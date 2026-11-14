@@ -45,6 +45,60 @@ export const CAREERS = [
       { title: 'General Contractor', salary: 195000, hours: [8, 17], req: { skills: { handiness: 8, business: 7 }, cert: ['contractor_license'] }, exec: true },
     ],
   },
+  {
+    id: 'finance', name: 'Finance', icon: '📈', place: 'office_finance', minigame: 'trading', skill: 'finance',
+    blurb: 'Read the market, manage money, earn the biggest bonuses in town.',
+    levels: [
+      { title: 'Operations Clerk', salary: 35000, hours: [9, 17], req: { skills: { finance: 1 } } },
+      { title: 'Junior Analyst', salary: 64000, hours: [9, 17], req: { skills: { finance: 3 } } },
+      { title: 'Financial Analyst', salary: 94000, hours: [9, 18], req: { skills: { finance: 5 }, degree: ['bs_finance', 'ba_business', 'mba'], cert: ['series65'], either: true } },
+      { title: 'Senior Analyst', salary: 138000, hours: [9, 18], req: { skills: { finance: 7, business: 2 } } },
+      { title: 'Portfolio Manager', salary: 195000, hours: [9, 18], req: { skills: { finance: 8, business: 4 } } },
+      { title: 'Director', salary: 275000, hours: [8, 18], req: { skills: { finance: 8, business: 6, charisma: 5 }, degree: ['mba', 'bs_finance'] } },
+      { title: 'Managing Director', salary: 400000, hours: [8, 18], req: { skills: { finance: 9, business: 7, charisma: 6 }, degree: ['mba'] }, exec: true },
+      { title: 'Chief Financial Officer', salary: 520000, hours: [8, 18], req: { skills: { finance: 10, business: 8, charisma: 7 } }, exec: true, ceo: true },
+    ],
+  },
+  {
+    id: 'healthcare', name: 'Healthcare', icon: '🩺', place: 'hospital', minigame: 'triage', skill: 'charisma',
+    blurb: 'Steady, meaningful work. The top of the ladder needs serious schooling.',
+    levels: [
+      { title: 'Hospital Orderly', salary: 31000, hours: [7, 15], req: {} },
+      { title: 'Nursing Assistant', salary: 40000, hours: [7, 15], req: { cert: ['cna'] } },
+      { title: 'Registered Nurse', salary: 84000, hours: [7, 15], req: { degree: ['bs_nursing'] } },
+      { title: 'Charge Nurse', salary: 106000, hours: [7, 15], req: { degree: ['bs_nursing'], skills: { charisma: 4 } } },
+      { title: 'Nurse Practitioner', salary: 138000, hours: [8, 16], req: { degree: ['bs_nursing'], skills: { charisma: 5, handiness: 3 } } },
+      { title: 'Resident Physician', salary: 165000, hours: [7, 17], req: { degree: ['md'] } },
+      { title: 'Attending Physician', salary: 300000, hours: [8, 17], req: { degree: ['md'], skills: { charisma: 6, handiness: 5 } }, exec: true },
+      { title: 'Chief of Medicine', salary: 460000, hours: [8, 17], req: { degree: ['md'], skills: { charisma: 7, business: 5 } }, exec: true, ceo: true },
+    ],
+  },
+  {
+    id: 'creative', name: 'Creative & Influencer', icon: '🎬', place: 'studio', minigame: 'beatcut', skill: 'creativity',
+    blurb: 'Make things people share. Fame opens the top jobs.',
+    levels: [
+      { title: 'Production Assistant', salary: 30000, hours: [10, 18], req: {} },
+      { title: 'Junior Designer', salary: 47000, hours: [10, 18], req: { skills: { creativity: 3 } } },
+      { title: 'Content Producer', salary: 68000, hours: [10, 18], req: { skills: { creativity: 5 } } },
+      { title: 'Senior Creative', salary: 95000, hours: [10, 18], req: { skills: { creativity: 7, charisma: 3 } } },
+      { title: 'Creative Director', salary: 145000, hours: [10, 18], req: { skills: { creativity: 8, business: 3 }, popularity: 20 } },
+      { title: 'Showrunner', salary: 215000, hours: [10, 19], req: { skills: { creativity: 9, charisma: 6 }, popularity: 40 } },
+      { title: 'Media Executive', salary: 345000, hours: [9, 18], req: { skills: { creativity: 9, business: 6 }, popularity: 60 }, exec: true, ceo: true },
+    ],
+  },
+  {
+    id: 'realestate', name: 'Real Estate', icon: '🏘️', place: 'realestate', minigame: 'matchhome', skill: 'charisma',
+    blurb: 'Lower base pay, but every closed deal pays commission the same day.',
+    levels: [
+      { title: 'Leasing Assistant', salary: 32000, hours: [9, 17], req: { skills: { charisma: 1 } } },
+      { title: 'Leasing Agent', salary: 40000, hours: [9, 17], req: { skills: { charisma: 3 }, cert: ['realestate_license'] }, tips: [20, 70] },
+      { title: 'Sales Agent', salary: 56000, hours: [9, 17], req: { skills: { charisma: 5, business: 2 }, cert: ['realestate_license'] }, tips: [50, 190] },
+      { title: 'Senior Agent', salary: 82000, hours: [9, 17], req: { skills: { charisma: 6, business: 4 } }, tips: [90, 330] },
+      { title: 'Broker', salary: 118000, hours: [9, 17], req: { skills: { business: 6, finance: 3, charisma: 6 } }, tips: [140, 480] },
+      { title: 'Managing Broker', salary: 172000, hours: [9, 18], req: { skills: { business: 7, charisma: 7 } }, tips: [200, 600] },
+      { title: 'Brokerage Partner', salary: 265000, hours: [9, 18], req: { skills: { business: 9, charisma: 8, finance: 5 } }, exec: true, ceo: true },
+    ],
+  },
 ];
 export const CAREER_BY_ID = Object.fromEntries(CAREERS.map((c) => [c.id, c]));
 

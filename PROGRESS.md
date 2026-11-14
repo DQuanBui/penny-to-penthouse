@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 6 — data/courses.js + sim/Education.js + Learn app (college service, bootcamps, online courses, books); add careers finance/healthcare/creative/realestate to data/careers.js + 4 mini-games; sim/Hustles.js (rideshare, delivery, freelance, streaming, tutoring) + Hustle UI; sim/Business.js + data/businesses.js (entrepreneur) + Business app.
+RESUME HERE: Phase 7 — data/stocks.js + sim/Market.js (regimes, news) + Invest and News apps; sim/RealEstate.js (listings, buy with mortgage, tax/maintenance, appreciation, renting out, tenant events, moving/renting homes) + Homes app + real-estate office service; Bank app: personal loan application and extra loan payments.
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
@@ -8,7 +8,7 @@ RESUME HERE: Phase 6 — data/courses.js + sim/Education.js + Learn app (college
 - [x] 3. Core sim: clock, needs, mood, money, HUD, phone + Bank app, saves, title, pause/settings
 - [x] 4. Home and work: room interior, sleep/eat/shower, Jobs app + interview, 3 careers + mini-games, café, clothing → MILESTONE demo
 - [x] 5. Social: NPCs, schedules, friendships, Contacts/Messages, Social app, popularity, parties
-- [ ] 6. Education and skills; remaining careers; side hustles; businesses
+- [x] 6. Education and skills; remaining careers; side hustles; businesses
 - [ ] 7. Finance depth: credit, card, loans, Invest app + market sim, Homes app, property, mortgages, renting out
 - [ ] 8. Build mode + furniture catalog + style score
 - [ ] 9. City select + all 5 cities, weather, transit/fast travel, map
@@ -40,9 +40,13 @@ RESUME HERE: Phase 6 — data/courses.js + sim/Education.js + Learn app (college
 - **NPCs**: data/npcs/<city>.js rows -> npcsOf() adds a deterministic look; npcWhere(npc,hour,day) returns home/work/in/out from schedule tables. characters/NPC.js shows "out" NPCs on benches / by shop doors when the player is within 75 m, and fills interiors with whoever is there plus counter staff. characters/Crowd.js = anonymous pedestrians random-walking sidewalk corners (typed arrays, rig pool for near, one InstancedMesh for far).
 - **Social**: sim/Relationships.js (sim.rel) levels 0/20/50/80; max 3 conversations per NPC per day with diminishing returns; friends (50+) give referrals (flags.referrals), 15% shop discounts (flags.discounts), tips, party invites via state.messages. sim/Popularity.js (sim.social): posts, sponsored posts from 5k followers, house parties, VIP at popularity 35.
 
+- **Education**: data/courses.js (college PROGRAMS = degrees/certs with one class a day at the college counter, ONLINE lessons and BOOKS via the Learn app). Career reqs: degree lists accept certs too; either:true means degree OR cert.
+- **Loans**: sim/Loans.js amortised monthly (APR/12); student loans are always approved, others need min score + DTI <= 43%. Archetype starting debt becomes a real loan/card balance in installSystems().
+- **Hustles / Business**: sim/Hustles.js (once a day each, 12% withheld). sim/Business.js: daily profit = base x 1.75^(level-1) x owner skill fit x reputation x staffing x city demand x luck, minus wages and fixed costs; bankrupt when the business account falls below -30% of startup cost. Owner draws are taxed.
+
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- Scenarios: social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
+- Scenarios: learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
 ## Known issues

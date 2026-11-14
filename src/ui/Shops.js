@@ -9,6 +9,8 @@ import { PLACE_TYPES } from '../data/placeTypes.js';
 import { CAREER_BY_ID } from '../data/careers.js';
 import { mod } from '../sim/Player.js';
 import { VIP_POPULARITY } from '../sim/Popularity.js';
+import { PROGRAM_BY_ID } from '../data/courses.js';
+import { LearnApp } from './Phone/Learn.js';
 import { fmtMoney } from '../core/utils.js';
 import { runActivity, openShift } from './Interact.js';
 
@@ -149,6 +151,33 @@ export const SERVICES = {
             st.flags.gymPassUntil = 1e9;
             refresh();
           }),
+    );
+  },
+  college(game, place, body) {
+    const edu = game.sim.edu;
+    const en = game.state.education.enrolled;
+    if (en) {
+      const p = PROGRAM_BY_ID[en.id];
+      const block = edu.classBlock();
+      body.append(
+        h('div.card', h('b', `${p.icon} ${p.name}`), h('div.bar', h('div.bar-fill', { style: { width: (en.done / p.sessions) * 100 + '%', background: 'var(--accent)' } })), h('div.muted.small', `${en.done} of ${p.sessions} classes attended`)),
+        btn(`📖  Attend today's class  ·  ${p.hours} h`, async () => {
+          game.closeTop();
+          let r;
+          await game.fade(() => {
+            r = edu.attendClass();
+          });
+          if (r && !r.finished) game.events.emit('toast', { icon: p.icon, title: 'Class attended', text: `${r.done} of ${r.total} done. See you tomorrow.`, kind: 'good' });
+        }, 'primary' + (block ? ' disabled' : '')),
+        block ? h('div.muted.small', block) : null,
+      );
+    } else body.append(h('div.muted', 'Degrees and certifications open the top of every career ladder. Choose a programme to enrol.'));
+    body.append(
+      btn('🎓  Browse programmes', () => {
+        game.closeAllOverlays();
+        LearnApp.tab = 'college';
+        game.phone.open('learn');
+      }),
     );
   },
   bank(game) {

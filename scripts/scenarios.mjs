@@ -11,6 +11,8 @@ export async function startLife(page, wait) {
   await page.click('.tab:nth-child(4)');
   await page.click('text=Start Life');
   await page.waitForFunction(() => window.__game.mode === 'play');
+  // software GL is slow: use the Low preset so UI animations finish before screenshots
+  await page.evaluate(() => window.__game.settings.set('graphics', 'low'));
   await wait(600);
 }
 
@@ -23,6 +25,83 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Phase 6: Learn app, college class, gigs, ventures, the four new mini-games. */
+  async learn({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.money.checking = 90000;
+      g.state.skills.coding = 5;
+      g.state.inventory.items.laptop = 1;
+      g.sim.advance(120, { noDecay: true });
+    });
+    await key(page, 'Tab');
+    await page.click('.app-icon:has-text("Learn")');
+    await wait(300);
+    await shot('p6-skills');
+    await page.click('.seg-btn:has-text("College")');
+    await wait(200);
+    await shot('p6-college');
+    await page.locator('.card.job').nth(8).locator('text=Student loan').click();
+    await page.click('.seg-btn:has-text("Online")');
+    await page.locator('.lrow .btn').first().click();
+    await wait(200);
+    await page.click('text=Study 1 h');
+    await wait(1200);
+    await shot('p6-online');
+    await page.click('.seg-btn:has-text("Books")');
+    await page.locator('.lrow .btn').first().click();
+    await page.click('text=Read 1 h');
+    await wait(1200);
+    await page.click('.app-back');
+    await page.click('.app-icon:has-text("Gigs")');
+    await wait(300);
+    await shot('p6-gigs');
+    await page.locator('.card.job').first().locator('text=Start').click();
+    await wait(1400);
+    await key(page, 'Tab');
+    await page.click('.app-icon:has-text("Ventures")');
+    await wait(300);
+    await page.locator('.card.job').first().locator('text=Launch').click();
+    await page.click('.dialog-foot >> text=Launch');
+    await wait(300);
+    await page.click('text=Hire');
+    await page.evaluate(() => window.__game.sim.advance(1440 * 6, { noDecay: true, noCollapse: true }));
+    await page.click('.app-back');
+    await page.click('.app-icon:has-text("Ventures")');
+    await wait(300);
+    await shot('p6-ventures');
+    await key(page, 'Escape');
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 10 * 60;
+      g.enterPlace(g.city.placeById.college);
+    });
+    await wait(1500);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.npcs.clearIndoor();
+      const pt = g.interior.points.find((p) => p.use === 'service');
+      g.player.teleport(pt.x, pt.z, Math.PI);
+    });
+    await wait(400);
+    await key(page, 'KeyE');
+    await shot('p6-class');
+    await page.click('text=Attend today');
+    await wait(1500);
+    for (const id of ['trading', 'triage', 'beatcut', 'matchhome']) {
+      await page.evaluate((x) => void window.__mg(x, 2), id);
+      await wait(3400);
+      await shot('p6-' + id);
+      await page.click('text=Skip — auto-resolve');
+      await wait(300);
+    }
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      return { enrolled: g.state.education.enrolled, loans: g.state.loans.length, biz: g.state.businesses.map((b) => Math.round(b.cash)), coding: +g.state.skills.coding.toFixed(2), gigs: g.state.hustles.total };
+    });
+    console.log('info', JSON.stringify(info));
+  },
   /** Phase 5: crowd, meeting an NPC, talk actions, Contacts + Social apps, NPCs indoors. */
   async social({ page, shot, wait }) {
     await startLife(page, wait);
@@ -129,6 +208,7 @@ export const scenarios = {
     await shot('p4-restaurant');
     await page.evaluate(() => {
       const g = window.__game;
+      g.npcs.clearIndoor(); // keep staff out of the way of the scripted interaction
       const pt = g.interior.points.find((p) => p.use === 'work');
       g.player.teleport(pt.x, pt.z, 0);
     });
@@ -158,6 +238,7 @@ export const scenarios = {
     await wait(1400);
     await page.evaluate(() => {
       const g = window.__game;
+      g.npcs.clearIndoor();
       const pt = g.interior.points.find((p) => p.use === 'service');
       g.player.teleport(pt.x, pt.z, Math.PI);
     });

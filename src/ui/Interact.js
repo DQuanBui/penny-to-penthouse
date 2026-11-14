@@ -10,6 +10,7 @@ import { fmtClock, fmtHour } from '../core/Clock.js';
 import { fmtMoney, clamp } from '../core/utils.js';
 import { runMiniGame } from '../minigames/index.js';
 import { openService } from './Shops.js';
+import { HUSTLES } from '../sim/Hustles.js';
 
 const NEED_ICON = { energy: '⚡', hunger: '🍔', hygiene: '🚿', fun: '🎮', social: '💬', health: '❤️' };
 
@@ -115,9 +116,23 @@ function openComputer(game, q) {
     return;
   }
   const act = (id) => btn(`${ACTIVITIES[id].icon}  ${ACTIVITIES[id].label}  ·  ${ACTIVITIES[id].minutes} min`, () => (game.closeOverlay(el), runActivity(game, id, { q, atHome: true })));
-  const extra = [];
-  game.events.emit('computerMenu', { extra, close: () => game.closeOverlay(el), q });
-  const el = dialog(game, { title: '🖥️ Computer', body: h('div.menu-col', act('code_practice'), act('browse'), extra) });
+  // side hustles that need a computer
+  const gig = (id) => {
+    const why = game.sim.hustles.blocked(id);
+    const [lo, hi] = game.sim.hustles.payRange(id);
+    return btn(`${HUSTLES[id].icon}  ${HUSTLES[id].name}  ·  ${HUSTLES[id].minutes / 60} h  ·  ${fmtMoney(lo)}–${fmtMoney(hi)}`, async () => {
+      game.closeOverlay(el);
+      let res;
+      await game.fade(() => {
+        res = game.sim.hustles.run(id);
+      });
+      if (res) game.events.emit('toast', { icon: HUSTLES[id].icon, title: `${HUSTLES[id].name} done`, text: `+${fmtMoney(res.net)} after tax${res.followers ? ` · +${res.followers} followers` : ''}`, kind: 'good' });
+    }, why ? 'disabled' : '');
+  };
+  const el = dialog(game, {
+    title: '🖥️ Computer',
+    body: h('div.menu-col', act('code_practice'), gig('freelance'), gig('stream'), act('browse'), btn('🎓  Online courses (Learn app)', () => (game.closeAllOverlays(), game.phone.open('learn')))),
+  });
 }
 
 export function openWardrobe(game) {

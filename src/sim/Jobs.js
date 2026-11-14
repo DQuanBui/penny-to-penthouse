@@ -45,8 +45,15 @@ export class Jobs {
     const st = this.sim.state;
     const missing = [];
     for (const s in req.skills || {}) if (skillLevel(st, s) < req.skills[s]) missing.push(`${SKILL_BY_ID[s].name} ${req.skills[s]}`);
-    if (req.degree && !req.degree.some((d) => st.education.degrees.includes(d))) missing.push('a relevant degree');
-    if (req.cert && !req.cert.some((d) => st.education.certs.includes(d))) missing.push('a certification');
+    const hasDeg = !req.degree || req.degree.some((d) => st.education.degrees.includes(d) || st.education.certs.includes(d));
+    const hasCert = !req.cert || req.cert.some((d) => st.education.certs.includes(d));
+    // "either" = a degree OR a certification is enough
+    if (req.either && req.degree && req.cert) {
+      if (!(req.degree.some((d) => st.education.degrees.includes(d)) || req.cert.some((d) => st.education.certs.includes(d)))) missing.push('a degree or licence (see Learn)');
+    } else {
+      if (!hasDeg) missing.push('a relevant degree (see Learn)');
+      if (!hasCert) missing.push('a certification (see Learn)');
+    }
     if (req.popularity && st.social.popularity < req.popularity) missing.push(`Popularity ${req.popularity}`);
     return { ok: missing.length === 0, missing };
   }

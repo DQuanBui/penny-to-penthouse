@@ -225,7 +225,7 @@ export class NPCManager {
   }
 
   /** Closest named NPC within reach (current scene only). */
-  nearest(pos, inside, reach = 2.4) {
+  nearest(pos, inside, reach = 2.0) {
     let best = null;
     let bd = reach * reach;
     const scan = (a) => {

@@ -3,11 +3,16 @@ import { BankApp } from './Bank.js';
 import { JobsApp } from './Jobs.js';
 import { ContactsApp } from './Contacts.js';
 import { SocialApp } from './Social.js';
+import { LearnApp } from './Learn.js';
+import { GigsApp, VenturesApp } from './Ventures.js';
 import { openSettings } from '../Menus.js';
 
 export function registerApps(phone, game) {
   phone.register(BankApp);
   phone.register(JobsApp);
+  phone.register(LearnApp);
+  phone.register(GigsApp);
+  phone.register(VenturesApp);
   phone.register(ContactsApp);
   phone.register(SocialApp);
   phone.register({

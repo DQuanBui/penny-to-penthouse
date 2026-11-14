@@ -6,6 +6,7 @@ import { fmtMoney, clamp } from '../../core/utils.js';
 import { fmtHour, fmtDay, dayOf } from '../../core/Clock.js';
 import { BALANCE } from '../../data/balance.js';
 import { CAREER_BY_ID } from '../../data/careers.js';
+import { PROGRAM_BY_ID } from '../../data/courses.js';
 import { isPayday, nextDayMatching } from '../../sim/Finance.js';
 import { section, row, tabs, kv, empty } from './widgets.js';
 import { employerName } from '../Interact.js';
@@ -84,13 +85,15 @@ export const JobsApp = {
       const have = Math.floor(state.skills[s] + 1e-6);
       rows.push(kv(`${have >= req.skills[s] ? '✅' : '⬜'} ${s[0].toUpperCase() + s.slice(1)} ${req.skills[s]}`, `you: ${have}`, have >= req.skills[s] ? 'good' : 'bad'));
     }
-    if (req.degree) {
-      const ok = req.degree.some((d) => state.education.degrees.includes(d));
-      rows.push(kv(`${ok ? '✅' : '⬜'} Relevant degree`, ok ? 'yes' : 'see Learn app', ok ? 'good' : 'bad'));
-    }
-    if (req.cert) {
-      const ok = req.cert.some((d) => state.education.certs.includes(d));
-      rows.push(kv(`${ok ? '✅' : '⬜'} Certification`, ok ? 'yes' : 'see Learn app', ok ? 'good' : 'bad'));
+    const names = (ids) => ids.map((d) => PROGRAM_BY_ID[d]?.name || d).join(' / ');
+    const hasD = req.degree?.some((d) => state.education.degrees.includes(d) || state.education.certs.includes(d));
+    const hasC = req.cert?.some((d) => state.education.certs.includes(d));
+    if (req.either && req.degree && req.cert) {
+      const ok = hasD || hasC;
+      rows.push(kv(`${ok ? '✅' : '⬜'} ${names(req.degree.concat(req.cert))}`, ok ? 'yes' : 'any one', ok ? 'good' : 'bad'));
+    } else {
+      if (req.degree) rows.push(kv(`${hasD ? '✅' : '⬜'} ${names(req.degree)}`, hasD ? 'yes' : 'Learn app', hasD ? 'good' : 'bad'));
+      if (req.cert) rows.push(kv(`${hasC ? '✅' : '⬜'} ${names(req.cert)}`, hasC ? 'yes' : 'Learn app', hasC ? 'good' : 'bad'));
     }
     if (req.popularity) rows.push(kv(`${state.social.popularity >= req.popularity ? '✅' : '⬜'} Popularity ${req.popularity}`, `you: ${Math.round(state.social.popularity)}`));
     if (!rows.length) rows.push(h('div.muted.small', 'No special requirements.'));
