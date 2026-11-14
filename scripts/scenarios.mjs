@@ -109,7 +109,7 @@ export const scenarios = {
     await page.click('.app-icon:nth-child(2)');
     await wait(300);
     await shot('p4-jobs');
-    await page.click('.card.job:has-text("Dishwasher") >> text=Apply');
+    await page.locator('.card.job').nth(1).locator('text=Apply').click();
     await wait(300);
     await shot('p4-interview');
     for (let i = 0; i < 3; i++) {
