@@ -128,6 +128,7 @@ export class Jobs {
     if (st.job) this.leave('quit', true);
     st.job = { career: careerId, level, perf: 10, accrued: 0, raise: 1, hiredDay: this.sim.day, lastShiftDay: -1, shifts: 0, lates: 0, warned: false };
     if (st.flags.referrals) delete st.flags.referrals[careerId];
+    st.flags.careerNews = true;
     const def = this.levelDef();
     this.sim.bus.emit('toast', { icon: '🎉', title: `Hired: ${def.title}`, text: `${fmtMoney(this.annualSalary())}/yr · weekdays ${fmtHour(def.hours[0])}–${fmtHour(def.hours[1])}. Do not be late!`, kind: 'good', long: true });
     this.sim.bus.emit('hired', { career: careerId, level });
@@ -250,6 +251,7 @@ export class Jobs {
         j.perf = 15;
         j.warned = false;
         st.stats.promotions++;
+        st.flags.careerNews = true;
         const bonusPay = Math.round(this.annualSalary() * 0.02);
         sim.finance.earn(bonusPay, 'tips', 'Promotion bonus');
         sim.bus.emit('toast', { icon: '🚀', title: `Promoted to ${next.title}!`, text: `New salary ${fmtMoney(this.annualSalary())}/yr plus a ${fmtMoney(bonusPay)} bonus.`, kind: 'good', long: true });

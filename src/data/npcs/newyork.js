@@ -1,0 +1,45 @@
+// Named residents of New York. Compact rows:
+// [id, name, job title, workplace place-type (or null), career id (or null),
+//  schedule, personality, interests, home district, favourite place types]
+// schedule:    office | early | service | night | student | freelance
+// personality: outgoing | shy | ambitious | chill | creative | serious
+const R = (id, name, job, work, career, sched, personality, interests, district, fav) => ({ id, name, job, work, career, sched, personality, interests, district, fav });
+
+export default [
+  R('ny_maya', 'Maya Okafor', 'Senior Developer', 'office_tech', 'tech', 'office', 'ambitious', ['coding', 'fitness', 'business'], 'midtown', ['cafe', 'gym']),
+  R('ny_dev', 'Dev Patel', 'Junior Developer', 'office_tech', 'tech', 'office', 'shy', ['coding', 'creativity'], 'queens', ['cafe', 'electronics']),
+  R('ny_lena', 'Lena Fischer', 'Engineering Manager', 'office_tech', 'tech', 'office', 'serious', ['business', 'coding', 'finance'], 'lower_manhattan', ['restaurant', 'gym']),
+  R('ny_theo', 'Theo Nakamura', 'IT Support Tech', 'office_tech', 'tech', 'office', 'chill', ['coding', 'cooking'], 'brooklyn', ['bar', 'cafe']),
+  R('ny_marcus', 'Marcus Bell', 'Investment Analyst', 'office_finance', 'finance', 'office', 'ambitious', ['finance', 'business', 'fitness'], 'lower_manhattan', ['bar', 'gym']),
+  R('ny_priya', 'Priya Raman', 'Portfolio Manager', 'office_finance', 'finance', 'office', 'serious', ['finance', 'business'], 'midtown', ['restaurant', 'cafe']),
+  R('ny_olivia', 'Olivia Grant', 'Bank Teller', 'bank', 'finance', 'service', 'outgoing', ['finance', 'charisma'], 'queens', ['cafe', 'clothing']),
+  R('ny_sam', 'Sam Whitaker', 'Hedge Fund Associate', 'office_finance', 'finance', 'office', 'outgoing', ['finance', 'charisma', 'fitness'], 'midtown', ['bar', 'restaurant']),
+  R('ny_rosa', 'Rosa Delgado', 'Head Chef', 'restaurant', 'hospitality', 'service', 'outgoing', ['cooking', 'business'], 'queens', ['grocery', 'bar']),
+  R('ny_jin', 'Jin Park', 'Line Cook', 'restaurant', 'hospitality', 'service', 'chill', ['cooking', 'creativity'], 'queens', ['bar', 'gym']),
+  R('ny_bea', 'Bea Kowalski', 'Server', 'restaurant', 'hospitality', 'service', 'outgoing', ['charisma', 'creativity'], 'brooklyn', ['bar', 'clothing']),
+  R('ny_tariq', 'Tariq Hassan', 'Barista', 'cafe', 'hospitality', 'service', 'creative', ['creativity', 'cooking', 'charisma'], 'brooklyn', ['cafe', 'bar']),
+  R('ny_gus', 'Gus Moretti', 'Master Electrician', 'trades', 'trades', 'early', 'serious', ['handiness', 'fitness'], 'queens', ['restaurant', 'gym']),
+  R('ny_dani', 'Dani Brooks', 'Apprentice', 'trades', 'trades', 'early', 'chill', ['handiness', 'fitness', 'cooking'], 'brooklyn', ['bar', 'gym']),
+  R('ny_frank', 'Frank Sullivan', 'Site Foreman', 'trades', 'trades', 'early', 'outgoing', ['handiness', 'business'], 'queens', ['restaurant', 'bar']),
+  R('ny_nia', 'Nia Thompson', 'ER Nurse', 'hospital', 'healthcare', 'early', 'serious', ['fitness', 'cooking'], 'queens', ['cafe', 'gym']),
+  R('ny_eli', 'Dr. Eli Rosen', 'Physician', 'hospital', 'healthcare', 'office', 'serious', ['finance', 'fitness'], 'lower_manhattan', ['restaurant', 'gym']),
+  R('ny_carmen', 'Carmen Vega', 'Paramedic', 'hospital', 'healthcare', 'night', 'outgoing', ['fitness', 'charisma'], 'brooklyn', ['bar', 'gym']),
+  R('ny_zoe', 'Zoe Laurent', 'Video Producer', 'studio', 'creative', 'office', 'creative', ['creativity', 'charisma'], 'brooklyn', ['cafe', 'bar']),
+  R('ny_kai', 'Kai Mendoza', 'Content Creator', 'studio', 'creative', 'freelance', 'outgoing', ['creativity', 'charisma', 'fitness'], 'brooklyn', ['cafe', 'clothing']),
+  R('ny_iris', 'Iris Chen', 'Art Director', 'studio', 'creative', 'office', 'creative', ['creativity', 'business'], 'midtown', ['cafe', 'furniture']),
+  R('ny_noah', 'Noah Abrams', 'Real Estate Agent', 'realestate', 'realestate', 'office', 'outgoing', ['business', 'charisma', 'finance'], 'midtown', ['restaurant', 'bar']),
+  R('ny_grace', 'Grace Liu', 'Property Broker', 'realestate', 'realestate', 'office', 'ambitious', ['business', 'finance'], 'lower_manhattan', ['cafe', 'gym']),
+  R('ny_hugo', 'Hugo Silva', 'Personal Trainer', 'gym', null, 'service', 'outgoing', ['fitness', 'charisma'], 'brooklyn', ['gym', 'cafe']),
+  R('ny_mina', 'Mina Farouk', 'Boutique Manager', 'clothing', null, 'service', 'creative', ['creativity', 'business', 'charisma'], 'midtown', ['cafe', 'bar']),
+  R('ny_otis', 'Otis Reed', 'Furniture Designer', 'furniture', null, 'service', 'chill', ['handiness', 'creativity'], 'queens', ['cafe', 'grocery']),
+  R('ny_vera', 'Vera Novak', 'Electronics Clerk', 'electronics', null, 'service', 'shy', ['coding', 'creativity'], 'lower_manhattan', ['cafe', 'electronics']),
+  R('ny_abe', 'Abe Goldman', 'Grocer', 'grocery', null, 'service', 'chill', ['cooking', 'business'], 'brooklyn', ['restaurant', 'cafe']),
+  R('ny_lucia', 'Lucia Romano', 'Bartender', 'bar', 'hospitality', 'night', 'outgoing', ['charisma', 'cooking', 'creativity'], 'brooklyn', ['cafe', 'gym']),
+  R('ny_prof', 'Prof. Helen Marsh', 'Economics Professor', 'college', null, 'office', 'serious', ['finance', 'business'], 'lower_manhattan', ['cafe', 'restaurant']),
+  R('ny_tom', 'Tom Reyes', 'Business Student', 'college', null, 'student', 'outgoing', ['business', 'finance', 'fitness'], 'lower_manhattan', ['bar', 'gym']),
+  R('ny_ana', 'Ana Castillo', 'Computer Science Student', 'college', null, 'student', 'shy', ['coding', 'creativity'], 'queens', ['cafe', 'electronics']),
+  R('ny_wes', 'Wes Carter', 'Car Salesman', 'dealer', null, 'service', 'outgoing', ['charisma', 'business'], 'queens', ['restaurant', 'bar']),
+  R('ny_june', 'June Ashby', 'Freelance Writer', null, null, 'freelance', 'creative', ['creativity', 'cooking'], 'brooklyn', ['cafe', 'bar']),
+  R('ny_ray', 'Ray Donnelly', 'Retired Firefighter', null, null, 'freelance', 'chill', ['fitness', 'handiness', 'cooking'], 'queens', ['cafe', 'restaurant']),
+  R('ny_sol', 'Sol Bernstein', 'Startup Founder', null, 'entrepreneur', 'freelance', 'ambitious', ['business', 'coding', 'finance'], 'midtown', ['cafe', 'restaurant']),
+];

@@ -407,6 +407,22 @@ export class Interior {
     return this;
   }
 
+  /** Up to n open floor positions (for NPCs), away from furniture and the door. */
+  freeSpots(n, rng = Math.random) {
+    const { w, d } = this.layout;
+    const out = [];
+    for (let x = 1; x <= w - 1; x += 1) {
+      for (let z = 1; z <= d - 1.6; z += 1) {
+        const px = x + (rng() - 0.5) * 0.4;
+        const pz = z + (rng() - 0.5) * 0.4;
+        if (this.world.colliders.pointBlocked(px, 0.4, pz, 0.5)) continue;
+        if (Math.hypot(px - this.door.x, pz - this.door.z) < 1.8) continue;
+        out.push({ x: px, z: pz, k: rng() });
+      }
+    }
+    return out.sort((a, b) => a.k - b.k).slice(0, n);
+  }
+
   /** Nearest usable thing to a position: furniture point or the exit door. */
   nearest(pos) {
     let best = null;

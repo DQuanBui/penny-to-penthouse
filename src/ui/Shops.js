@@ -8,6 +8,7 @@ import { OUTFITS, ELECTRONICS, wearOutfit } from '../data/items.js';
 import { PLACE_TYPES } from '../data/placeTypes.js';
 import { CAREER_BY_ID } from '../data/careers.js';
 import { mod } from '../sim/Player.js';
+import { VIP_POPULARITY } from '../sim/Popularity.js';
 import { fmtMoney } from '../core/utils.js';
 import { runActivity, openShift } from './Interact.js';
 
@@ -21,6 +22,10 @@ function item(icon, title, sub, price, onBuy, opts = {}) {
   );
 }
 
+/** Friends-and-family discount earned through a friend who works at this kind of shop. */
+const disc = (game, place) => game.state.flags.discounts?.[place.type] || 1;
+const discNote = (game, place) => (disc(game, place) < 1 ? h('div.good.small', '⭐ Friends-and-family discount applied: 15% off.') : null);
+
 const effects = (id) =>
   Object.entries(ACTIVITIES[id].needs)
     .map(([k, v]) => `${k} ${v > 0 ? '+' : ''}${v}`)
@@ -32,8 +37,9 @@ const effects = (id) =>
  */
 export const SERVICES = {
   cafe(game, place, body) {
-    const act = (id) => item(ACTIVITIES[id].icon, ACTIVITIES[id].label, effects(id), priceOf(game.sim, ACTIVITIES[id].price), () => (game.closeTop(), runActivity(game, id)));
-    body.append(h('div.muted', 'Fresh coffee, fast.'), act('coffee'), act('pastry'), act('cafe_meal'));
+    const d = disc(game, place);
+    const act = (id) => item(ACTIVITIES[id].icon, ACTIVITIES[id].label, effects(id), priceOf(game.sim, ACTIVITIES[id].price, d), () => (game.closeTop(), runActivity(game, id, { discount: d })));
+    body.append(h('div.muted', 'Fresh coffee, fast.'), discNote(game, place), act('coffee'), act('pastry'), act('cafe_meal'));
   },
   restaurant(game, place, body) {
     const act = (id) => item(ACTIVITIES[id].icon, ACTIVITIES[id].label, effects(id), priceOf(game.sim, ACTIVITIES[id].price), () => (game.closeTop(), runActivity(game, id)));
@@ -41,16 +47,31 @@ export const SERVICES = {
   },
   bar(game, place, body) {
     const act = (id) => item(ACTIVITIES[id].icon, ACTIVITIES[id].label, effects(id), priceOf(game.sim, ACTIVITIES[id].price), () => (game.closeTop(), runActivity(game, id)));
-    body.append(h('div.muted', 'The night is young.'), act('drink'), act('mocktail'));
+    const st = game.state;
+    const vip = st.social.popularity >= VIP_POPULARITY;
+    body.append(
+      h('div.muted', 'The night is young.'),
+      act('drink'),
+      act('mocktail'),
+      item('⭐', 'VIP table', vip ? 'fun +38 · social +30 · get noticed' : `Reserved for well-known faces (Popularity ${VIP_POPULARITY}+). Yours: ${Math.round(st.social.popularity)}`, priceOf(game.sim, 'fancyDinner'), async () => {
+        if (!game.sim.finance.spend(priceOf(game.sim, 'fancyDinner'), 'fun', 'VIP table')) return;
+        game.closeTop();
+        await game.fade(() => game.sim.advance(120, { rates: { fun: 19, social: 15, energy: -3 }, noCollapse: true }));
+        const gain = Math.round(30 + st.social.followers * 0.01);
+        st.social.followers += gain;
+        game.events.emit('toast', { icon: '⭐', title: 'VIP night', text: `People noticed. +${gain} followers.`, kind: 'good' });
+      }, { owned: vip ? null : '🔒 VIP' }),
+    );
   },
   grocery(game, place, body, refresh) {
     const st = game.state;
-    const pi = (game.sim.city.priceIndex || 1) * mod(st, 'priceMul');
+    const pi = (game.sim.city.priceIndex || 1) * mod(st, 'priceMul') * disc(game, place);
     body.append(
+      discNote(game, place),
       h('div.muted', `You have ${st.inventory.meals} portions at home. A home-cooked meal costs a fraction of eating out.`),
       GROCERY_PACKS.map(([id, label, n, price]) =>
         item('🛍️', label, `${n} portions · ${fmtMoney((price * pi) / n)} per meal`, Math.round(price * pi), () => {
-          if (buyGroceries(game.sim, id)) {
+          if (buyGroceries(game.sim, id, disc(game, place))) {
             game.audio?.play('cash');
             refresh();
           }
@@ -60,14 +81,16 @@ export const SERVICES = {
   },
   clothing(game, place, body, refresh) {
     const st = game.state;
-    const pm = mod(st, 'priceMul') * (game.sim.city.priceIndex || 1);
+    const pm = mod(st, 'priceMul') * (game.sim.city.priceIndex || 1) * disc(game, place);
     body.append(
+      discNote(game, place),
       h('div.muted', 'Better outfits help in interviews and make your posts more popular. Change any time at a wardrobe.'),
       OUTFITS.filter((o) => o.price > 0).map((o) => {
         const owned = st.inventory.outfits.includes(o.id);
         return item(o.icon, o.name, `Style ${o.style} · ${o.desc}`, Math.round(o.price * pm), () => {
           if (!game.sim.finance.spend(Math.round(o.price * pm), 'shopping', o.name)) return;
           st.inventory.outfits.push(o.id);
+          st.flags.newOutfit = true;
           wearOutfit(st, o.id);
           game.setPlayerLook(st.profile.appearance);
           game.audio?.play('cash');
@@ -80,8 +103,9 @@ export const SERVICES = {
   },
   electronics(game, place, body, refresh) {
     const st = game.state;
-    const pm = mod(st, 'priceMul');
+    const pm = mod(st, 'priceMul') * disc(game, place);
     body.append(
+      discNote(game, place),
       h('div.muted', 'Tools that pay for themselves — if you use them.'),
       ELECTRONICS.map((e) =>
         item(e.icon, e.name, e.desc, Math.round(e.price * pm), () => {

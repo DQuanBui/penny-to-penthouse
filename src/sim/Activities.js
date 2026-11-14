@@ -95,10 +95,10 @@ export const GROCERY_PACKS = [
   ['bulk', 'Bulk stock-up', 30, 108],
 ];
 
-export function buyGroceries(sim, packId) {
+export function buyGroceries(sim, packId, discount = 1) {
   const pack = GROCERY_PACKS.find((p) => p[0] === packId);
   if (!pack) return false;
-  const price = Math.round(pack[3] * (sim.city.priceIndex || 1) * mod(sim.state, 'priceMul'));
+  const price = Math.round(pack[3] * (sim.city.priceIndex || 1) * mod(sim.state, 'priceMul') * discount);
   if (!sim.finance.spend(price, 'food', `Groceries — ${pack[1]}`)) return false;
   sim.state.inventory.meals += pack[2];
   return true;

@@ -34,6 +34,9 @@ import { PLACE_TYPES } from '../data/placeTypes.js';
 import { hasComputer } from '../data/items.js';
 import { useFurniture } from '../ui/Interact.js';
 import { computeObjective } from '../ui/Objectives.js';
+import { Crowd } from '../characters/Crowd.js';
+import { NPCManager } from '../characters/NPC.js';
+import { openTalk } from '../ui/Talk.js';
 import { fmtMoney } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
@@ -69,6 +72,8 @@ export class Game {
     this._lampTimer = 0;
 
     this.interior = new Interior();
+    this.crowd = new Crowd(this.scene);
+    this.npcs = new NPCManager(this);
     this.inside = null; // { place, home, layout } while in an interior
     this._focus = new THREE.Vector3();
     this._winColor = new THREE.Color();
@@ -113,6 +118,8 @@ export class Game {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO[q] || 1));
     this.renderer.shadowMap.enabled = q !== 'low';
     this.sky.setQuality(q);
+    if (this.city && this._crowdQ !== q) this.crowd.setCity(this.city, q);
+    this._crowdQ = q;
     this.cam.sensitivity = s.get('sensitivity');
     this.cam.invertY = s.get('invertY');
     this.input.cameraMode = s.get('cameraMode');
@@ -181,6 +188,8 @@ export class Game {
     this.city.season = season;
     this.scene.add(this.city.group);
     this.map.setCity(this.city);
+    this.crowd.setCity(this.city, this.quality);
+    this.npcs.setCity(this.city);
     return this.city;
   }
 
@@ -221,6 +230,17 @@ export class Game {
     return `${d.name}, ${this.city.cfg.name}`;
   }
 
+  /** What the Social app can post about from where the player stands. */
+  postContext() {
+    const inside = this.inside;
+    let landmark = null;
+    if (!inside) {
+      const p = this.player.pos;
+      for (const l of this.city.landmarks) if ((l.x - p.x) ** 2 + (l.z - p.z) ** 2 < 55 * 55) landmark = l.name;
+    }
+    return { landmark, inHome: !!inside?.home, inFoodPlace: !!inside && ['cafe', 'restaurant', 'bar'].includes(inside.place.type) };
+  }
+
   // ------------------------------------------------------------ interiors
   /** Walk through a door: fade into the place's interior scene. */
   enterPlace(place) {
@@ -231,6 +251,7 @@ export class Game {
       const layout = home ? (st.home.layout ||= defaultHomeLayout(st.home.type)) : commercialLayout(place);
       this.interior.build(layout, { place, home, hasPc: hasComputer(st) });
       this.inside = { place, home, layout };
+      this.npcs.populateInterior(this.interior, place);
       this.interior.scene.add(this.playerRig.group);
       this.player.setWorld(this.interior.world);
       this.cam.setWorld(this.interior.world);
@@ -253,7 +274,9 @@ export class Game {
     const { place, home } = this.inside;
     const layout = home ? (this.state.home.layout ||= defaultHomeLayout(this.state.home.type)) : this.inside.layout;
     this.inside.layout = layout;
+    this.npcs.clearIndoor();
     this.interior.build(layout, { place, home, hasPc: hasComputer(this.state) });
+    this.npcs.populateInterior(this.interior, place);
     this.player.setWorld(this.interior.world);
     this.cam.setWorld(this.interior.world);
   }
@@ -269,6 +292,7 @@ export class Game {
       this.cam.maxDist = 16;
       this.cam.dist = this._outDist || 6.5;
       this.inside = null;
+      this.npcs.clearIndoor();
       this.placePlayerAt(place);
       this.events.emit('left', { place });
     };
@@ -299,6 +323,8 @@ export class Game {
     this.hud.show(false);
     this.input.gameplay = false;
     if (this.playerRig) this.playerRig.group.visible = false;
+    this.npcs.clearOutdoor();
+    this.crowd.group.visible = false;
     this.state = null;
     this.sim = null;
     this.title?.close();
@@ -376,6 +402,8 @@ export class Game {
     this.loadCity(state.cityId, season);
     this.sim = new Sim(state, this.events, this.city.cfg);
     installSystems(this.sim);
+    this.npcs.clearOutdoor();
+    this.crowd.group.visible = true;
     this.setPlayerLook(state.profile.appearance);
     this.playerRig.group.visible = true;
     const w = this.cityWorld();
@@ -450,6 +478,8 @@ export class Game {
   /** Nearest thing the player can use right now: { label, action } or null. */
   findInteractable() {
     const p = this.player.pos;
+    const actor = this.npcs.nearest(p, !!this.inside);
+    if (actor) return { label: `Talk to ${actor.npc.first}`, action: () => openTalk(this, actor.npc, actor) };
     if (this.inside) {
       const pt = this.interior.nearest(p);
       if (!pt) return null;
@@ -541,6 +571,8 @@ export class Game {
       this.city.update(elapsed, this.sky.night);
       this.updateLampLights(dt);
     }
+    this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside);
+    this.npcs.update(dt, this.player.pos, !!inside);
 
     // --- interaction prompt + HUD ---
     this._interactT = (this._interactT || 0) - dt;

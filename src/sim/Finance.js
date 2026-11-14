@@ -204,7 +204,8 @@ export class Finance {
     const out = [];
     const home = st.home;
     const ht = HOME_BY_ID[home.type];
-    if (!home.owned && home.rent > 0) out.push({ label: `Rent — ${ht.name}`, amount: home.rent, cat: 'rent', when: 'first', rent: true });
+    // a roommate covers 45% of the rent
+    if (!home.owned && home.rent > 0) out.push({ label: `Rent — ${ht.name}${home.roommate ? ' (your share)' : ''}`, amount: Math.round(home.rent * (home.roommate ? 0.55 : 1)), cat: 'rent', when: 'first', rent: true });
     out.push({ label: 'Utilities', amount: Math.round(BALANCE.housing.utilitiesPerRoom * Math.max(1, ht.tier) * pi * (home.type === 'couch' ? 0.4 : 1)), cat: 'utilities', when: 'first' });
     out.push({ label: 'Phone plan', amount: Math.round(B.phone * pi), cat: 'phone', when: 'mid' });
     const insured = st.job && st.job.level >= 2;

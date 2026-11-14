@@ -1,13 +1,13 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 5 — data/npcs/<city>.js (30+ NPCs), characters/NPC.js + Crowd.js (schedules, pedestrians, LOD/instancing), sim/Relationships.js + Popularity.js, talk dialog (chat/joke/compliment/ask work/hang out/gift), phone apps Contacts/Messages + Social, parties, bar service.
+RESUME HERE: Phase 6 — data/courses.js + sim/Education.js + Learn app (college service, bootcamps, online courses, books); add careers finance/healthcare/creative/realestate to data/careers.js + 4 mini-games; sim/Hustles.js (rideshare, delivery, freelance, streaming, tutoring) + Hustle UI; sim/Business.js + data/businesses.js (entrepreneur) + Business app.
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
 - [x] 2. Characters: factory (GLB hook + procedural), animations, 10 archetypes, creator UI, Random
 - [x] 3. Core sim: clock, needs, mood, money, HUD, phone + Bank app, saves, title, pause/settings
 - [x] 4. Home and work: room interior, sleep/eat/shower, Jobs app + interview, 3 careers + mini-games, café, clothing → MILESTONE demo
-- [ ] 5. Social: NPCs, schedules, friendships, Contacts/Messages, Social app, popularity, parties
+- [x] 5. Social: NPCs, schedules, friendships, Contacts/Messages, Social app, popularity, parties
 - [ ] 6. Education and skills; remaining careers; side hustles; businesses
 - [ ] 7. Finance depth: credit, card, loans, Invest app + market sim, Homes app, property, mortgages, renting out
 - [ ] 8. Build mode + furniture catalog + style score
@@ -37,9 +37,12 @@ RESUME HERE: Phase 5 — data/npcs/<city>.js (30+ NPCs), characters/NPC.js + Cro
 - **Interaction**: Game.findInteractable() -> {label, action}; furniture  ids are handled in ui/Interact.js, counters in ui/Shops.js SERVICES (later phases add entries), everyday actions in sim/Activities.js (shared with headless sim).
 - **Jobs**: sim/Jobs.js. Pay accrues per shift and is paid every other Friday; tips are instant cash. Performance 100 = promotion if next-level requirements are met, otherwise a 4% raise. Outside hires are capped at level 4. Mini-games live in src/minigames (shell + one file per game), score 0..1 or skip.
 
+- **NPCs**: data/npcs/<city>.js rows -> npcsOf() adds a deterministic look; npcWhere(npc,hour,day) returns home/work/in/out from schedule tables. characters/NPC.js shows "out" NPCs on benches / by shop doors when the player is within 75 m, and fills interiors with whoever is there plus counter staff. characters/Crowd.js = anonymous pedestrians random-walking sidewalk corners (typed arrays, rig pool for near, one InstancedMesh for far).
+- **Social**: sim/Relationships.js (sim.rel) levels 0/20/50/80; max 3 conversations per NPC per day with diminishing returns; friends (50+) give referrals (flags.referrals), 15% shop discounts (flags.discounts), tips, party invites via state.messages. sim/Popularity.js (sim.social): posts, sponsored posts from 5k followers, house parties, VIP at popularity 35.
+
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- Scenarios: work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
+- Scenarios: social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
 ## Known issues

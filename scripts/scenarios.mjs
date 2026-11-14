@@ -23,6 +23,71 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Phase 5: crowd, meeting an NPC, talk actions, Contacts + Social apps, NPCs indoors. */
+  async social({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => window.__game.sim.advance(90, { noDecay: true }));
+    await wait(1500);
+    await shot('p5-crowd');
+    const who = await page.evaluate(() => {
+      const g = window.__game;
+      g.sim.advance(9.5 * 60, { noDecay: true }); // ~6 PM: office workers are out
+      for (const n of g.npcs.list) {
+        const w = g.npcs.where(n);
+        if (w.kind !== 'out') continue;
+        const s = g.npcs.outdoorSpot(n, w.slot);
+        g.player.teleport(s.x + Math.sin(s.ry) * 1.5, s.z + Math.cos(s.ry) * 1.5, s.ry + Math.PI);
+        g.cam.snapBehind(s.ry + Math.PI + 0.7);
+        return n.name;
+      }
+      return null;
+    });
+    console.log('npc', who);
+    await wait(1800);
+    await shot('p5-npc');
+    await key(page, 'KeyE');
+    await shot('p5-talk');
+    await page.click('text=Chat');
+    await page.click('text=Tell a joke');
+    await page.click('text=Compliment');
+    await page.click('text=Hang out');
+    await wait(200);
+    await shot('p5-hangout');
+    await page.click('text=Back');
+    await page.click('text=Give a gift');
+    await page.click('text=Flowers');
+    await wait(200);
+    await shot('p5-talk2');
+    await page.click('text=Goodbye');
+    await key(page, 'Tab');
+    await page.click('.app-icon:has-text("Contacts")');
+    await wait(300);
+    await shot('p5-contacts');
+    await page.click('.lrow');
+    await wait(200);
+    await page.click('text=Send a friendly text');
+    await shot('p5-person');
+    await page.click('.app-back');
+    await page.click('.app-icon:has-text("Pulse")');
+    await wait(300);
+    await page.click('.lrow:has-text("Selfie") >> text=Post');
+    await wait(300);
+    await shot('p5-social');
+    await key(page, 'Escape');
+    const inCafe = await page.evaluate(() => {
+      const g = window.__game;
+      g.state.time.total = 1440 * 1 + 12.4 * 60; // Tuesday lunch
+      g.enterPlace(g.city.placeById.cafe);
+      return true;
+    });
+    await wait(1600);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      return { indoor: g.npcs.indoor.map((a) => (a.npc ? a.npc.first : 'staff')), known: Object.keys(g.state.relationships).length, followers: g.state.social.followers, pop: Math.round(g.state.social.popularity), calls: g.renderer.info.render.calls };
+    });
+    console.log('info', JSON.stringify(info), inCafe);
+    await shot('p5-cafe-npcs');
+  },
   /** Phase 4: home interior, sleep, Jobs app + interview, shift + mini-games, café. */
   async work({ page, shot, wait }) {
     await startLife(page, wait);

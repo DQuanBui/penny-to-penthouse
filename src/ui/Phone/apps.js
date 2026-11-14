@@ -1,11 +1,15 @@
 // Registers every phone app in home-screen order.
 import { BankApp } from './Bank.js';
 import { JobsApp } from './Jobs.js';
+import { ContactsApp } from './Contacts.js';
+import { SocialApp } from './Social.js';
 import { openSettings } from '../Menus.js';
 
 export function registerApps(phone, game) {
   phone.register(BankApp);
   phone.register(JobsApp);
+  phone.register(ContactsApp);
+  phone.register(SocialApp);
   phone.register({
     id: 'settings',
     name: 'Settings',
