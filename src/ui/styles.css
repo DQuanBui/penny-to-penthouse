@@ -1,0 +1,217 @@
+/* PENNY TO PENTHOUSE — UI styles. Warm, rounded, modern. */
+:root {
+  --bg: #0f1320;
+  --panel: rgba(18, 22, 36, 0.86);
+  --panel-solid: #161b2c;
+  --card: rgba(255, 255, 255, 0.06);
+  --card-hover: rgba(255, 255, 255, 0.11);
+  --line: rgba(255, 255, 255, 0.1);
+  --text: #f3f4f8;
+  --muted: #9aa3b8;
+  --accent: #ffb347;
+  --accent2: #ff7a59;
+  --good: #4fd18b;
+  --bad: #ff6b6b;
+  --info: #5ab0ff;
+  --radius: 16px;
+  --font: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --ui-scale: 1;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+#app {
+  position: fixed;
+  inset: 0;
+}
+#game {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+}
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-size: calc(15px * var(--ui-scale));
+}
+#ui > * {
+  pointer-events: auto;
+}
+#fade {
+  position: absolute;
+  inset: 0;
+  background: #05070d;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+  z-index: 50;
+}
+#fade.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+button {
+  font-family: inherit;
+  color: inherit;
+}
+.hidden {
+  display: none !important;
+}
+
+/* ---------- generic building blocks ---------- */
+.btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 0.62em 1.1em;
+  font-size: 1em;
+  font-weight: 600;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s;
+  outline: 1px solid var(--line);
+}
+.btn:hover {
+  background: var(--card-hover);
+  transform: translateY(-1px);
+}
+.btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #20140a;
+  outline: 0;
+  box-shadow: 0 6px 20px rgba(255, 140, 70, 0.35);
+}
+.btn.primary:hover {
+  box-shadow: 0 8px 26px rgba(255, 140, 70, 0.5);
+}
+.btn.good {
+  background: var(--good);
+  color: #06281a;
+  outline: 0;
+}
+.btn.danger {
+  background: rgba(255, 107, 107, 0.16);
+  outline-color: rgba(255, 107, 107, 0.5);
+  color: #ffb1b1;
+}
+.btn.small {
+  padding: 0.38em 0.75em;
+  font-size: 0.86em;
+  border-radius: 10px;
+}
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.bar {
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.35s ease;
+}
+.muted {
+  color: var(--muted);
+}
+.good {
+  color: var(--good);
+}
+.bad {
+  color: var(--bad);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+.row.between {
+  justify-content: space-between;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 0.85em 1em;
+  outline: 1px solid var(--line);
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.2em 0.65em;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.09);
+  font-size: 0.82em;
+  font-weight: 600;
+}
+.big {
+  font-size: 1.6em;
+  font-weight: 700;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- boot HUD (phase 1) ---------- */
+.dev-hud {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  font-weight: 600;
+  pointer-events: none !important;
+}
+.fps {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 8px;
+  pointer-events: none !important;
+  z-index: 60;
+}
