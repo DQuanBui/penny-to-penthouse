@@ -7,6 +7,8 @@ import { Loans } from './Loans.js';
 import { Education } from './Education.js';
 import { Hustles } from './Hustles.js';
 import { Businesses } from './Business.js';
+import { Market } from './Market.js';
+import { RealEstate } from './RealEstate.js';
 
 export function installSystems(sim) {
   sim.jobs = sim.use(new Jobs(sim));
@@ -16,6 +18,10 @@ export function installSystems(sim) {
   sim.edu = new Education(sim);
   sim.hustles = new Hustles(sim);
   sim.biz = sim.use(new Businesses(sim));
+  sim.market = sim.use(new Market(sim));
+  sim.market.init();
+  sim.re = sim.use(new RealEstate(sim));
+  sim.re.refreshListings();
   sim.loans.applyStartingDebt();
   return sim;
 }

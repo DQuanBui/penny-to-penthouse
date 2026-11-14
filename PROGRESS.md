@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 7 — data/stocks.js + sim/Market.js (regimes, news) + Invest and News apps; sim/RealEstate.js (listings, buy with mortgage, tax/maintenance, appreciation, renting out, tenant events, moving/renting homes) + Homes app + real-estate office service; Bank app: personal loan application and extra loan payments.
+RESUME HERE: Phase 8 — src/build/BuildMode.js (+Grid.js, Walls.js): B inside your home, top-down camera, grid placement/move/rotate/sell of furniture, catalog by category, undo/redo, style score; owned homes also walls, floors, paint, doors/windows; furniture store service sells into inventory.furniture.
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
@@ -9,7 +9,7 @@ RESUME HERE: Phase 7 — data/stocks.js + sim/Market.js (regimes, news) + Invest
 - [x] 4. Home and work: room interior, sleep/eat/shower, Jobs app + interview, 3 careers + mini-games, café, clothing → MILESTONE demo
 - [x] 5. Social: NPCs, schedules, friendships, Contacts/Messages, Social app, popularity, parties
 - [x] 6. Education and skills; remaining careers; side hustles; businesses
-- [ ] 7. Finance depth: credit, card, loans, Invest app + market sim, Homes app, property, mortgages, renting out
+- [x] 7. Finance depth: credit, card, loans, Invest app + market sim, Homes app, property, mortgages, renting out
 - [ ] 8. Build mode + furniture catalog + style score
 - [ ] 9. City select + all 5 cities, weather, transit/fast travel, map
 - [ ] 10. Rankings + AI rivals, goals, achievements, life events, tutorial
@@ -44,9 +44,12 @@ RESUME HERE: Phase 7 — data/stocks.js + sim/Market.js (regimes, news) + Invest
 - **Loans**: sim/Loans.js amortised monthly (APR/12); student loans are always approved, others need min score + DTI <= 43%. Archetype starting debt becomes a real loan/card balance in installSystems().
 - **Hustles / Business**: sim/Hustles.js (once a day each, 12% withheld). sim/Business.js: daily profit = base x 1.75^(level-1) x owner skill fit x reputation x staffing x city demand x luck, minus wages and fixed costs; bankrupt when the business account falls below -30% of startup cost. Owner draws are taxed.
 
+- **Market**: sim/Market.js. Index random walk with regimes (bull/normal/bear/recession/boom announced in News), stocks = beta x market + sector trend + own noise + news shocks; dividends every 28 days; 15% tax on realised gains. Buying/selling assets uses finance.assetTx() so it stays out of the budget and earned/spent stats.
+- **Real estate**: sim/RealEstate.js. Rentals of every type in every district (deposit + first month + movers); 5 listings per district refreshed monthly; mortgage via sim.loans (PMI under 20% down); monthly property tax + upkeep; appreciation tied to market regime (market.homeIndex); rent out (vacancy/repairs) or move in; player-bought furniture (item.own) goes to inventory.furniture when moving.
+
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- Scenarios: learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
+- Scenarios: finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
 ## Known issues

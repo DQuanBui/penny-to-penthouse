@@ -99,6 +99,7 @@ export class Game {
     this.events.on('settings', () => this.applySettings());
     this.events.on('newday', () => this.settings.get('autosave') && this.saveNow(true));
     this.events.on('collapse', (c) => this.onCollapse(c));
+    this.events.on('homeChanged', () => this.onHomeChanged());
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('blur', () => this.mode === 'play' && !this.overlays.length && openPause(this));
     window.addEventListener('beforeunload', () => this.mode === 'play' && this.saveNow(true));
@@ -249,6 +250,11 @@ export class Game {
       const st = this.state;
       const home = place.type === 'home';
       const layout = home ? (st.home.layout ||= defaultHomeLayout(st.home.type)) : commercialLayout(place);
+      if (home && st.home.owned) {
+        // an owned home's layout is stored on the property too
+        const prop = st.properties.find((p) => p.id === st.home.propertyId);
+        if (prop) prop.layout = layout;
+      }
       this.interior.build(layout, { place, home, hasPc: hasComputer(st) });
       this.inside = { place, home, layout };
       this.npcs.populateInterior(this.interior, place);
@@ -448,6 +454,17 @@ export class Game {
         body: h('div', h('p', text), h('p.bad', `Medical bill: ${fmtMoney(c.bill)}`), h('p.muted', 'Keep an eye on your needs — hover the mood ring in the top right.')),
         buttons: [btn('OK', () => this.closeTop(), 'primary')],
       });
+    });
+  }
+
+  /** The player moved (or was evicted): show them their new front door. */
+  onHomeChanged() {
+    if (this.mode !== 'play') return;
+    const wasHome = this.inside?.home;
+    this.fade(() => {
+      this.closeAllOverlays();
+      if (wasHome) this.leaveInterior(true);
+      if (wasHome || !this.inside) this.placePlayerAt(this.homePlace());
     });
   }
 

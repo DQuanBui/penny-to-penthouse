@@ -159,7 +159,7 @@ export class Relationships {
       return { perk: `"Use my friends-and-family discount." — 15% off at their shop from now on.` };
     }
     if (lvl >= 1 && npc.interests.includes('finance') && sim.rng() < 0.35) {
-      sim.bus.emit('friendTip', { npc });
+      sim.market?.friendTip(npc);
       return { perk: sim.state.flags.lastTip ? `"Keep an eye on ${sim.state.flags.lastTip}." — check the News app.` : null };
     }
     return {};

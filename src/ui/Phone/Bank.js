@@ -59,12 +59,7 @@ export const BankApp = {
               : null,
         ),
         this.creditSection(sim, state, refresh),
-        state.loans.length
-          ? section(
-              'Loans',
-              state.loans.map((l) => row({ icon: l.icon || '🏦', title: l.label, sub: `${(l.apr * 100).toFixed(1)}% APR · ${fmtMoney(l.payment)}/mo · ${l.monthsLeft} payments left`, right: money(-l.balance) })),
-            )
-          : null,
+        this.loanSection(sim, state, refresh),
         section(
           'Coming up',
           state.job ? row({ icon: '💼', title: 'Payday', sub: fmtDay(nextDayMatching(day - 1, isPayday)), right: state.job.accrued ? h('span.good', '≈ ' + fmtMoney(sim.jobs?.netPreview() || 0)) : '—' }) : null,
@@ -110,6 +105,33 @@ export const BankApp = {
         ),
       );
     }
+  },
+
+  /** Loans: balances, extra payments and a personal-loan application. */
+  loanSection(sim, state, refresh) {
+    const loans = sim.loans;
+    const amounts = [2000, 5000, 10000, 25000];
+    const q = this.loanAmt ? loans.quote('personal', this.loanAmt) : null;
+    return section(
+      'Loans',
+      state.loans.map((l) => [
+        row({ icon: l.icon || '🏦', title: l.label, sub: `${(l.apr * 100).toFixed(1)}% APR · ${fmtMoney(l.payment)}/mo · ${l.monthsLeft} payments left`, right: money(-l.balance), onclick: () => ((this.form = this.form === l.id ? null : l.id), refresh()) }),
+        this.form === l.id ? amountPicker({ max: Math.min(l.balance, Math.max(0, state.money.checking)), label: 'Pay extra', chips: [500, 2000, 10000], onConfirm: (v) => (loans.payExtra(l.id, v), (this.form = null), refresh()) }) : null,
+      ]),
+      state.loans.length ? h('div.muted.small', 'Tap a loan to pay extra — every extra dollar skips its future interest.') : null,
+      h('button.btn.small', { onclick: () => ((this.form = this.form === 'apply' ? null : 'apply'), (this.loanAmt = null), refresh()) }, '🤝 Apply for a personal loan'),
+      this.form === 'apply'
+        ? h(
+            'div.amount',
+            h('div.chips', amounts.map((a) => h('button.chip' + (this.loanAmt === a ? '.active' : ''), { onclick: () => ((this.loanAmt = a), refresh()) }, fmtMoney(a)))),
+            q
+              ? q.approved
+                ? h('div.col', h('div.small', `${(q.apr * 100).toFixed(1)}% APR · ${fmtMoney(q.payment)}/mo for ${q.months} months · total interest ${fmtMoney(q.payment * q.months - this.loanAmt)}`), h('button.btn.small.primary', { onclick: () => (loans.take('personal', this.loanAmt, 'Personal loan', { cash: true }), (this.form = null), refresh()) }, `Accept ${fmtMoney(this.loanAmt)}`))
+                : h('div.bad.small', q.reason)
+              : h('div.muted.small', 'Borrowed money is expensive. Only borrow for things that earn or save more than the interest.'),
+          )
+        : null,
+    );
   },
 
   billRows(fin, day) {

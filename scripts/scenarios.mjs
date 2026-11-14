@@ -25,6 +25,67 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Phase 7: Invest + News apps, Homes app (rent, buy with mortgage), loans in the Bank app. */
+  async finance({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.money.checking = 250000;
+      g.sim.jobs.hire('tech', 0);
+      g.state.job.level = 3;
+      g.state.credit.score = 720;
+      g.sim.advance(1440 * 3, { noDecay: true, noCollapse: true });
+    });
+    await key(page, 'Tab');
+    await page.click('.app-icon:has-text("Invest")');
+    await wait(300);
+    await page.click('.seg-btn:has-text("Markets")');
+    await wait(200);
+    await shot('p7-markets');
+    await page.click('.lrow:has-text("CITY500")');
+    await wait(200);
+    await page.click('.btn:has-text("Buy")');
+    await page.click('.chip:has-text("$10,000")');
+    await page.click('.amount .btn.primary');
+    await wait(200);
+    await shot('p7-asset');
+    await page.click('text=‹ Back');
+    await page.click('.seg-btn:has-text("Portfolio")');
+    await wait(200);
+    await shot('p7-portfolio');
+    await page.click('.app-back');
+    await page.click('.app-icon:has-text("Homes")');
+    await wait(300);
+    await shot('p7-myhome');
+    await page.click('.seg-btn:has-text("Rent")');
+    await wait(200);
+    await shot('p7-rent');
+    await page.click('.seg-btn:has-text("Buy")');
+    await wait(200);
+    await page.locator('.lrow').first().click();
+    await wait(300);
+    await shot('p7-listing');
+    await page.click('text=Buy to rent out');
+    await page.click('.dialog-foot >> text=Buy it');
+    await wait(400);
+    await shot('p7-owned');
+    await page.click('.app-back');
+    await page.click('.app-icon:has-text("Bank")');
+    await wait(300);
+    await page.click('text=Apply for a personal loan');
+    await page.click('.chip:has-text("$5,000")');
+    await wait(200);
+    await shot('p7-loan');
+    await page.click('.app-back');
+    await page.click('.app-icon:has-text("News")');
+    await wait(300);
+    await shot('p7-news');
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      return { holdings: Object.keys(g.state.portfolio.holdings), props: g.state.properties.length, loans: g.state.loans.map((l) => l.kind), nw: Math.round(g.sim.finance.netWorth()) };
+    });
+    console.log('info', JSON.stringify(info));
+  },
   /** Phase 6: Learn app, college class, gigs, ventures, the four new mini-games. */
   async learn({ page, shot, wait }) {
     await startLife(page, wait);

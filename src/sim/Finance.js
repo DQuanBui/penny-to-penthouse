@@ -162,6 +162,25 @@ export class Finance {
     }
   }
 
+  /**
+   * Money moving between cash and an asset (investments, property, deposits).
+   * Shown in the activity list but kept out of the budget and earned/spent stats.
+   * @returns false when a negative amount is not covered by checking
+   */
+  assetTx(amount, label) {
+    const m = this.m;
+    amount = Math.round(amount * 100) / 100;
+    if (amount < 0 && m.checking < -amount - 0.005) {
+      this.sim.bus.emit('toast', { icon: '💸', title: 'Not enough money', text: `${label} needs ${fmtMoney(-amount)} in checking.`, kind: 'bad' });
+      return false;
+    }
+    m.checking += amount;
+    m.txs.unshift({ id: m.nextTx++, t: Math.floor(this.sim.state.time.total), amount, cat: 'asset', label, account: 'checking' });
+    if (m.txs.length > 160) m.txs.length = 160;
+    this.sim.bus.emit('money', { amount, cat: 'asset', label });
+    return true;
+  }
+
   transfer(from, to, amount) {
     const m = this.m;
     amount = Math.floor(Math.min(amount, m[from]) * 100) / 100;

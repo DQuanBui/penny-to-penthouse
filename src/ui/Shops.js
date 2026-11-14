@@ -11,6 +11,7 @@ import { mod } from '../sim/Player.js';
 import { VIP_POPULARITY } from '../sim/Popularity.js';
 import { PROGRAM_BY_ID } from '../data/courses.js';
 import { LearnApp } from './Phone/Learn.js';
+import { HomesApp } from './Phone/Homes.js';
 import { fmtMoney } from '../core/utils.js';
 import { runActivity, openShift } from './Interact.js';
 
@@ -179,6 +180,11 @@ export const SERVICES = {
         game.phone.open('learn');
       }),
     );
+  },
+  realestate(game) {
+    game.closeTop();
+    HomesApp.tab = 'buy';
+    game.phone.open('homes');
   },
   bank(game) {
     game.closeTop();

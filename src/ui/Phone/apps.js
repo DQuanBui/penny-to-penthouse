@@ -5,16 +5,21 @@ import { ContactsApp } from './Contacts.js';
 import { SocialApp } from './Social.js';
 import { LearnApp } from './Learn.js';
 import { GigsApp, VenturesApp } from './Ventures.js';
+import { InvestApp, NewsApp } from './Invest.js';
+import { HomesApp } from './Homes.js';
 import { openSettings } from '../Menus.js';
 
 export function registerApps(phone, game) {
   phone.register(BankApp);
+  phone.register(InvestApp);
+  phone.register(HomesApp);
   phone.register(JobsApp);
   phone.register(LearnApp);
   phone.register(GigsApp);
   phone.register(VenturesApp);
   phone.register(ContactsApp);
   phone.register(SocialApp);
+  phone.register(NewsApp);
   phone.register({
     id: 'settings',
     name: 'Settings',
