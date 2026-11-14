@@ -7,6 +7,16 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Tex } from '../world/Textures.js';
 import { defaultAppearance } from './Customization.js';
+import { buildGLBCharacter } from './GLBCharacters.js';
+
+/** Preferred entry point: uses a GLB model when the look names one that is loaded, else the procedural body. */
+export function createRig(appearance, opts) {
+  if (appearance?.model) {
+    const rig = buildGLBCharacter(appearance.model, appearance.height || 1);
+    if (rig) return rig;
+  }
+  return buildCharacter(appearance, opts);
+}
 
 export const BONES = ['hips', 'spine', 'chest', 'neck', 'head', 'armL', 'foreL', 'handL', 'armR', 'foreR', 'handR', 'thighL', 'shinL', 'footL', 'thighR', 'shinR', 'footR'];
 const BI = Object.fromEntries(BONES.map((n, i) => [n, i]));
@@ -24,6 +34,10 @@ const FACE = { oval: [0.94, 1.1, 1.0], round: [1.03, 1.03, 1.03], square: [1.0, 
 const EYE = { round: [1, 1], almond: [1.25, 0.78], wide: [1.15, 1.12], narrow: [1.2, 0.6] };
 const LONG_SLEEVE = { shirt: 1, hoodie: 1, sweater: 1, blazer: 1, jacket: 1 };
 
+const HEAD_SCALE = 1.17;
+const HEAD_PIVOT = 1.515;
+const LIFT = 0.065; // legs are shortened by this much; the mesh is lowered to keep feet on the ground
+
 let sharedMaterial = null;
 const material = () => (sharedMaterial ||= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0 }));
 
@@ -39,6 +53,7 @@ class Parts {
     this.list = [];
   }
   add(geo, bone, color) {
+    if (bone === 'head') geo.translate(0, -HEAD_PIVOT, 0).scale(HEAD_SCALE, HEAD_SCALE, HEAD_SCALE).translate(0, HEAD_PIVOT, 0);
     const n = geo.attributes.position.count;
     _c.set(color);
     const col = new Float32Array(n * 3);
@@ -92,7 +107,7 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
   const J = {
     hips: [0, 0.96, 0], spine: [0, 1.06, 0], chest: [0, 1.22, 0], neck: [0, 1.46, 0], head: [0, 1.52, 0],
     armL: [B.sh, 1.405, 0], foreL: [B.sh + 0.032, 1.13, 0], handL: [B.sh + 0.05, 0.875, 0.01],
-    thighL: [0.085, 0.92, 0], shinL: [0.09, 0.5, 0], footL: [0.09, 0.085, 0],
+    thighL: [0.085, 0.92, 0], shinL: [0.09, 0.5 + LIFT * 0.55, 0], footL: [0.09, 0.085 + LIFT, 0],
   };
   for (const k of ['arm', 'fore', 'hand', 'thigh', 'shin', 'foot']) {
     const p = J[k + 'L'];
@@ -110,10 +125,12 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
   // ---- torso ----
   const chest = new THREE.CapsuleGeometry(B.tr, 0.17, 6, 16).scale(1, 1, B.td / B.tr).translate(0, 1.235, 0);
   P.add(chest, 'chest', topC);
-  P.add(sph(1, B.sh + 0.012, 0.062, B.td * 0.92, 14).translate(0, 1.385, 0), 'chest', a.top === 'tank' ? topC : topC);
+  P.add(sph(1, B.sh + 0.004, 0.066, B.td * 0.94, 14).translate(0, 1.378, 0), 'chest', topC);
+  // clean hem ring hides the seam where torso and hips meet
+  P.add(new THREE.CylinderGeometry(B.tr * 1.05, B.tr * 1.06, 0.07, 20, 1, true).scale(1, 1, (B.td * (1.12 + B.belly * 0.26)) / B.tr).translate(0, 1.012, B.belly * 0.02), 'spine', shade(topC, 0.9));
   P.add(sph(1, B.tr * 0.96, 0.12 + B.belly * 0.03, B.td * (1 + B.belly * 0.22), 14).translate(0, 1.07 + B.belly * 0.02, B.belly * 0.022), 'spine', topC);
   P.add(sph(1, B.hip, 0.125, B.td * 1.06, 14).translate(0, 0.965, 0), 'hips', botC);
-  P.add(new THREE.CylinderGeometry(0.04, 0.046, 0.12, 10).translate(0, 1.49, 0), 'neck', skin);
+  P.add(new THREE.CylinderGeometry(0.046, 0.054, 0.13, 12).translate(0, 1.485, 0), 'neck', skin);
 
   // ---- arms + legs (mirrored) ----
   for (const s of ['L', 'R']) {
@@ -121,12 +138,12 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
     const sh = J['arm' + s];
     const el = J['fore' + s];
     const wr = J['hand' + s];
-    P.add(sph(0.054 * L).translate(sh[0], sh[1] - 0.008, sh[2]), 'chest', sleeveUpper);
-    P.add(seg(sh, el, 0.05 * L, 0.041 * L), 'arm' + s, sleeveUpper);
-    P.add(sph(0.042 * L).translate(el[0], el[1], el[2]), 'fore' + s, sleeveLower);
-    P.add(seg(el, wr, 0.04 * L, 0.03 * L), 'fore' + s, sleeveLower);
-    P.add(sph(0.04, 0.8, 1.15, 1).translate(wr[0], wr[1] - 0.035, wr[2]), 'hand' + s, skin);
-    if (LONG_SLEEVE[a.top]) P.add(new THREE.CylinderGeometry(0.035 * L, 0.035 * L, 0.03, 10).translate(wr[0], wr[1] + 0.012, wr[2]), 'fore' + s, shade(topC, 0.85));
+    P.add(sph(0.056 * L).translate(sh[0] - m * 0.012, sh[1] - 0.012, sh[2]), 'chest', sleeveUpper);
+    P.add(seg(sh, el, 0.055 * L, 0.046 * L), 'arm' + s, sleeveUpper);
+    P.add(sph(0.047 * L).translate(el[0], el[1], el[2]), 'fore' + s, sleeveLower);
+    P.add(seg(el, wr, 0.045 * L, 0.035 * L), 'fore' + s, sleeveLower);
+    P.add(sph(0.045, 0.8, 1.15, 1).translate(wr[0], wr[1] - 0.038, wr[2]), 'hand' + s, skin);
+    if (LONG_SLEEVE[a.top]) P.add(new THREE.CylinderGeometry(0.04 * L, 0.04 * L, 0.03, 10).translate(wr[0], wr[1] + 0.012, wr[2]), 'fore' + s, shade(topC, 0.85));
 
     const hp = J['thigh' + s];
     const kn = J['shin' + s];
@@ -134,25 +151,24 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
     const thighC = bareLegs ? skin : botC;
     const shinC = bareLegs || a.bottom === 'shorts' ? skin : botC;
     const tw = a.bottom === 'slacks' ? 0.92 : a.bottom === 'joggers' ? 1.06 : 1;
-    P.add(sph(0.078 * L).translate(hp[0], hp[1], hp[2]), 'thigh' + s, thighC);
-    P.add(seg(hp, kn, 0.078 * L * tw, 0.058 * L * tw), 'thigh' + s, thighC);
-    P.add(sph(0.058 * L * tw).translate(kn[0], kn[1], kn[2]), 'shin' + s, shinC);
-    P.add(seg(kn, an, 0.057 * L * tw, 0.042 * L * tw), 'shin' + s, shinC);
-    if (a.bottom === 'shorts' && !bareLegs) P.add(new THREE.CylinderGeometry(0.066 * L, 0.07 * L, 0.05, 10).translate(kn[0], kn[1] + 0.07, kn[2]), 'thigh' + s, shade(botC, 0.9));
+    P.add(sph(0.088 * L).translate(hp[0], hp[1], hp[2]), 'thigh' + s, thighC);
+    P.add(seg(hp, kn, 0.088 * L * tw, 0.066 * L * tw), 'thigh' + s, thighC);
+    P.add(sph(0.066 * L * tw).translate(kn[0], kn[1], kn[2]), 'shin' + s, shinC);
+    P.add(seg(kn, an, 0.065 * L * tw, 0.05 * L * tw), 'shin' + s, shinC);
+    if (a.bottom === 'shorts' && !bareLegs) P.add(new THREE.CylinderGeometry(0.074 * L, 0.078 * L, 0.05, 10).translate(kn[0], kn[1] + 0.07, kn[2]), 'thigh' + s, shade(botC, 0.9));
 
     // feet / shoes
     const sandal = a.shoes === 'sandals';
     const shoeC = sandal ? skin : a.shoeColor;
     const fy = a.shoes === 'dress' ? 0.7 : 0.86;
-    P.add(new THREE.CapsuleGeometry(0.044, 0.13, 4, 10).rotateX(Math.PI / 2).scale(1.08, fy, 1).translate(an[0], 0.046, 0.05), 'foot' + s, shoeC);
-    P.add(sph(0.045 * L).translate(an[0], an[1], an[2]), 'foot' + s, sandal ? skin : shoeC);
-    if (a.shoes === 'sneakers') P.add(bx(0.086, 0.016, 0.232).translate(an[0], 0.009, 0.05), 'foot' + s, '#e9e9e4');
-    if (a.shoes === 'boots') P.add(new THREE.CylinderGeometry(0.052 * L, 0.05 * L, 0.15, 10).translate(an[0], an[1] + 0.07, 0), 'shin' + s, shoeC);
+    P.add(new THREE.CapsuleGeometry(0.044, 0.13, 4, 10).rotateX(Math.PI / 2).scale(1.16, fy, 1.05).translate(an[0], 0.046 + LIFT, 0.05), 'foot' + s, shoeC);
+    P.add(sph(0.052 * L).translate(an[0], an[1], an[2]), 'foot' + s, sandal ? skin : shoeC);
+    if (a.shoes === 'sneakers') P.add(bx(0.092, 0.016, 0.24).translate(an[0], 0.009 + LIFT, 0.05), 'foot' + s, '#e9e9e4');
+    if (a.shoes === 'boots') P.add(new THREE.CylinderGeometry(0.06 * L, 0.057 * L, 0.15, 10).translate(an[0], an[1] + 0.07, 0), 'shin' + s, shoeC);
     if (sandal) {
-      P.add(bx(0.1, 0.016, 0.25).translate(an[0], 0.009, 0.05), 'foot' + s, a.shoeColor);
-      P.add(bx(0.105, 0.02, 0.03).translate(an[0], 0.075, 0.08), 'foot' + s, a.shoeColor);
+      P.add(bx(0.1, 0.016, 0.25).translate(an[0], 0.009 + LIFT, 0.05), 'foot' + s, a.shoeColor);
+      P.add(bx(0.11, 0.02, 0.03).translate(an[0], 0.078 + LIFT, 0.08), 'foot' + s, a.shoeColor);
     }
-    void m;
   }
 
   // ---- clothing details ----
@@ -197,18 +213,18 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
     const ex = m * 0.043;
     const ey = 0.012;
     const ez = faceZ(ex, ey);
-    P.add(sph(0.02, es[0], es[1], 0.42, 10).translate(ex, HY + ey, ez - 0.003), 'head', '#f7f5f0');
-    P.add(sph(0.0118, 1, Math.min(1, es[1] + 0.15), 0.5, 10).translate(ex, HY + ey, ez + 0.0045), 'head', a.eyes);
-    P.add(sph(0.006, 1, 1, 0.5, 8).translate(ex, HY + ey, ez + 0.009), 'head', '#0c0c0e');
-    P.add(sph(0.0026, 1, 1, 0.5, 6).translate(ex + 0.004, HY + ey + 0.004, ez + 0.0115), 'head', '#ffffff');
-    P.add(bx(0.043 * es[0], 0.0055, 0.008).rotateZ(-m * 0.06).translate(ex, HY + ey + 0.0185 * es[1], ez + 0.002), 'head', '#241a14');
+    P.add(sph(0.02, es[0], es[1], 0.34, 10).translate(ex, HY + ey, ez - 0.0045), 'head', '#f7f5f0');
+    P.add(sph(0.0122, 1, Math.min(1, es[1] + 0.15), 0.4, 10).translate(ex, HY + ey, ez + 0.0015), 'head', a.eyes);
+    P.add(sph(0.0062, 1, 1, 0.4, 8).translate(ex, HY + ey, ez + 0.0052), 'head', '#0c0c0e');
+    P.add(sph(0.0026, 1, 1, 0.5, 6).translate(ex + 0.004, HY + ey + 0.004, ez + 0.0072), 'head', '#ffffff');
+    P.add(bx(0.042 * es[0], 0.004, 0.006).rotateZ(-m * 0.06).translate(ex, HY + ey + 0.019 * es[1], ez + 0.0005), 'head', '#241a14');
     // brow
     const browC = a.hair === 'bald' ? '#3a2a1e' : mix(a.hairColor, '#1a1410', 0.35);
     const bt = a.brows === 'thick' ? 0.013 : 0.008;
     const br = a.brows === 'arched' ? 0.24 : a.brows === 'straight' ? 0 : 0.1;
     P.add(bx(0.042, bt, 0.009).rotateZ(-m * br).translate(ex, HY + 0.046, faceZ(ex, 0.046) + 0.003), 'head', browC);
   }
-  P.add(sph(0.016, 0.85, 1.1, 1, 8).translate(0, HY - 0.014, faceZ(0, -0.014) + 0.004), 'head', shade(skin, 0.93));
+  P.add(sph(0.0125, 0.9, 1.15, 0.9, 8).translate(0, HY - 0.014, faceZ(0, -0.014) - 0.001), 'head', shade(skin, 0.94));
   P.add(new THREE.TorusGeometry(0.02, 0.0042, 5, 10, Math.PI).rotateZ(Math.PI).translate(0, HY - 0.04, faceZ(0, -0.05) + 0.001), 'head', mix(skin, '#8a2f3a', 0.6));
 
   addHair(P, a, { hx, hy, hz, HY, faceZ });
@@ -237,6 +253,7 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
   const mesh = new THREE.SkinnedMesh(geo, material());
   mesh.castShadow = true;
   mesh.receiveShadow = false;
+  mesh.position.y = -LIFT;
   mesh.add(bones.hips);
   mesh.bind(new THREE.Skeleton(boneList));
 

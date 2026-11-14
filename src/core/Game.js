@@ -10,7 +10,9 @@ import { Sky } from '../world/Sky.js';
 import { worldUniforms } from '../world/Buildings.js';
 import { generateCity } from '../world/CityGenerator.js';
 import { getCity } from '../data/cities/index.js';
-import { buildCharacter } from '../characters/CharacterFactory.js';
+import { createRig } from '../characters/CharacterFactory.js';
+import { loadGLBCharacters } from '../characters/GLBCharacters.js';
+import { CharacterCreator } from '../ui/CharacterCreator.js';
 import { defaultAppearance } from '../characters/Customization.js';
 import { PlayerController } from '../characters/PlayerController.js';
 import { ThirdPersonCamera } from '../characters/ThirdPersonCamera.js';
@@ -87,6 +89,7 @@ export class Game {
     this.renderer.setSize(w, hgt, false);
     this.camera.aspect = w / hgt;
     this.camera.updateProjectionMatrix();
+    this.creator?.onResize(w, hgt);
   }
 
   /** Fade to black, run fn (may be async), fade back. */
@@ -115,7 +118,7 @@ export class Game {
       this.scene.remove(this.playerRig.group);
       this.playerRig.dispose();
     }
-    this.playerRig = buildCharacter(appearance);
+    this.playerRig = createRig(appearance);
     this.scene.add(this.playerRig.group);
     const w = { colliders: this.city.colliders, groundY: this.city.groundY };
     this.player.setWorld(w);
@@ -127,16 +130,43 @@ export class Game {
     this.input.gameplay = true;
   }
 
-  start() {
-    this.loadCity('newyork');
-    this.enterCity();
-    this.devHud = h('div.dev-hud');
-    this.ui.append(this.devHud);
+  async start() {
+    this.mode = 'boot';
     this.loop.start();
+    await loadGLBCharacters(); // optional models; resolves immediately when none exist
+    this.loadCity('newyork');
+    this.openCreator();
+  }
+
+  /** Character creator -> new life. */
+  openCreator() {
+    this.input.gameplay = false;
+    this.creator = new CharacterCreator(this, (profile) => {
+      this.fade(() => {
+        this.creator.close();
+        this.creator = null;
+        this.profile = profile;
+        this.enterCity(profile.appearance);
+        if (!this.devHud) this.ui.append((this.devHud = h('div.dev-hud')));
+        this.mode = 'play';
+      });
+    });
+    this.creator.onResize(window.innerWidth, window.innerHeight);
+    this.mode = 'creator';
   }
 
   update(dt, elapsed) {
     const input = this.input;
+    if (this.mode === 'creator') {
+      this.creator.update(dt);
+      this.renderer.render(this.creator.scene, this.creator.camera);
+      input.endFrame();
+      return;
+    }
+    if (this.mode !== 'play') {
+      input.endFrame();
+      return;
+    }
     // --- time ---
     const minPerSec = (1440 / (16 * 60)) * this.settings.get('timeSpeed');
     this.timeTotal += dt * minPerSec;

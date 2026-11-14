@@ -1,10 +1,10 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 2 — GLB character hook (characters/GLBCharacters.js), data/archetypes.js + traits.js, ui/CharacterCreator.js with studio preview + Random; wire a temporary "New Life" flow from boot.
+RESUME HERE: Phase 3 — data/balance.js, sim/State.js + Sim.js + Needs.js + Finance.js + Player.js, core/SaveSystem.js, ui/HUD.js, ui/Phone (shell + Bank), ui/TitleScreen.js, ui/Menus.js; rewrite core/Game.js around a sim state + modes (title/creator/play).
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
-- [ ] 2. Characters: factory (GLB hook + procedural), animations, 10 archetypes, creator UI, Random
+- [x] 2. Characters: factory (GLB hook + procedural), animations, 10 archetypes, creator UI, Random
 - [ ] 3. Core sim: clock, needs, mood, money, HUD, phone + Bank app, saves, title, pause/settings
 - [ ] 4. Home and work: room interior, sleep/eat/shower, Jobs app + interview, 3 careers + mini-games, café, clothing → MILESTONE demo
 - [ ] 5. Social: NPCs, schedules, friendships, Contacts/Messages, Social app, popularity, parties
@@ -25,6 +25,9 @@ RESUME HERE: Phase 2 — GLB character hook (characters/GLBCharacters.js), data/
 - **Characters**: procedural humanoid = one merged, vertex-coloured SkinnedMesh (1 draw call) driven by a procedural animator; GLB rigs use AnimationMixer when files exist.
 - **Calendar**: 1 year = 4 seasons × 28 days. Pay every 14 days (annual/26, looks like a real paycheck), monthly bills every 28 days with real-looking amounts. Asset growth rates (market, property) are applied per game-year, i.e. time-compressed ≈3× in the player's favour. All numbers live in `src/data/balance.js`.
 - **Phone / menus pause the clock** so players can think about money decisions.
+
+- **GLB hook**: a Vite plugin (vite.config.js) scans public/models/* and public/audio and serves/emits `asset-manifest.json`, so the game never requests a missing file (no 404 console noise). Character files named `player*.glb` are offered in the creator; others dress NPCs. Shared clips go in public/models/characters/animations/.
+- **Traits**: archetype grants 1 signature trait for free; the player picks 2 more. Trait effects are multipliers in data/traits.js read via sim/Player.js mod().
 
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
