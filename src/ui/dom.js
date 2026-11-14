@@ -28,11 +28,12 @@ export function h(sel, props, ...kids) {
   return el;
 }
 
-function append(el, kids) {
+/** Like el.append() but skips null/false and flattens arrays. */
+export function append(el, kids) {
   for (const k of kids) {
     if (k == null || k === false) continue;
     if (Array.isArray(k)) append(el, k);
-    else el.append(k instanceof Node ? k : document.createTextNode(String(k)));
+    else el.appendChild(k instanceof Node ? k : document.createTextNode(String(k)));
   }
 }
 
@@ -47,3 +48,9 @@ export function bar(value, color = 'var(--accent)', cls = '') {
 }
 
 export const btn = (label, onclick, cls = '') => h('button.btn' + (cls ? '.' + cls.split(' ').join('.') : ''), { onclick, type: 'button' }, label);
+
+/** Make el.append() tolerant of null/false/arrays (used for app + dialog bodies). */
+export function tolerant(el) {
+  el.append = (...kids) => append(el, kids);
+  return el;
+}

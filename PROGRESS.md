@@ -1,11 +1,11 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 3 — data/balance.js, sim/State.js + Sim.js + Needs.js + Finance.js + Player.js, core/SaveSystem.js, ui/HUD.js, ui/Phone (shell + Bank), ui/TitleScreen.js, ui/Menus.js; rewrite core/Game.js around a sim state + modes (title/creator/play).
+RESUME HERE: Phase 4 — world/Interiors.js (room/café/shop/office templates + interact points), build/FurnitureCatalog.js (procedural furniture meshes), data/careers.js (tech, hospitality, trades first), sim/Jobs.js (apply, interview, shifts, pay, promotion), minigames/*, ui/Phone/Jobs.js, shop dialogs (café, clothing), Game.enterPlace/leaveInterior, register jobs in sim/index.js.
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
 - [x] 2. Characters: factory (GLB hook + procedural), animations, 10 archetypes, creator UI, Random
-- [ ] 3. Core sim: clock, needs, mood, money, HUD, phone + Bank app, saves, title, pause/settings
+- [x] 3. Core sim: clock, needs, mood, money, HUD, phone + Bank app, saves, title, pause/settings
 - [ ] 4. Home and work: room interior, sleep/eat/shower, Jobs app + interview, 3 careers + mini-games, café, clothing → MILESTONE demo
 - [ ] 5. Social: NPCs, schedules, friendships, Contacts/Messages, Social app, popularity, parties
 - [ ] 6. Education and skills; remaining careers; side hustles; businesses
@@ -29,9 +29,14 @@ RESUME HERE: Phase 3 — data/balance.js, sim/State.js + Sim.js + Needs.js + Fin
 - **GLB hook**: a Vite plugin (vite.config.js) scans public/models/* and public/audio and serves/emits `asset-manifest.json`, so the game never requests a missing file (no 404 console noise). Character files named `player*.glb` are offered in the creator; others dress NPCs. Shared clips go in public/models/characters/animations/.
 - **Traits**: archetype grants 1 signature trait for free; the player picks 2 more. Trait effects are multipliers in data/traits.js read via sim/Player.js mod().
 
+- **Game structure**: core/Game.js has modes title/creator/play. Blocking UI = overlays (game.openOverlay/closeOverlay); any open overlay pauses the sim clock and player input. Sim systems are attached in sim/index.js installSystems() (shared with npm run sim). Phone apps register in ui/Phone/apps.js.
+- **Bills**: rent+utilities on the 1st of each 28-day month, phone/insurance on the 15th, paychecks every other Friday (day%14==4). First month of rent is treated as prepaid.
+- **UI gotcha**: DOM .append(null) prints "null" — app/dialog bodies are wrapped with dom.js tolerant() so apps may pass null/arrays.
+
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- Dev keys: `[` / `]` shift the clock by an hour.
+- Scenarios: core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
+- Dev key: `]` advances the clock one hour.
 
 ## Known issues
 - GitHub repo `DQuanBui/penny-to-penthouse` did not exist / `gh` not logged in at start → commits are local until the repo exists (see end of file for push steps).

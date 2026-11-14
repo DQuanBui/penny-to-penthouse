@@ -1,22 +1,34 @@
-// Top-level orchestrator: owns the renderer, the city scene, the player and
-// camera, and steps everything each frame.
+// Top-level orchestrator: renderer, city scene, player + camera, the sim state,
+// UI overlays and the title / creator / play modes.
 import * as THREE from 'three';
 import { Events } from './Events.js';
 import { Loop } from './Loop.js';
 import { Input } from './Input.js';
 import { Settings } from './Settings.js';
-import { hourOf, fmtClock, fmtDate, calendar } from './Clock.js';
+import { hourOf, calendar, fmtClock } from './Clock.js';
+import { saveSlot, loadSlot, latestSlot, firstFreeSlot } from './SaveSystem.js';
+import { BALANCE } from '../data/balance.js';
+import { getCity } from '../data/cities/index.js';
+import { HOME_BY_ID } from '../data/homes.js';
 import { Sky } from '../world/Sky.js';
 import { worldUniforms } from '../world/Buildings.js';
 import { generateCity } from '../world/CityGenerator.js';
-import { getCity } from '../data/cities/index.js';
 import { createRig } from '../characters/CharacterFactory.js';
 import { loadGLBCharacters } from '../characters/GLBCharacters.js';
-import { CharacterCreator } from '../ui/CharacterCreator.js';
-import { defaultAppearance } from '../characters/Customization.js';
 import { PlayerController } from '../characters/PlayerController.js';
 import { ThirdPersonCamera } from '../characters/ThirdPersonCamera.js';
-import { h } from '../ui/dom.js';
+import { newState, migrate } from '../sim/State.js';
+import { Sim } from '../sim/Sim.js';
+import { installSystems } from '../sim/index.js';
+import { CharacterCreator } from '../ui/CharacterCreator.js';
+import { TitleScreen } from '../ui/TitleScreen.js';
+import { HUD } from '../ui/HUD.js';
+import { CityMap } from '../ui/Map.js';
+import { Phone } from '../ui/Phone/Phone.js';
+import { registerApps } from '../ui/Phone/apps.js';
+import { openPause, openSlots, dialog } from '../ui/Menus.js';
+import { h, btn } from '../ui/dom.js';
+import { fmtMoney } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
 
@@ -50,21 +62,36 @@ export class Game {
     }
     this._lampTimer = 0;
 
+    this.mode = 'boot';
     this.city = null;
-    this.timeTotal = 8 * 60; // minutes since Day 1 00:00 (replaced by sim state in phase 3)
+    this.state = null;
+    this.sim = null;
+    this.slot = 1;
+    this.overlays = [];
+    this.interactable = null;
+    this.titleTime = 18.75;
     this.lowFpsTime = 0;
 
     this.fpsEl = h('div.fps.hidden');
     this.ui.append(this.fpsEl);
+    this.map = new CityMap(this);
+    this.hud = new HUD(this);
+    this.phone = new Phone(this);
+    registerApps(this.phone, this);
 
     this.applySettings();
     this.events.on('settings', () => this.applySettings());
+    this.events.on('newday', () => this.settings.get('autosave') && this.saveNow(true));
+    this.events.on('collapse', (c) => this.onCollapse(c));
     window.addEventListener('resize', () => this.resize());
+    window.addEventListener('blur', () => this.mode === 'play' && !this.overlays.length && openPause(this));
+    window.addEventListener('beforeunload', () => this.mode === 'play' && this.saveNow(true));
     this.resize();
 
     this.loop = new Loop((dt, t) => this.update(dt, t));
   }
 
+  // ------------------------------------------------------------- settings
   get quality() {
     return this.settings.get('graphics');
   }
@@ -94,107 +121,354 @@ export class Game {
 
   /** Fade to black, run fn (may be async), fade back. */
   async fade(fn) {
+    this.fading = true;
     this.fadeEl.classList.add('on');
     await new Promise((r) => setTimeout(r, 300));
-    await fn();
-    await new Promise((r) => setTimeout(r, 60));
-    this.fadeEl.classList.remove('on');
+    try {
+      await fn();
+    } finally {
+      await new Promise((r) => setTimeout(r, 80));
+      this.fadeEl.classList.remove('on');
+      this.fading = false;
+    }
   }
 
-  loadCity(cityId) {
+  // ------------------------------------------------------------- overlays
+  /** Blocking UI layers (phone, menus, dialogs, shops). They pause the clock. */
+  openOverlay(el, opts = {}) {
+    this.ui.append(el);
+    this.overlays.push({ el, ...opts });
+    this.input.gameplay = false;
+    this.input.releaseLock();
+    return el;
+  }
+  closeOverlay(el) {
+    const i = this.overlays.findIndex((o) => o.el === el);
+    if (i < 0) return;
+    const [o] = this.overlays.splice(i, 1);
+    o.el.remove();
+    o.onClose?.();
+    this.input.gameplay = this.mode === 'play' && !this.overlays.length;
+  }
+  closeTop() {
+    const o = this.overlays[this.overlays.length - 1];
+    if (o && o.closable !== false) this.closeOverlay(o.el);
+  }
+  closeAllOverlays() {
+    while (this.overlays.length) this.closeOverlay(this.overlays[this.overlays.length - 1].el);
+  }
+
+  // ---------------------------------------------------------------- world
+  loadCity(cityId, season) {
+    if (this.city && this.city.cfg.id === cityId && this.city.season === season) return this.city;
     if (this.city) {
       this.scene.remove(this.city.group);
       this.city.dispose();
     }
     const cfg = getCity(cityId);
-    this.city = generateCity(cfg, { season: calendar(this.timeTotal).seasonId });
+    this.city = generateCity(cfg, { season });
+    this.city.season = season;
     this.scene.add(this.city.group);
+    this.map.setCity(this.city);
     return this.city;
   }
 
-  /** Put the player (with the given look) into the open city. */
-  enterCity(appearance = defaultAppearance()) {
+  cityWorld() {
+    return { colliders: this.city.colliders, groundY: this.city.groundY };
+  }
+
+  setPlayerLook(appearance) {
+    const parent = this.playerRig ? this.playerRig.group.parent : this.scene;
     if (this.playerRig) {
-      this.scene.remove(this.playerRig.group);
+      parent?.remove(this.playerRig.group);
       this.playerRig.dispose();
     }
     this.playerRig = createRig(appearance);
-    this.scene.add(this.playerRig.group);
-    const w = { colliders: this.city.colliders, groundY: this.city.groundY };
-    this.player.setWorld(w);
-    this.cam.setWorld(w);
+    (parent || this.scene).add(this.playerRig.group);
     this.player.setRig(this.playerRig);
-    const sp = this.city.spawn;
-    this.player.teleport(sp.x, sp.z, sp.ry);
-    this.cam.snapBehind(sp.ry + 1.1);
-    this.input.gameplay = true;
   }
 
+  homePlace() {
+    return this.city.placeById['home_' + this.state.home.districtId] || this.city.places.find((p) => p.type === 'home');
+  }
+
+  /** Stand the player outside a place's door, facing the street. */
+  placePlayerAt(place) {
+    const ry = Math.atan2(place.nx, place.nz);
+    this.player.teleport(place.x, place.z, ry);
+    this.cam.snapBehind(ry + 1.1);
+  }
+
+  playerMapPos() {
+    return { x: this.player.pos.x, z: this.player.pos.z, heading: this.player.heading };
+  }
+
+  locationLabel() {
+    const d = this.city.districtAt(this.player.pos.x, this.player.pos.z);
+    return `${d.name}, ${this.city.cfg.name}`;
+  }
+
+  // ----------------------------------------------------------------- flow
   async start() {
-    this.mode = 'boot';
     this.loop.start();
     await loadGLBCharacters(); // optional models; resolves immediately when none exist
-    this.loadCity('newyork');
-    this.openCreator();
+    const latest = latestSlot();
+    const st = latest ? loadSlot(latest) : null;
+    this.loadCity(st?.cityId || 'newyork', 'summer');
+    this.toTitle();
   }
 
-  /** Character creator -> new life. */
-  openCreator() {
+  toTitle() {
+    this.closeAllOverlays();
+    this.hud.show(false);
     this.input.gameplay = false;
-    this.creator = new CharacterCreator(this, (profile) => {
-      this.fade(() => {
-        this.creator.close();
-        this.creator = null;
-        this.profile = profile;
-        this.enterCity(profile.appearance);
-        if (!this.devHud) this.ui.append((this.devHud = h('div.dev-hud')));
-        this.mode = 'play';
-      });
-    });
+    if (this.playerRig) this.playerRig.group.visible = false;
+    this.state = null;
+    this.sim = null;
+    this.title?.close();
+    this.title = new TitleScreen(this);
+    this.mode = 'title';
+  }
+
+  /** New Life: choose a slot, then the creator. */
+  newLife() {
+    const free = firstFreeSlot();
+    const go = (slot) => {
+      this.slot = slot;
+      this.fade(() => this.openCreator());
+    };
+    if (free) go(free);
+    else openSlots(this, 'new', go);
+  }
+
+  openCreator() {
+    this.title?.close();
+    this.title = null;
+    this.closeAllOverlays();
+    this.input.gameplay = false;
+    this.creator = new CharacterCreator(
+      this,
+      (profile) => this.fade(() => this.beginLife(profile, 'newyork')),
+      () =>
+        this.fade(() => {
+          this.closeCreator();
+          this.toTitle();
+        }),
+    );
     this.creator.onResize(window.innerWidth, window.innerHeight);
     this.mode = 'creator';
   }
+  closeCreator() {
+    this.creator?.close();
+    this.creator = null;
+  }
 
+  beginLife(profile, cityId) {
+    this.closeCreator();
+    const cfg = getCity(cityId);
+    const state = newState(profile, cfg);
+    this.setupLife(state);
+    this.placePlayerAt(this.homePlace());
+    this.saveNow(true);
+    this.events.emit('lifeStarted', {});
+  }
+
+  loadGame(slot) {
+    const raw = loadSlot(slot);
+    if (!raw) return;
+    this.fade(() => {
+      this.slot = slot;
+      const state = migrate(raw, getCity(raw.cityId));
+      this.setupLife(state);
+      const p = state.pos;
+      if (p && p.x != null) {
+        this.player.teleport(p.x, p.z, p.heading || 0);
+        this.cam.snapBehind((p.heading || 0) + 0.6);
+      } else this.placePlayerAt(this.homePlace());
+      this.events.emit('lifeLoaded', {});
+    });
+  }
+
+  /** Shared by new and loaded games: city, sim, player, HUD. */
+  setupLife(state) {
+    this.title?.close();
+    this.title = null;
+    this.closeAllOverlays();
+    this.state = state;
+    const season = calendar(state.time.total).seasonId;
+    this.loadCity(state.cityId, season);
+    this.sim = new Sim(state, this.events, this.city.cfg);
+    installSystems(this.sim);
+    this.setPlayerLook(state.profile.appearance);
+    this.playerRig.group.visible = true;
+    const w = this.cityWorld();
+    this.player.setWorld(w);
+    this.cam.setWorld(w);
+    this.hud.cashShown = null;
+    this.hud.show(true);
+    this.mode = 'play';
+    this.input.gameplay = true;
+    this.hud.hint('move', 'WASD to move · Shift to run · drag the mouse to look around · Tab opens your phone', 10);
+  }
+
+  saveMeta() {
+    return { netWorth: Math.round(this.sim.finance.netWorth()), job: this.sim.jobs?.title() || '' };
+  }
+
+  saveNow(quiet) {
+    if (!this.state || this.mode !== 'play') return;
+    const p = this.player.pos;
+    this.state.pos = { x: this.insidePlace ? null : p.x, z: this.insidePlace ? null : p.z, heading: this.player.heading, place: null };
+    const ok = saveSlot(this.slot, this.state, this.saveMeta());
+    if (!quiet) this.events.emit('toast', ok ? { icon: '💾', title: 'Game saved', text: `Slot ${this.slot}`, kind: 'good' } : { icon: '⚠️', title: 'Save failed', text: 'Browser storage is unavailable.', kind: 'bad' });
+    this.events.emit('slotsChanged');
+  }
+
+  onCollapse(c) {
+    if (this.sim?.headless) return;
+    const text =
+      c.kind === 'hospital'
+        ? `Your health gave out. You spent ${c.hours} hours in hospital.`
+        : c.kind === 'hunger'
+          ? 'You fainted from hunger and woke up in the ER.'
+          : 'You collapsed from exhaustion and woke up in the ER.';
+    this.fade(() => {
+      this.closeAllOverlays();
+      this.leaveInterior?.(true);
+      const hosp = this.city.placeById.hospital || this.homePlace();
+      this.placePlayerAt(hosp);
+      dialog(this, {
+        title: c.kind === 'hospital' ? '🏥 Hospitalised' : '🚑 You collapsed',
+        body: h('div', h('p', text), h('p.bad', `Medical bill: ${fmtMoney(c.bill)}`), h('p.muted', 'Keep an eye on your needs — hover the mood ring in the top right.')),
+        buttons: [btn('OK', () => this.closeTop(), 'primary')],
+      });
+    });
+  }
+
+  /** T: wait / skip time. */
+  openWait() {
+    const opts = [
+      [30, '30 minutes'],
+      [60, '1 hour'],
+      [180, '3 hours'],
+      [360, '6 hours'],
+    ];
+    const el = dialog(this, {
+      title: '⏳ Wait',
+      body: h(
+        'div.menu-col',
+        h('div.muted', `It is ${fmtClock(this.state.time.total)}. Time passes while you wait — your needs keep dropping.`),
+        opts.map(([m, label]) =>
+          btn(label, () => {
+            this.closeOverlay(el);
+            this.fade(() => this.sim.advance(m));
+          }),
+        ),
+      ),
+    });
+  }
+
+  // ---------------------------------------------------------- interaction
+  /** Nearest thing the player can use right now: { label, action } or null. */
+  findInteractable() {
+    const p = this.player.pos;
+    let best = null;
+    let bd = 3.1 * 3.1;
+    for (const pl of this.city.places) {
+      const d = (pl.x - p.x) ** 2 + (pl.z - p.z) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = pl;
+      }
+    }
+    if (!best) return null;
+    const mine = best.type === 'home' && best.id === 'home_' + this.state.home.districtId;
+    if (best.type === 'home' && !mine) return { label: `${best.name} — you do not live here`, action: null };
+    const label = best.station ? `Take the ${best.label}` : mine ? `Enter your home (${HOME_BY_ID[this.state.home.type].name})` : `Enter ${best.name}`;
+    return { label, action: () => this.enterPlace(best) };
+  }
+
+  enterPlace(place) {
+    this.events.emit('toast', { icon: place.icon, title: place.name, text: 'Opening soon.', kind: 'info' });
+  }
+
+  // --------------------------------------------------------------- update
   update(dt, elapsed) {
     const input = this.input;
     if (this.mode === 'creator') {
       this.creator.update(dt);
       this.renderer.render(this.creator.scene, this.creator.camera);
-      input.endFrame();
-      return;
+    } else if (this.mode === 'title') {
+      this.updateTitle(dt, elapsed);
+    } else if (this.mode === 'play') {
+      this.updatePlay(dt, elapsed);
     }
-    if (this.mode !== 'play') {
-      input.endFrame();
-      return;
+    if (this.settings.get('showFps')) this.fpsEl.textContent = Math.round(this.loop.fps) + ' FPS';
+    input.endFrame();
+  }
+
+  updateTitle(dt, elapsed) {
+    const a = elapsed * 0.035 + 0.6;
+    const r = this.city.half + 150;
+    const focus = this.camera.position.set(Math.sin(a) * r, 150 + Math.sin(elapsed * 0.05) * 25, Math.cos(a) * r);
+    this.camera.lookAt(0, 55, 0);
+    worldUniforms.uTime.value = elapsed;
+    this.sky.update(this.titleTime, dt, focus);
+    this.city.update(elapsed, this.sky.night);
+    for (const l of this.lampLights) l.intensity = 0;
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  updatePlay(dt, elapsed) {
+    const input = this.input;
+    const st = this.state;
+    const blocked = this.overlays.length > 0 || this.fading;
+    st.playtime += dt;
+
+    // --- keys ---
+    if (input.pressed('Escape')) {
+      if (this.overlays.length) this.closeTop();
+      else openPause(this);
+    } else if (!this.fading) {
+      if (input.pressed('Tab') || input.pressed('KeyP')) {
+        if (this.phone.isOpen()) this.phone.close();
+        else if (!this.overlays.length) this.phone.open();
+      }
+      if (input.pressed('KeyM') && (this.map.isOpen() || !this.overlays.length)) this.map.toggle();
+      if (!blocked) {
+        if (input.pressed('KeyT')) this.openWait();
+        if (input.pressed('KeyE') && this.interactable?.action) this.interactable.action();
+        if (import.meta.env.DEV && input.pressed('BracketRight')) this.sim.advance(60, { noCollapse: true });
+      }
     }
-    // --- time ---
-    const minPerSec = (1440 / (16 * 60)) * this.settings.get('timeSpeed');
-    this.timeTotal += dt * minPerSec;
-    if (import.meta.env.DEV) {
-      if (input.pressed('BracketRight')) this.timeTotal += 60;
-      if (input.pressed('BracketLeft')) this.timeTotal -= 60;
+
+    // --- simulation clock ---
+    if (!blocked) {
+      const minPerSec = (1440 / (BALANCE.time.realMinutesPerDay * 60)) * this.settings.get('timeSpeed');
+      this.sim.advance(dt * minPerSec);
     }
-    const hour = hourOf(this.timeTotal);
 
     // --- world ---
-    this.player.update(dt, input, this.cam.yaw);
-    this.cam.update(dt, input, this.player.pos);
+    this.player.frozen = blocked;
+    this.player.update(dt, blocked ? null : input, this.cam.yaw);
+    this.cam.update(dt, blocked ? null : input, this.player.pos);
     worldUniforms.uTime.value = elapsed;
-    this.sky.update(hour, dt, this.player.pos);
+    this.sky.update(hourOf(st.time.total), dt, this.player.pos);
     this.city.update(elapsed, this.sky.night);
     this.updateLampLights(dt);
 
-    // --- hud ---
-    if (this.devHud) {
-      const d = this.city.districtAt(this.player.pos.x, this.player.pos.z);
-      const text = `${fmtClock(this.timeTotal)} · ${fmtDate(this.timeTotal)} · ${d.name}`;
-      if (text !== this._hudText) this.devHud.textContent = this._hudText = text;
+    // --- interaction prompt + HUD ---
+    this._interactT = (this._interactT || 0) - dt;
+    if (this._interactT <= 0) {
+      this._interactT = 0.12;
+      this.interactable = blocked ? null : this.findInteractable();
+      this.hud.setPrompt(this.interactable ? this.interactable.label : null, this.interactable?.action ? 'E' : '✕');
+      if (this.interactable) this.hud.hint('interact', 'Press E to use doors, shops, people and furniture.');
     }
-    if (this.settings.get('showFps')) this.fpsEl.textContent = Math.round(this.loop.fps) + ' FPS';
+    this.hud.update(dt);
 
     this.autoQuality(dt);
     this.renderer.render(this.scene, this.camera);
-    input.endFrame();
   }
 
   updateLampLights(dt) {
@@ -237,7 +511,7 @@ export class Game {
       const q = this.quality;
       if (q === 'high') this.settings.set('graphics', 'medium');
       else if (q === 'medium') this.settings.set('graphics', 'low');
-      if (q !== 'low') this.events.emit('toast', { icon: '⚙️', title: 'Graphics lowered', text: 'Switched to a faster preset to keep things smooth.' });
+      if (q !== 'low') this.events.emit('toast', { icon: '⚙️', title: 'Graphics lowered', text: 'Switched to a faster preset to keep things smooth.', kind: 'info' });
     }
   }
 }
