@@ -23,6 +23,89 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Phase 4: home interior, sleep, Jobs app + interview, shift + mini-games, café. */
+  async work({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => window.__game.enterPlace(window.__game.homePlace()));
+    await wait(1400);
+    await shot('p4-home');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const pt = g.interior.points.find((p) => p.use === 'sleep');
+      g.player.teleport(pt.x, pt.z, 0);
+    });
+    await wait(500);
+    await key(page, 'KeyE');
+    await shot('p4-sleep');
+    await key(page, 'Escape');
+    await page.evaluate(() => window.__game.leaveInterior());
+    await wait(1200);
+    await key(page, 'Tab');
+    await page.click('.app-icon:nth-child(2)');
+    await wait(300);
+    await shot('p4-jobs');
+    await page.click('.card.job:has-text("Dishwasher") >> text=Apply');
+    await wait(300);
+    await shot('p4-interview');
+    for (let i = 0; i < 3; i++) {
+      await page.click('.btn.answer');
+      await wait(150);
+    }
+    await shot('p4-verdict');
+    await page.click('text=Continue');
+    await key(page, 'Escape');
+    await page.evaluate(() => {
+      const g = window.__game;
+      if (!g.state.job) g.sim.jobs.hire('hospitality', 0);
+      g.sim.advance(4 * 60, { noDecay: true });
+      g.enterPlace(g.city.placeById.restaurant);
+    });
+    await wait(1400);
+    await shot('p4-restaurant');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const pt = g.interior.points.find((p) => p.use === 'work');
+      g.player.teleport(pt.x, pt.z, 0);
+    });
+    await wait(400);
+    await key(page, 'KeyE');
+    await shot('p4-shift');
+    await page.click('text=Play shift');
+    await wait(2800);
+    for (const f of ['🍔', '🍟', '🥤']) await page.click('.or-btn:has-text("' + f + '")').catch(() => {});
+    await shot('p4-orderrush');
+    await page.click('text=Skip — auto-resolve');
+    await wait(1500);
+    await shot('p4-summary');
+    await page.click('text=Continue');
+    for (const id of ['bugsquash', 'wiring']) {
+      await page.evaluate((x) => void window.__mg(x, 2), id);
+      await wait(3600);
+      await shot('p4-' + id);
+      await page.click('text=Skip — auto-resolve');
+      await wait(300);
+    }
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.leaveInterior(true);
+      g.enterPlace(g.city.placeById.cafe);
+    });
+    await wait(1400);
+    await page.evaluate(() => {
+      const g = window.__game;
+      const pt = g.interior.points.find((p) => p.use === 'service');
+      g.player.teleport(pt.x, pt.z, Math.PI);
+    });
+    await wait(400);
+    await key(page, 'KeyE');
+    await shot('p4-cafe');
+    await page.click('.slot .btn');
+    await wait(1200);
+    const info = await page.evaluate(() => ({ cash: Math.round(window.__game.state.money.checking), job: window.__game.sim.jobs.title(), energy: Math.round(window.__game.state.needs.energy), inside: !!window.__game.inside }));
+    console.log('info', JSON.stringify(info));
+    await shot('p4-after-coffee');
+  },
+
   /** Phase 3: HUD, phone + bank, map, pause, settings, save/load round trip. */
   async core({ page, shot, wait }) {
     await startLife(page, wait);

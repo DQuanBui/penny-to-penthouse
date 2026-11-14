@@ -28,6 +28,12 @@ import { Phone } from '../ui/Phone/Phone.js';
 import { registerApps } from '../ui/Phone/apps.js';
 import { openPause, openSlots, dialog } from '../ui/Menus.js';
 import { h, btn } from '../ui/dom.js';
+import { Interior, defaultHomeLayout, commercialLayout } from '../world/Interiors.js';
+import { loadFurnitureModels } from '../build/FurnitureCatalog.js';
+import { PLACE_TYPES } from '../data/placeTypes.js';
+import { hasComputer } from '../data/items.js';
+import { useFurniture } from '../ui/Interact.js';
+import { computeObjective } from '../ui/Objectives.js';
 import { fmtMoney } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
@@ -61,6 +67,11 @@ export class Game {
       this.lampLights.push(l);
     }
     this._lampTimer = 0;
+
+    this.interior = new Interior();
+    this.inside = null; // { place, home, layout } while in an interior
+    this._focus = new THREE.Vector3();
+    this._winColor = new THREE.Color();
 
     this.mode = 'boot';
     this.city = null;
@@ -200,18 +211,82 @@ export class Game {
   }
 
   playerMapPos() {
+    if (this.inside) return { x: this.inside.place.x, z: this.inside.place.z, heading: Math.atan2(this.inside.place.nx, this.inside.place.nz) };
     return { x: this.player.pos.x, z: this.player.pos.z, heading: this.player.heading };
   }
 
   locationLabel() {
+    if (this.inside) return this.inside.home ? `Home · ${this.inside.place.district.name}` : this.inside.place.name;
     const d = this.city.districtAt(this.player.pos.x, this.player.pos.z);
     return `${d.name}, ${this.city.cfg.name}`;
+  }
+
+  // ------------------------------------------------------------ interiors
+  /** Walk through a door: fade into the place's interior scene. */
+  enterPlace(place) {
+    if (place.station) return this.useStation(place);
+    this.fade(() => {
+      const st = this.state;
+      const home = place.type === 'home';
+      const layout = home ? (st.home.layout ||= defaultHomeLayout(st.home.type)) : commercialLayout(place);
+      this.interior.build(layout, { place, home, hasPc: hasComputer(st) });
+      this.inside = { place, home, layout };
+      this.interior.scene.add(this.playerRig.group);
+      this.player.setWorld(this.interior.world);
+      this.cam.setWorld(this.interior.world);
+      this.player.teleport(layout.doorX, layout.d - 1.1, Math.PI);
+      this.cam.snapBehind(Math.PI);
+      this.cam.pitch = 0.55;
+      this._outDist = this.cam.dist;
+      this.cam.dist = Math.min(this.cam.dist, 5);
+      this.cam.maxDist = 9;
+      this.audio?.play('door');
+      this.events.emit('entered', { place, home });
+      if (home) this.hud.hint('home', 'This is your place. Walk up to furniture and press E: bed to sleep, fridge to eat, shower to wash.', 9);
+      else if (PLACE_TYPES[place.type].service) this.hud.hint('counter', 'Walk up to the counter and press E to be served.', 7);
+    });
+  }
+
+  /** Rebuild the current interior (after furniture or ownership changes). */
+  refreshInterior() {
+    if (!this.inside) return;
+    const { place, home } = this.inside;
+    const layout = home ? (this.state.home.layout ||= defaultHomeLayout(this.state.home.type)) : this.inside.layout;
+    this.inside.layout = layout;
+    this.interior.build(layout, { place, home, hasPc: hasComputer(this.state) });
+    this.player.setWorld(this.interior.world);
+    this.cam.setWorld(this.interior.world);
+  }
+
+  leaveInterior(silent) {
+    if (!this.inside) return;
+    const place = this.inside.place;
+    const out = () => {
+      this.scene.add(this.playerRig.group);
+      const w = this.cityWorld();
+      this.player.setWorld(w);
+      this.cam.setWorld(w);
+      this.cam.maxDist = 16;
+      this.cam.dist = this._outDist || 6.5;
+      this.inside = null;
+      this.placePlayerAt(place);
+      this.events.emit('left', { place });
+    };
+    if (silent) out();
+    else {
+      this.audio?.play('door');
+      this.fade(out);
+    }
+  }
+
+  useStation(place) {
+    this.events.emit('toast', { icon: place.icon, title: place.name, text: 'Service starts soon.', kind: 'info' });
   }
 
   // ----------------------------------------------------------------- flow
   async start() {
     this.loop.start();
-    await loadGLBCharacters(); // optional models; resolves immediately when none exist
+    await Promise.all([loadGLBCharacters(), loadFurnitureModels()]); // optional models; resolve immediately when none exist
     const latest = latestSlot();
     const st = latest ? loadSlot(latest) : null;
     this.loadCity(st?.cityId || 'newyork', 'summer');
@@ -220,6 +295,7 @@ export class Game {
 
   toTitle() {
     this.closeAllOverlays();
+    this.leaveInterior(true);
     this.hud.show(false);
     this.input.gameplay = false;
     if (this.playerRig) this.playerRig.group.visible = false;
@@ -294,6 +370,7 @@ export class Game {
     this.title?.close();
     this.title = null;
     this.closeAllOverlays();
+    this.leaveInterior(true);
     this.state = state;
     const season = calendar(state.time.total).seasonId;
     this.loadCity(state.cityId, season);
@@ -318,7 +395,8 @@ export class Game {
   saveNow(quiet) {
     if (!this.state || this.mode !== 'play') return;
     const p = this.player.pos;
-    this.state.pos = { x: this.insidePlace ? null : p.x, z: this.insidePlace ? null : p.z, heading: this.player.heading, place: null };
+    // inside a building the save point is the pavement outside its door
+    this.state.pos = this.inside ? { x: this.inside.place.x, z: this.inside.place.z, heading: Math.atan2(this.inside.place.nx, this.inside.place.nz) } : { x: p.x, z: p.z, heading: this.player.heading };
     const ok = saveSlot(this.slot, this.state, this.saveMeta());
     if (!quiet) this.events.emit('toast', ok ? { icon: '💾', title: 'Game saved', text: `Slot ${this.slot}`, kind: 'good' } : { icon: '⚠️', title: 'Save failed', text: 'Browser storage is unavailable.', kind: 'bad' });
     this.events.emit('slotsChanged');
@@ -372,6 +450,13 @@ export class Game {
   /** Nearest thing the player can use right now: { label, action } or null. */
   findInteractable() {
     const p = this.player.pos;
+    if (this.inside) {
+      const pt = this.interior.nearest(p);
+      if (!pt) return null;
+      if (pt.exit) return { label: this.inside.home ? 'Leave home' : `Leave ${this.inside.place.name}`, action: () => this.leaveInterior() };
+      const label = pt.use === 'service' ? `${this.inside.place.label} counter` : pt.label;
+      return { label, action: () => useFurniture(this, pt) };
+    }
     let best = null;
     let bd = 3.1 * 3.1;
     for (const pl of this.city.places) {
@@ -386,10 +471,6 @@ export class Game {
     if (best.type === 'home' && !mine) return { label: `${best.name} — you do not live here`, action: null };
     const label = best.station ? `Take the ${best.label}` : mine ? `Enter your home (${HOME_BY_ID[this.state.home.type].name})` : `Enter ${best.name}`;
     return { label, action: () => this.enterPlace(best) };
-  }
-
-  enterPlace(place) {
-    this.events.emit('toast', { icon: place.icon, title: place.name, text: 'Opening soon.', kind: 'info' });
   }
 
   // --------------------------------------------------------------- update
@@ -453,9 +534,13 @@ export class Game {
     this.player.update(dt, blocked ? null : input, this.cam.yaw);
     this.cam.update(dt, blocked ? null : input, this.player.pos);
     worldUniforms.uTime.value = elapsed;
-    this.sky.update(hourOf(st.time.total), dt, this.player.pos);
-    this.city.update(elapsed, this.sky.night);
-    this.updateLampLights(dt);
+    const inside = this.inside;
+    this.sky.update(hourOf(st.time.total), dt, inside ? this._focus.set(inside.place.x, 0, inside.place.z) : this.player.pos);
+    if (inside) this.interior.update(this.sky.night, this._winColor.copy(this.sky.top).lerp(this.sky.horizon, 0.55));
+    else {
+      this.city.update(elapsed, this.sky.night);
+      this.updateLampLights(dt);
+    }
 
     // --- interaction prompt + HUD ---
     this._interactT = (this._interactT || 0) - dt;
@@ -465,10 +550,16 @@ export class Game {
       this.hud.setPrompt(this.interactable ? this.interactable.label : null, this.interactable?.action ? 'E' : '✕');
       if (this.interactable) this.hud.hint('interact', 'Press E to use doors, shops, people and furniture.');
     }
+    this._objT = (this._objT || 0) - dt;
+    if (this._objT <= 0) {
+      this._objT = 0.5;
+      const o = computeObjective(this);
+      this.hud.setObjective(o[0], o[1]);
+    }
     this.hud.update(dt);
 
     this.autoQuality(dt);
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(inside ? this.interior.scene : this.scene, this.camera);
   }
 
   updateLampLights(dt) {

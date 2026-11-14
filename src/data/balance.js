@@ -57,8 +57,10 @@ export const BALANCE = {
     skipShiftPerf: [5, 9], // auto-resolve: perf gained per shift (min,max) before multipliers
     miniGamePerf: [3, 17], // mini-game: perf by score 0..1
     miniGameTipBonus: 0.5, // extra tips/bonus fraction for a perfect mini-game
-    energyPerHour: 5.2, // extra drain while working
-    funPerHour: 1.6,
+    energyPerHour: 2.2, // extra drain while working (on top of normal decay)
+    funPerHour: 1.2,
+    lunchPerHour: 3.2, // hunger offset: shifts include a meal break
+    socialPerHour: 1.6, // coworkers
     raiseOnReview: 0.04, // raise when promotion requirements are not met yet
     interviewBase: 0.42, // base chance for an entry role with zero bonus
     referralBonus: 0.2,

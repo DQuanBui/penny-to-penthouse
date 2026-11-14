@@ -25,7 +25,7 @@ export class HUD {
       ),
       h('div.hud-br', (this.miniCv = h('canvas.minimap', { width: MINI, height: MINI, onclick: () => game.map?.toggle() })), (this.wayEl = h('div.way-label.hidden'))),
       h('div.hud-bc', (this.hintEl = h('div.hint.hidden')), (this.promptEl = h('div.prompt.hidden'))),
-      h('div.hud-bl', h('span', h('kbd', 'Tab'), ' Phone'), h('span', h('kbd', 'M'), ' Map'), h('span', h('kbd', 'T'), ' Wait'), h('span', h('kbd', 'Esc'), ' Menu')),
+      h('div.hud-bl', h('span', h('kbd', 'E'), ' Use'), h('span', h('kbd', 'Tab'), ' Phone'), h('span', h('kbd', 'M'), ' Map'), h('span', h('kbd', 'T'), ' Wait'), h('span', h('kbd', 'Esc'), ' Menu')),
     );
     this.ringFg = this.el.querySelector('.ring-fg');
     for (const n of NEEDS) {

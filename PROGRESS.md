@@ -1,12 +1,12 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 4 — world/Interiors.js (room/café/shop/office templates + interact points), build/FurnitureCatalog.js (procedural furniture meshes), data/careers.js (tech, hospitality, trades first), sim/Jobs.js (apply, interview, shifts, pay, promotion), minigames/*, ui/Phone/Jobs.js, shop dialogs (café, clothing), Game.enterPlace/leaveInterior, register jobs in sim/index.js.
+RESUME HERE: Phase 5 — data/npcs/<city>.js (30+ NPCs), characters/NPC.js + Crowd.js (schedules, pedestrians, LOD/instancing), sim/Relationships.js + Popularity.js, talk dialog (chat/joke/compliment/ask work/hang out/gift), phone apps Contacts/Messages + Social, parties, bar service.
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
 - [x] 2. Characters: factory (GLB hook + procedural), animations, 10 archetypes, creator UI, Random
 - [x] 3. Core sim: clock, needs, mood, money, HUD, phone + Bank app, saves, title, pause/settings
-- [ ] 4. Home and work: room interior, sleep/eat/shower, Jobs app + interview, 3 careers + mini-games, café, clothing → MILESTONE demo
+- [x] 4. Home and work: room interior, sleep/eat/shower, Jobs app + interview, 3 careers + mini-games, café, clothing → MILESTONE demo
 - [ ] 5. Social: NPCs, schedules, friendships, Contacts/Messages, Social app, popularity, parties
 - [ ] 6. Education and skills; remaining careers; side hustles; businesses
 - [ ] 7. Finance depth: credit, card, loans, Invest app + market sim, Homes app, property, mortgages, renting out
@@ -33,9 +33,13 @@ RESUME HERE: Phase 4 — world/Interiors.js (room/café/shop/office templates + 
 - **Bills**: rent+utilities on the 1st of each 28-day month, phone/insurance on the 15th, paychecks every other Friday (day%14==4). First month of rent is treated as prepaid.
 - **UI gotcha**: DOM .append(null) prints "null" — app/dialog bodies are wrapped with dom.js tolerant() so apps may pass null/arrays.
 
+- **Interiors**: separate scene (world/Interiors.js) built from a layout {w,d,floor,wall,walls,items,doorX}. Perimeter walls/ceiling/door are inward-facing planes, so the orbit camera may sit outside the room (dollhouse view) and never needs wall collision. Homes keep their layout in state.home.layout; shops use commercialLayout(place) templates. Furniture = data/furniture.js + procedural meshes in build/FurnitureCatalog.js (GLB override by id).
+- **Interaction**: Game.findInteractable() -> {label, action}; furniture  ids are handled in ui/Interact.js, counters in ui/Shops.js SERVICES (later phases add entries), everyday actions in sim/Activities.js (shared with headless sim).
+- **Jobs**: sim/Jobs.js. Pay accrues per shift and is paid every other Friday; tips are instant cash. Performance 100 = promotion if next-level requirements are met, otherwise a 4% raise. Outside hires are capped at level 4. Mini-games live in src/minigames (shell + one file per game), score 0..1 or skip.
+
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- Scenarios: core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
+- Scenarios: work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
 ## Known issues

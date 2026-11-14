@@ -60,7 +60,7 @@ export class ThirdPersonCamera {
         const x = this.target.x + d.x * s;
         const y = this.target.y + d.y * s;
         const z = this.target.z + d.z * s;
-        if (w.colliders.pointBlocked(x, y, z, 0.3) || (w.ceiling && y > w.ceiling - 0.2)) {
+        if (w.colliders.pointBlocked(x, y, z, 0.3)) {
           allowed = Math.max(0.6, s - step);
           break;
         }
