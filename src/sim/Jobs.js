@@ -218,7 +218,7 @@ export class Jobs {
 
     const skillFit = clamp(0.8 + 0.045 * skillLevel(st, c.skill), 0.8, 1.25);
     let perf = score != null ? lerp(J.miniGamePerf[0], J.miniGamePerf[1], score) : lerp(J.skipShiftPerf[0], J.skipShiftPerf[1], sim.rng());
-    perf *= skillFit * mf * mod(st, 'perfGain') * (hours / full);
+    perf *= (skillFit * mf * mod(st, 'perfGain') * (hours / full)) / (1 + J.seniorityDrag * j.level);
     if (late) {
       perf -= J.latePerfPenalty;
       j.lates++;
@@ -256,6 +256,7 @@ export class Jobs {
       const check = next ? this.meets(next.req) : { ok: false, missing: [] };
       if (next && check.ok) {
         j.level++;
+        j.raise = 1; // the new level's salary replaces old raises
         j.perf = 15;
         j.warned = false;
         st.stats.promotions++;
@@ -266,7 +267,7 @@ export class Jobs {
         sim.bus.emit('promoted', { career: c.id, level: j.level, exec: !!next.exec, ceo: !!next.ceo });
         return { promoted: next.title };
       }
-      j.raise *= 1 + J.raiseOnReview;
+      j.raise = Math.min(J.maxRaise, j.raise * (1 + J.raiseOnReview));
       j.perf = 55;
       const why = next ? `Promotion to ${next.title} needs ${check.missing.join(', ')}.` : 'You are at the top of this ladder.';
       sim.bus.emit('toast', { icon: '💰', title: `Raise: now ${fmtMoney(this.annualSalary())}/yr`, text: `Great review. ${why}`, kind: 'good', long: true });

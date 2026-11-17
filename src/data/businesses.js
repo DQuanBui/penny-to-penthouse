@@ -14,7 +14,7 @@ export const BUSINESS_BY_ID = Object.fromEntries(BUSINESS_TYPES.map((b) => [b.id
 export const BUSINESS = {
   maxOwned: 3,
   maxLevel: 5,
-  levelGrowth: 1.75, // profit multiplier per level
+  levelGrowth: 1.5, // profit multiplier per level
   upgradeCost: 0.85, // × startup cost × current level
   staffWage: 105, // per staff per day (× city salaryIndex)
   fixedCost: 0.22, // of base, per day, grows with level
@@ -22,5 +22,5 @@ export const BUSINESS = {
   marketingRep: 11,
   workHours: 4,
   bankruptAt: 0.3, // closes when cash < -cost × this
-  sellMultiple: 14, // months of average profit a buyer pays
+  sellMultiple: 10, // months of average profit a buyer pays
 };

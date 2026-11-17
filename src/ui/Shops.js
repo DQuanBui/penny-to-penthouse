@@ -2,7 +2,7 @@
 // hospital, bar... Later phases plug extra services in through SERVICES.
 import { h, btn, tolerant } from './dom.js';
 import { dialog } from './Menus.js';
-import { ACTIVITIES, priceOf, GROCERY_PACKS, buyGroceries } from '../sim/Activities.js';
+import { ACTIVITIES, priceOf, GROCERY_PACKS, buyGroceries, foodBank, foodBankBlock } from '../sim/Activities.js';
 import { BALANCE } from '../data/balance.js';
 import { OUTFITS, ELECTRONICS, wearOutfit } from '../data/items.js';
 import { PLACE_TYPES } from '../data/placeTypes.js';
@@ -75,6 +75,12 @@ export const SERVICES = {
     body.append(
       discNote(game, place),
       h('div.muted', `You have ${st.inventory.meals} portions at home. A home-cooked meal costs a fraction of eating out.`),
+      item('🥫', 'Community food-bank box', foodBankBlock(game.sim) || '6 portions, free — no questions asked', 0, () => {
+        if (foodBank(game.sim)) {
+          game.events.emit('toast', { icon: '🥫', title: 'Food-bank box', text: 'Six portions to get you through. Tough weeks happen to everyone.', kind: 'good' });
+          refresh();
+        }
+      }, { owned: foodBankBlock(game.sim) ? '—' : null, label: 'Take one' }),
       GROCERY_PACKS.map(([id, label, n, price]) =>
         item('🛍️', label, `${n} portions · ${fmtMoney((price * pi) / n)} per meal`, Math.round(price * pi), () => {
           if (buyGroceries(game.sim, id, disc(game, place))) {

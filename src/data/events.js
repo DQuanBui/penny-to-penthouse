@@ -5,6 +5,7 @@
 //   choices[]        { label, run(sim, ctx) -> result text }
 //   weight, cooldown (days before it can repeat)
 import { fmtMoney, lerp } from '../core/utils.js';
+import { BALANCE } from './balance.js';
 import { skillLevel, addSkill } from '../sim/Player.js';
 import { addNeed } from '../sim/Needs.js';
 import { adjustScore } from '../sim/Credit.js';
@@ -18,13 +19,13 @@ const aFriend = (sim) => {
 
 export const LIFE_EVENTS = [
   {
-    id: 'rival_offer', title: 'A rival company calls', icon: '📞', weight: 2, cooldown: 20,
-    when: (sim) => sim.state.job && sim.state.job.shifts >= 5,
-    setup: (sim) => ({ bump: 0.12 + sim.rng() * 0.12 }),
+    id: 'rival_offer', title: 'A rival company calls', icon: '📞', weight: 1.5, cooldown: 50,
+    when: (sim) => sim.state.job && sim.state.job.shifts >= 10 && sim.state.job.raise < BALANCE.jobs.maxRaise - 0.02,
+    setup: (sim) => ({ bump: 0.06 + sim.rng() * 0.08 }),
     text: (sim, c) => `A competitor wants to poach you: the same role for ${Math.round(c.bump * 100)}% more pay. Your manager would not be thrilled.`,
     choices: [
-      { label: 'Take the offer', run: (sim, c) => { const j = sim.state.job; j.raise *= 1 + c.bump; j.perf = 20; j.hiredDay = sim.day; sim.state.flags.careerNews = true; return `New desk, same job, ${fmtMoney(sim.jobs.annualSalary())} a year. You start over proving yourself.`; } },
-      { label: 'Use it to negotiate a raise', run: (sim, c) => { const ok = sim.rng() < 0.35 + skillLevel(sim.state, 'charisma') * 0.07; const j = sim.state.job; if (ok) { j.raise *= 1 + c.bump * 0.6; return `It worked. Your employer matched most of it: ${fmtMoney(sim.jobs.annualSalary())} a year.`; } j.perf -= 12; return 'Your manager called your bluff. Things are a little frosty now.'; } },
+      { label: 'Take the offer', run: (sim, c) => { const j = sim.state.job; j.raise = Math.min(BALANCE.jobs.maxRaise, j.raise * (1 + c.bump)); j.perf = 20; j.hiredDay = sim.day; sim.state.flags.careerNews = true; return `New desk, same job, ${fmtMoney(sim.jobs.annualSalary())} a year. You start over proving yourself.`; } },
+      { label: 'Use it to negotiate a raise', run: (sim, c) => { const ok = sim.rng() < 0.35 + skillLevel(sim.state, 'charisma') * 0.07; const j = sim.state.job; if (ok) { j.raise = Math.min(BALANCE.jobs.maxRaise, j.raise * (1 + c.bump * 0.6)); return `It worked. Your employer matched most of it: ${fmtMoney(sim.jobs.annualSalary())} a year.`; } j.perf -= 12; return 'Your manager called your bluff. Things are a little frosty now.'; } },
       { label: 'Stay loyal', run: (sim) => { sim.state.job.perf += 10; return 'You turned it down. Word got around — your boss noticed.'; } },
     ],
   },

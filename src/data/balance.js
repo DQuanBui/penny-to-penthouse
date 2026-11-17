@@ -14,7 +14,7 @@ export const BALANCE = {
   needs: {
     start: { energy: 82, hunger: 68, hygiene: 78, fun: 60, social: 52, health: 88 },
     // points lost per in-game hour while awake
-    decay: { energy: 4.4, hunger: 5.2, hygiene: 3.0, fun: 2.9, social: 2.1, health: 0 },
+    decay: { energy: 3.5, hunger: 5.0, hygiene: 3.0, fun: 2.7, social: 1.9, health: 0 },
     sleepDecay: { hunger: 2.2, hygiene: 1.0, fun: 0, social: 0.6 },
     // mood = weighted average of needs
     moodWeights: { energy: 0.2, hunger: 0.2, hygiene: 0.12, fun: 0.2, social: 0.13, health: 0.15 },
@@ -54,14 +54,16 @@ export const BALANCE = {
     fireBelow: -30, // performance below this = fired
     warnBelow: -15,
     promoPerf: 100, // performance needed for a promotion review
-    skipShiftPerf: [5, 9], // auto-resolve: perf gained per shift (min,max) before multipliers
-    miniGamePerf: [3, 17], // mini-game: perf by score 0..1
+    skipShiftPerf: [2.5, 5.5], // auto-resolve: perf gained per shift (min,max) before multipliers
+    miniGamePerf: [2, 12], // mini-game: perf by score 0..1
+    seniorityDrag: 0.1, // each level makes the next review this much slower
     miniGameTipBonus: 0.5, // extra tips/bonus fraction for a perfect mini-game
-    energyPerHour: 2.2, // extra drain while working (on top of normal decay)
+    energyPerHour: 1.7, // extra drain while working (on top of normal decay)
     funPerHour: 1.2,
     lunchPerHour: 3.2, // hunger offset: shifts include a meal break
     socialPerHour: 1.6, // coworkers
     raiseOnReview: 0.04, // raise when promotion requirements are not met yet
+    maxRaise: 1.3, // cap on raises within one level (resets on promotion)
     interviewBase: 0.42, // base chance for an entry role with zero bonus
     referralBonus: 0.2,
     reapplyDays: 3,

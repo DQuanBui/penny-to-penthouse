@@ -95,6 +95,23 @@ export const GROCERY_PACKS = [
   ['bulk', 'Bulk stock-up', 30, 108],
 ];
 
+/**
+ * Safety net: a free food-bank box when you are nearly broke, so an empty
+ * wallet never turns into a starvation loop. Once every three days.
+ */
+export function foodBankBlock(sim) {
+  const st = sim.state;
+  if (st.money.checking + st.money.savings >= 60) return 'For people with under $60 to their name.';
+  if ((st.flags.foodBankDay ?? -9) > sim.day - 3) return 'One box every three days.';
+  return null;
+}
+export function foodBank(sim) {
+  if (foodBankBlock(sim)) return false;
+  sim.state.flags.foodBankDay = sim.day;
+  sim.state.inventory.meals += 6;
+  return true;
+}
+
 export function buyGroceries(sim, packId, discount = 1) {
   const pack = GROCERY_PACKS.find((p) => p[0] === packId);
   if (!pack) return false;

@@ -69,7 +69,7 @@ export class Businesses {
     const need = this.staffNeeded(b);
     const hands = b.staff + (worked ? 1 : 0);
     const staffF = Math.min(1, 0.4 + 0.6 * (hands / need)) + (worked ? 0.25 : 0);
-    const repF = 0.5 + b.reputation / 100;
+    const repF = 0.55 + b.reputation / 125;
     const demand = Math.sqrt(city.salaryIndex || 1) * (city.priceIndex || 1) * (city.industries?.entrepreneur || 1);
     const regime = { recession: 0.72, bear: 0.9, normal: 1, bull: 1.08, boom: 1.22 }[st.market?.regime || 'normal'] || 1;
     let gross = t.base * Math.pow(B.levelGrowth, b.level - 1) * this.skillFactor(b) * repF * staffF * demand * regime * rnd;
