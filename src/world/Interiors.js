@@ -295,6 +295,10 @@ export class Interior {
     const { w, d } = layout;
     const H = ROOM_H;
     const root = this.root;
+    const level = opts.level || 0;
+    this.level = level;
+    // level 0 is the layout itself; the upper storey has its own walls and items
+    const src = level ? (layout.upper ||= { walls: [], items: [] }) : layout;
     const colliders = new ColliderWorld(4);
     colliders.bounds = { minX: 0.02, maxX: w - 0.02, minZ: 0.02, maxZ: d - 0.02 };
     this.world = { colliders, groundY: () => 0, ceiling: H };
@@ -332,29 +336,42 @@ export class Interior {
 
     // windows on the back wall glow with the sky colour
     const nWin = Math.max(1, Math.floor(w / 4));
+    const pano = layout.windows === 'panorama';
+    const ww = pano ? Math.min(3.2, w / nWin - 0.5) : 1.5;
+    const wh = pano ? 1.9 : 1.3;
+    const wy = pano ? 1.65 : 1.95;
     for (let i = 0; i < nWin; i++) {
       const x = (w / nWin) * (i + 0.5);
-      const frame = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.3), trim);
-      frame.position.set(x, 1.95, 0.012);
-      const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.36, 1.16), this.windowMat);
-      glass.position.set(x, 1.95, 0.02);
-      const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1.16), trim);
-      bar.position.set(x, 1.95, 0.025);
+      const frame = new THREE.Mesh(new THREE.PlaneGeometry(ww, wh), trim);
+      frame.position.set(x, wy, 0.012);
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(ww - 0.14, wh - 0.14), this.windowMat);
+      glass.position.set(x, wy, 0.02);
+      const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.05, wh - 0.14), trim);
+      bar.position.set(x, wy, 0.025);
       root.add(frame, glass, bar);
     }
 
-    // door on the south wall
+    // lift pad between storeys (two-floor homes are stairs-free)
+    this.lift = null;
+    if ((layout.floors || 1) > 1 && opts.home) {
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.04, 24), new THREE.MeshStandardMaterial({ color: '#ffb347', emissive: '#ff9a3a', emissiveIntensity: 0.7, roughness: 0.4 }));
+      pad.position.set(w - 0.8, 0.02, d - 0.8);
+      root.add(pad);
+      this.lift = { x: w - 0.8, z: d - 0.8 };
+    }
+
+    // door on the south wall (ground floor only)
     const dx = layout.doorX ?? w / 2;
     // a plane facing into the room, so it never hides the player from a camera outside the wall
     const door = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.2).rotateY(Math.PI), new THREE.MeshStandardMaterial({ color: '#6b4a32', roughness: 0.6 }));
     door.position.set(dx, 1.1, d - 0.02);
     const mat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.02, 0.6), new THREE.MeshStandardMaterial({ color: '#5a4a3a', roughness: 1 }));
     mat.position.set(dx, 0.012, d - 0.5);
-    root.add(door, mat);
-    this.door = { x: dx, z: d - 0.9 };
+    if (!level) root.add(door, mat);
+    this.door = level ? null : { x: dx, z: d - 0.9 };
 
     // inner walls
-    for (const s of layout.walls || []) {
+    for (const s of src.walls || []) {
       const horiz = s.z1 === s.z2;
       const len = horiz ? Math.abs(s.x2 - s.x1) : Math.abs(s.z2 - s.z1);
       const m = new THREE.Mesh(new THREE.BoxGeometry(horiz ? len : 0.12, H, horiz ? 0.12 : len), wallMat);
@@ -369,7 +386,7 @@ export class Interior {
     let lampI = 0;
     for (const l of this.lamps) l.intensity = 0;
     this.lampBase = [];
-    for (const it of layout.items) {
+    for (const it of src.items) {
       const def = FURNITURE_BY_ID[it.id];
       if (!def) continue;
       const use = it.use ?? def.use;
@@ -416,7 +433,7 @@ export class Interior {
         const px = x + (rng() - 0.5) * 0.4;
         const pz = z + (rng() - 0.5) * 0.4;
         if (this.world.colliders.pointBlocked(px, 0.4, pz, 0.5)) continue;
-        if (Math.hypot(px - this.door.x, pz - this.door.z) < 1.8) continue;
+        if (this.door && Math.hypot(px - this.door.x, pz - this.door.z) < 1.8) continue;
         out.push({ x: px, z: pz, k: rng() });
       }
     }
@@ -436,7 +453,8 @@ export class Interior {
       }
     }
     if (best) return best;
-    if (Math.hypot(this.door.x - pos.x, this.door.z + 0.5 - pos.z) < 1.5) return { exit: true, label: 'Leave' };
+    if (this.lift && Math.hypot(this.lift.x - pos.x, this.lift.z - pos.z) < 1.2) return { lift: true, label: this.level ? 'Go downstairs' : 'Go upstairs' };
+    if (this.door && Math.hypot(this.door.x - pos.x, this.door.z + 0.5 - pos.z) < 1.5) return { exit: true, label: 'Leave' };
     return null;
   }
 

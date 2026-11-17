@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 8 — src/build/BuildMode.js (+Grid.js, Walls.js): B inside your home, top-down camera, grid placement/move/rotate/sell of furniture, catalog by category, undo/redo, style score; owned homes also walls, floors, paint, doors/windows; furniture store service sells into inventory.furniture.
+RESUME HERE: Phase 9 — data/cities/{losangeles,chicago,miami,austin}.js + data/npcs for each (registerNpcs), ui/CitySelect.js comparison screen in the New Life flow, world/Weather.js (rain, Chicago winter snow, Miami heat haze), world/Transit.js (station fast travel with fare, taxi from the Map app), Map phone app.
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
@@ -10,7 +10,7 @@ RESUME HERE: Phase 8 — src/build/BuildMode.js (+Grid.js, Walls.js): B inside y
 - [x] 5. Social: NPCs, schedules, friendships, Contacts/Messages, Social app, popularity, parties
 - [x] 6. Education and skills; remaining careers; side hustles; businesses
 - [x] 7. Finance depth: credit, card, loans, Invest app + market sim, Homes app, property, mortgages, renting out
-- [ ] 8. Build mode + furniture catalog + style score
+- [x] 8. Build mode + furniture catalog + style score
 - [ ] 9. City select + all 5 cities, weather, transit/fast travel, map
 - [ ] 10. Rankings + AI rivals, goals, achievements, life events, tutorial
 - [ ] 11. Vehicles: dealer, driving, parking, traffic
@@ -47,9 +47,12 @@ RESUME HERE: Phase 8 — src/build/BuildMode.js (+Grid.js, Walls.js): B inside y
 - **Market**: sim/Market.js. Index random walk with regimes (bull/normal/bear/recession/boom announced in News), stocks = beta x market + sector trend + own noise + news shocks; dividends every 28 days; 15% tax on realised gains. Buying/selling assets uses finance.assetTx() so it stays out of the budget and earned/spent stats.
 - **Real estate**: sim/RealEstate.js. Rentals of every type in every district (deposit + first month + movers); 5 listings per district refreshed monthly; mortgage via sim.loans (PMI under 20% down); monthly property tax + upkeep; appreciation tied to market regime (market.homeIndex); rent out (vacancy/repairs) or move in; player-bought furniture (item.own) goes to inventory.furniture when moving.
 
+- **Build mode**: build/BuildMode.js (B inside your home, own overlay + top-down camera; Game.updatePlay hands the frame to it while active). Furniture snaps to 0.5 m (build/Grid.js canPlace), inner walls are 1 m unit segments (build/Walls.js; a doorway = a missing segment). Two-storey homes: layout.upper {walls, items}, a lift pad switches floors (stairs-free). Renters may furnish only. Undo/redo = JSON snapshots of layout + storage + cash. Style score = Grid.styleScore(layout), stored on state.home.styleScore (and the property).
+- **Smoke tests**: software GL is slow, so scenarios switch to the Low preset and key() waits for game.fading to clear.
+
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- Scenarios: finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
+- Scenarios: build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
 ## Known issues

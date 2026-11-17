@@ -454,3 +454,100 @@
   flex-wrap: wrap;
   gap: 0.35em;
 }
+
+/* ---------- build mode ---------- */
+.overlay.build-ui {
+  display: block;
+  pointer-events: none !important;
+  animation: none;
+}
+.build-ui > * {
+  pointer-events: auto;
+  position: absolute;
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+  outline: 1px solid var(--line);
+  border-radius: 16px;
+}
+.build-top {
+  left: 16px;
+  right: 16px;
+  top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.5em 0.9em;
+}
+.build-top .seg {
+  width: 240px;
+}
+.build-title {
+  font-weight: 800;
+  font-size: 1.1em;
+}
+.build-side {
+  left: 16px;
+  top: 74px;
+  bottom: 74px;
+  width: min(330px, 30vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 0.6em;
+}
+.build-cats .chip {
+  font-size: 0.78em;
+  padding: 0.3em 0.65em;
+}
+.build-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  padding-right: 2px;
+}
+.build-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  text-align: left;
+  border: 0;
+  border-radius: 12px;
+  background: var(--card);
+  padding: 0.5em 0.7em;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background 0.12s;
+}
+.build-item:hover {
+  background: var(--card-hover);
+}
+.build-item.active {
+  outline: 2px solid var(--accent);
+  background: rgba(255, 179, 71, 0.14);
+}
+.build-name {
+  font-weight: 600;
+  font-size: 0.92em;
+}
+.build-price {
+  font-weight: 700;
+  color: var(--good);
+  white-space: nowrap;
+}
+.build-bar {
+  left: calc(min(330px, 30vw) + 32px);
+  right: 16px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.55em 0.9em;
+  min-height: 3em;
+}
+.chip.disabled,
+.swatch.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}

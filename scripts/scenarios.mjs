@@ -18,6 +18,8 @@ export async function startLife(page, wait) {
 
 /** Press a key and give the (slow, software-rendered) game loop time to see it. */
 export async function key(page, code, ms = 500) {
+  // never press keys while a fade-to-black is still running (they are ignored by design)
+  await page.waitForFunction(() => !window.__game.fading);
   await page.keyboard.down(code);
   await page.waitForTimeout(160);
   await page.keyboard.up(code);
@@ -25,6 +27,108 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Phase 8: build mode — place, rotate, move, store, undo; renovate an owned two-storey home. */
+  async build({ page, shot, wait }) {
+    await startLife(page, wait);
+    const toScreen = (x, z) =>
+      page.evaluate(
+        ([wx, wz]) => {
+          const g = window.__game;
+          const v = new g.build.point.constructor(wx, 0, wz).project(g.build.camera);
+          return [((v.x + 1) / 2) * innerWidth, ((1 - v.y) / 2) * innerHeight];
+        },
+        [x, z],
+      );
+    const clickAt = async (x, z) => {
+      const [sx, sy] = await toScreen(x, z);
+      await page.mouse.move(sx, sy);
+      await wait(250);
+      await page.mouse.down();
+      await page.mouse.up();
+      await wait(350);
+    };
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.money.checking = 30000;
+      g.enterPlace(g.homePlace());
+    });
+    await wait(1500);
+    await key(page, 'KeyB');
+    await wait(600);
+    await shot('p8-build');
+    await page.click('.chip:has-text("Sofas")');
+    await page.click('.build-item:has-text("Loveseat")');
+    await clickAt(2.5, 3.5);
+    await page.click('.chip:has-text("Plants")');
+    await page.click('.build-item:has-text("Fiddle")');
+    await clickAt(4.5, 4.4);
+    await page.click('.build-bar >> text=Cancel');
+    await page.click('.chip:has-text("Decor")');
+    await page.click('.build-item:has-text("Framed Print")');
+    await clickAt(2.5, 0.2);
+    await page.click('.build-bar >> text=Cancel');
+    await wait(300);
+    await shot('p8-furnished');
+    await page.click('.seg-btn:has-text("Renovate")');
+    await wait(200);
+    await shot('p8-renter');
+    await page.click('text=Done');
+    await wait(900);
+    const a = await page.evaluate(() => ({ style: window.__game.state.home.styleScore, items: window.__game.state.home.layout.items.length, cash: Math.round(window.__game.state.money.checking) }));
+    console.log('rented', JSON.stringify(a));
+    await shot('p8-after');
+    // own a two-storey home
+    await page.evaluate(() => {
+      const g = window.__game;
+      const st = g.state;
+      st.money.checking = 900000;
+      g.leaveInterior(true);
+      const ls = st.listings.find((l) => l.type === 'townhouse');
+      g.sim.re.buy(ls.id, { downPct: 1, years: 30, use: 'live' });
+    });
+    await wait(1800);
+    await page.evaluate(() => window.__game.enterPlace(window.__game.homePlace()));
+    await wait(1500);
+    await key(page, 'KeyB');
+    await wait(500);
+    await page.click('.seg-btn:has-text("Renovate")');
+    await page.click('text=Draw wall');
+    await clickAt(4, 0);
+    await clickAt(4, 5);
+    await page.mouse.click(640, 400, { button: 'right' });
+    await page.click('text=Doorway');
+    await clickAt(4, 2.5);
+    await page.click('.chip:has-text("Wood")').catch(() => {});
+    await page.click('.chip:has-text("Tile")').catch(() => {});
+    await page.locator('.swatch').nth(7).click();
+    await page.click('text=Panorama windows');
+    await wait(300);
+    await shot('p8-renovate');
+    await page.click('.seg-btn:has-text("Upstairs")');
+    await wait(400);
+    await page.click('.seg-btn:has-text("Storage")');
+    await wait(200);
+    await shot('p8-upstairs');
+    await page.keyboard.down('Control');
+    await page.keyboard.press('KeyZ');
+    await page.keyboard.up('Control');
+    await page.click('text=Done');
+    await wait(900);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.player.teleport(g.interior.lift.x, g.interior.lift.z - 0.6, 0);
+    });
+    await wait(400);
+    const label = await page.evaluate(() => window.__game.interactable && window.__game.interactable.label);
+    await key(page, 'KeyE');
+    await wait(900);
+    const b = await page.evaluate(() => {
+      const g = window.__game;
+      return { level: g.inside.level, walls: g.state.home.layout.walls.length, floor: g.state.home.layout.floor, windows: g.state.home.layout.windows, style: g.state.home.styleScore, stash: g.state.inventory.furniture };
+    });
+    console.log('owned', label, JSON.stringify(b));
+    await shot('p8-upstairs-play');
+  },
   /** Phase 7: Invest + News apps, Homes app (rent, buy with mortgage), loans in the Bank app. */
   async finance({ page, shot, wait }) {
     await startLife(page, wait);

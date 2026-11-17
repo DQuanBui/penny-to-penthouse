@@ -12,6 +12,8 @@ import { VIP_POPULARITY } from '../sim/Popularity.js';
 import { PROGRAM_BY_ID } from '../data/courses.js';
 import { LearnApp } from './Phone/Learn.js';
 import { HomesApp } from './Phone/Homes.js';
+import { FURNITURE, FURNITURE_CATS } from '../data/furniture.js';
+import { furnitureBlurb, furniturePrice } from '../build/BuildMode.js';
 import { fmtMoney } from '../core/utils.js';
 import { runActivity, openShift } from './Interact.js';
 
@@ -179,6 +181,25 @@ export const SERVICES = {
         LearnApp.tab = 'college';
         game.phone.open('learn');
       }),
+    );
+  },
+  furniture(game, place, body, refresh) {
+    const st = game.state;
+    const d = disc(game, place);
+    const stash = (st.inventory.furniture ||= {});
+    SERVICES._furnCat ||= 'bed';
+    body.append(
+      discNote(game, place),
+      h('div.muted', 'Bought pieces are delivered to your storage. Place them at home in build mode (press B inside).'),
+      h('div.chips', FURNITURE_CATS.map(([id, label, icon]) => h('button.chip' + (SERVICES._furnCat === id ? '.active' : ''), { onclick: () => ((SERVICES._furnCat = id), refresh()) }, `${icon} ${label}`))),
+      FURNITURE.filter((f) => f.cat === SERVICES._furnCat && !f.shop).map((f) =>
+        item('📦', `${f.name}${stash[f.id] ? ` (×${stash[f.id]} in storage)` : ''}`, furnitureBlurb(f), furniturePrice(game, f, d), () => {
+          if (!game.sim.finance.spend(furniturePrice(game, f, d), 'shopping', `Furniture — ${f.name}`)) return;
+          stash[f.id] = (stash[f.id] || 0) + 1;
+          game.audio?.play('cash');
+          refresh();
+        }),
+      ),
     );
   },
   realestate(game) {

@@ -37,6 +37,7 @@ import { computeObjective } from '../ui/Objectives.js';
 import { Crowd } from '../characters/Crowd.js';
 import { NPCManager } from '../characters/NPC.js';
 import { openTalk } from '../ui/Talk.js';
+import { BuildMode } from '../build/BuildMode.js';
 import { fmtMoney } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
@@ -74,6 +75,7 @@ export class Game {
     this.interior = new Interior();
     this.crowd = new Crowd(this.scene);
     this.npcs = new NPCManager(this);
+    this.build = new BuildMode(this);
     this.inside = null; // { place, home, layout } while in an interior
     this._focus = new THREE.Vector3();
     this._winColor = new THREE.Color();
@@ -136,6 +138,7 @@ export class Game {
     this.camera.aspect = w / hgt;
     this.camera.updateProjectionMatrix();
     this.creator?.onResize(w, hgt);
+    if (this.build?.active) this.build.resize();
   }
 
   /** Fade to black, run fn (may be async), fade back. */
@@ -256,7 +259,7 @@ export class Game {
         if (prop) prop.layout = layout;
       }
       this.interior.build(layout, { place, home, hasPc: hasComputer(st) });
-      this.inside = { place, home, layout };
+      this.inside = { place, home, layout, level: 0 };
       this.npcs.populateInterior(this.interior, place);
       this.interior.scene.add(this.playerRig.group);
       this.player.setWorld(this.interior.world);
@@ -271,6 +274,7 @@ export class Game {
       this.events.emit('entered', { place, home });
       if (home) this.hud.hint('home', 'This is your place. Walk up to furniture and press E: bed to sleep, fridge to eat, shower to wash.', 9);
       else if (PLACE_TYPES[place.type].service) this.hud.hint('counter', 'Walk up to the counter and press E to be served.', 7);
+      if (home) this.hud.hint('buildkey', 'Press B at home to furnish and decorate in build mode.', 8);
     });
   }
 
@@ -281,14 +285,26 @@ export class Game {
     const layout = home ? (this.state.home.layout ||= defaultHomeLayout(this.state.home.type)) : this.inside.layout;
     this.inside.layout = layout;
     this.npcs.clearIndoor();
-    this.interior.build(layout, { place, home, hasPc: hasComputer(this.state) });
+    this.interior.build(layout, { place, home, hasPc: hasComputer(this.state), level: this.inside.level || 0 });
     this.npcs.populateInterior(this.interior, place);
     this.player.setWorld(this.interior.world);
     this.cam.setWorld(this.interior.world);
   }
 
+  /** Two-storey homes: ride the lift pad to the other floor. */
+  switchFloor() {
+    this.fade(() => {
+      this.inside.level = this.inside.level ? 0 : 1;
+      this.refreshInterior();
+      const L = this.inside.layout;
+      this.player.teleport(L.w - 0.8, L.d - 2.0, Math.PI);
+      this.cam.snapBehind(Math.PI);
+    });
+  }
+
   leaveInterior(silent) {
     if (!this.inside) return;
+    if (this.build.active) this.build.exit();
     const place = this.inside.place;
     const out = () => {
       this.scene.add(this.playerRig.group);
@@ -501,6 +517,7 @@ export class Game {
       const pt = this.interior.nearest(p);
       if (!pt) return null;
       if (pt.exit) return { label: this.inside.home ? 'Leave home' : `Leave ${this.inside.place.name}`, action: () => this.leaveInterior() };
+      if (pt.lift) return { label: pt.label, action: () => this.switchFloor() };
       const label = pt.use === 'service' ? `${this.inside.place.label} counter` : pt.label;
       return { label, action: () => useFurniture(this, pt) };
     }
@@ -565,9 +582,21 @@ export class Game {
       if (input.pressed('KeyM') && (this.map.isOpen() || !this.overlays.length)) this.map.toggle();
       if (!blocked) {
         if (input.pressed('KeyT')) this.openWait();
+        if (input.pressed('KeyB')) {
+          if (this.inside?.home) this.build.enter();
+          else this.events.emit('toast', { icon: '🔨', title: 'Build mode', text: 'Go inside your home first, then press B.', kind: 'info' });
+        }
         if (input.pressed('KeyE') && this.interactable?.action) this.interactable.action();
         if (import.meta.env.DEV && input.pressed('BracketRight')) this.sim.advance(60, { noCollapse: true });
       }
+    }
+
+    // --- build mode owns the screen while it is open ---
+    if (this.build.active) {
+      this.build.update(dt, input);
+      this.interior.update(this.sky.night, this._winColor.copy(this.sky.top).lerp(this.sky.horizon, 0.55));
+      this.renderer.render(this.interior.scene, this.build.camera);
+      return;
     }
 
     // --- simulation clock ---
