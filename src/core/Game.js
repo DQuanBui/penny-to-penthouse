@@ -47,6 +47,8 @@ import { recordHallOfFame } from '../sim/Rankings.js';
 import { VehicleManager, loadVehicleModels } from '../world/Vehicles.js';
 import { Traffic } from '../world/Traffic.js';
 import { VEHICLE_BY_ID } from '../data/vehicles.js';
+import { PostFX } from './PostFX.js';
+import { AudioEngine } from '../audio/AudioEngine.js';
 import { fmtMoney } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
@@ -65,12 +67,17 @@ export class Game {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
 
+    this.postfx = new PostFX(this.renderer);
+    this.audio = new AudioEngine(this);
+
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(55, 1, 0.15, 3200);
     this.sky = new Sky(this.scene);
     this.input = new Input(this.canvas);
     this.player = new PlayerController();
     this.cam = new ThirdPersonCamera(this.camera);
+    this.player.onStep = () => this.audio.play(this.inside ? 'stepIn' : 'step');
+    if (import.meta.env.DEV) import('../ui/Debug.js').then((m) => m.installDebug(this));
 
     // Three real lights hop between the street lamps nearest the player.
     this.lampLights = [];
@@ -141,6 +148,7 @@ export class Game {
     const q = s.get('graphics');
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO[q] || 1));
     this.renderer.shadowMap.enabled = q !== 'low';
+    this.postfx.setQuality(q);
     this.sky.setQuality(q);
     if (this.city && this._crowdQ !== q) {
       this.crowd.setCity(this.city, q);
@@ -159,10 +167,16 @@ export class Game {
     const w = window.innerWidth;
     const hgt = window.innerHeight;
     this.renderer.setSize(w, hgt, false);
+    this.postfx.setSize(w, hgt, this.renderer.getPixelRatio());
     this.camera.aspect = w / hgt;
     this.camera.updateProjectionMatrix();
     this.creator?.onResize(w, hgt);
     if (this.build?.active) this.build.resize();
+  }
+
+  /** Draw a frame (through post-processing on Medium/High). */
+  draw(scene, camera) {
+    this.postfx.render(scene, camera);
   }
 
   /** Fade to black, run fn (may be async), fade back. */
@@ -630,13 +644,23 @@ export class Game {
     const input = this.input;
     if (this.mode === 'creator') {
       this.creator.update(dt);
-      this.renderer.render(this.creator.scene, this.creator.camera);
+      this.draw(this.creator.scene, this.creator.camera);
     } else if (this.mode === 'title' || this.mode === 'cityselect') {
       this.updateTitle(dt, elapsed);
     } else if (this.mode === 'play') {
       this.updatePlay(dt, elapsed);
     }
     if (this.settings.get('showFps')) this.fpsEl.textContent = Math.round(this.loop.fps) + ' FPS';
+    this._audio ||= {};
+    const a = this._audio;
+    a.active = this.mode === 'play';
+    a.outside = !this.inside;
+    a.night = this.sky.night;
+    a.weather = this.mode === 'play' ? this.weather.kind : 'clear';
+    a.cityCfg = this.city?.cfg;
+    a.driving = !!this.vehicles.driving;
+    a.musicOn = this.mode !== 'boot';
+    this.audio.update(dt, a);
     input.endFrame();
   }
 
@@ -650,7 +674,7 @@ export class Game {
     this.city.update(elapsed, this.sky.night);
     for (const l of this.lampLights) l.intensity = 0;
     this.traffic.update(dt, elapsed, 18, 0, 0, null, true, 1);
-    this.renderer.render(this.scene, this.camera);
+    this.draw(this.scene, this.camera);
   }
 
   updatePlay(dt, elapsed) {
@@ -661,7 +685,12 @@ export class Game {
 
     // --- keys ---
     if (input.pressed('Escape')) {
-      if (this.overlays.length) this.closeTop();
+      // in build mode Esc first drops whatever is being placed
+      if (this.build.active && (this.build.held || this.build.mode !== 'idle')) {
+        this.build.cancel();
+        this.build.mode = 'idle';
+        this.build.renderUi();
+      } else if (this.overlays.length) this.closeTop();
       else openPause(this);
     } else if (!this.fading) {
       if (input.pressed('Tab') || input.pressed('KeyP')) {
@@ -685,7 +714,7 @@ export class Game {
     if (this.build.active) {
       this.build.update(dt, input);
       this.interior.update(this.sky.night, this._winColor.copy(this.sky.top).lerp(this.sky.horizon, 0.55));
-      this.renderer.render(this.interior.scene, this.build.camera);
+      this.draw(this.interior.scene, this.build.camera);
       return;
     }
 
@@ -737,7 +766,7 @@ export class Game {
     this.hud.update(dt);
 
     this.autoQuality(dt);
-    this.renderer.render(inside ? this.interior.scene : this.scene, this.camera);
+    this.draw(inside ? this.interior.scene : this.scene, this.camera);
   }
 
   updateLampLights(dt) {
@@ -767,7 +796,7 @@ export class Game {
       }
       for (let k = 0; k < 3; k++) if (idx[k] >= 0) this.lampLights[k].position.set(lp[idx[k]], 5.6, lp[idx[k] + 1]);
     }
-    for (const l of this.lampLights) l.intensity = on ? night * 26 : 0;
+    for (const l of this.lampLights) l.intensity = on ? night * 36 : 0;
   }
 
   /** Drop one graphics preset if the frame rate stays low for several seconds. */

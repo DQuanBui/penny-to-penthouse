@@ -40,6 +40,39 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Phase 12: post-processing on Medium, audio engine running, dev debug panel. */
+  async polish({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.state.time.total = 19.2 * 60;
+      const lm = g.city.landmarks[0];
+      g.player.teleport(lm.x + 36, lm.z + 36, -2.3);
+      g.cam.snapBehind(-2.3);
+      g.cam.pitch = 0.05;
+    });
+    await wait(4000);
+    await shot('p12-sunset-fx');
+    await page.evaluate(() => (window.__game.state.time.total = 22.5 * 60));
+    await wait(4000);
+    await shot('p12-night-fx');
+    await page.keyboard.down('KeyW');
+    await wait(2500);
+    await page.keyboard.up('KeyW');
+    await page.keyboard.press('F1');
+    await wait(500);
+    await shot('p12-debug');
+    await page.click('.dbg >> text=+$50,000');
+    await page.click('.dbg >> text=Max skills');
+    await page.keyboard.press('F1');
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      return { audio: g.audio.ctx && g.audio.ctx.state, music: !!g.audio.music, fx: g.postfx.enabled, cash: g.state.money.checking, coding: g.state.skills.coding, calls: g.renderer.info.render.calls, tris: g.renderer.info.render.triangles };
+    });
+    console.log('info', JSON.stringify(info));
+  },
   /** Phase 11: buy a car at the dealer, drive it, park it, traffic on the roads. */
   async drive({ page, shot, wait }) {
     await startLife(page, wait);

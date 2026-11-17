@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 12 — src/audio (AudioEngine, Ambience, Music; game.audio.play hooks already exist), post-processing (bloom + vignette on Medium/High), scripts/sim.mjs balance run (npm run sim) + tuning in data/balance.js, F1 dev debug panel, performance + bug pass. Then Phase 13: README.md, ASSETS.md.
+RESUME HERE: Phase 13 — write README.md and ASSETS.md (deploy workflow already exists and is live), final push. After that: optional polish (see Known issues).
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
@@ -14,7 +14,7 @@ RESUME HERE: Phase 12 — src/audio (AudioEngine, Ambience, Music; game.audio.pl
 - [x] 9. City select + all 5 cities, weather, transit/fast travel, map
 - [x] 10. Rankings + AI rivals, goals, achievements, life events, tutorial
 - [x] 11. Vehicles: dealer, driving, parking, traffic
-- [ ] 12. Polish: audio, post-processing, UI animation, balance pass, performance, bugs
+- [x] 12. Polish: audio, post-processing, UI animation, balance pass, performance, bugs
 - [ ] 13. README, ASSETS.md, GitHub Pages workflow
 
 ## Decisions
@@ -58,9 +58,12 @@ RESUME HERE: Phase 12 — src/audio (AudioEngine, Ambience, Music; game.audio.pl
 
 - **Vehicles**: data/vehicles.js, sim/Garage.js (cash or auto loan, depreciation, upkeep billed monthly), world/Vehicles.js (F to enter/exit, arcade driving restricted to asphalt, auto-brake for pedestrians, kerb parking in the outer lanes, valet from the Homes app), world/Traffic.js (AI cars in the inner lanes, obey signals, yield to people and the player). Interactables may set key F.
 
+- **Phase 12**: src/audio (AudioEngine = synthesised SFX + optional files from public/audio, Ambience, Music = generative lo-fi from city.music). core/PostFX.js = bloom + vignette + OutputPass on Medium/High (Game.draw). ui/Debug.js = F1 panel, dynamically imported only in dev. scripts/sim.mjs = npm run sim [years] [city]: 7 bot strategies, 3 seeds each.
+- **Balance results (5 years, Austin)**: coaster ~$105K, saver ~$110K, trades+index ~$205K, tech climber ~$525K, finance+landlord ~$675K ($1.1M in NYC), entrepreneur ~$2M. Year 1 is near zero for anyone studying on loans. Raises are capped at 30% per level and reset on promotion.
+
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- Scenarios: drive (dealer, driving, parking, traffic), life (tutorial, events, Goals/Rankings/Calendar), cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
+- Scenarios: polish (post FX, audio, debug panel), drive (dealer, driving, parking, traffic), life (tutorial, events, Goals/Rankings/Calendar), cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
 ## Deployment
@@ -68,3 +71,6 @@ RESUME HERE: Phase 12 — src/audio (AudioEngine, Ambience, Music; game.audio.pl
 - .github/workflows/deploy.yml builds and deploys to GitHub Pages on every push to main, so only push commits whose smoke scenarios pass.
 
 ## Known issues
+- Procedural characters show a slightly jagged hem where shirt meets hips on some outfits (cosmetic).
+- Under headless software GL the heavy `cities` scenario can time out on a screenshot; rerun it.
+- Player cars are simple box meshes unless GLB files are supplied (see ASSETS.md).

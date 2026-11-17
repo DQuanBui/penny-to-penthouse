@@ -8,17 +8,17 @@ import { smoothstep, mulberry32 } from '../core/utils.js';
 
 // hour, sky top, horizon, sun colour, sun intensity, hemisphere intensity
 const KEYS = [
-  [0, '#050816', '#0e1328', '#8fa6ff', 0.55, 1.15],
-  [4.6, '#0a1030', '#1d2042', '#8fa6ff', 0.5, 1.15],
+  [0, '#050816', '#0e1328', '#8fa6ff', 0.7, 1.9],
+  [4.6, '#0a1030', '#1d2042', '#8fa6ff', 0.65, 1.9],
   [5.9, '#27407a', '#e8845a', '#ff9a66', 1.0, 1.5],
   [7.0, '#3d7fd6', '#ffd2a0', '#ffd9b0', 2.6, 2.1],
   [9.5, '#3a8ee6', '#c4e2f8', '#fff3de', 3.6, 2.6],
   [15.5, '#3a8ee6', '#c4e2f8', '#fff3de', 3.6, 2.6],
   [17.8, '#3c7fd4', '#ffd08a', '#ffd49a', 3.3, 2.4],
-  [19.2, '#2b4590', '#ff8a4f', '#ff9450', 2.2, 2.0],
-  [20.2, '#141c4a', '#a8506e', '#ff8060', 0.6, 1.5],
-  [21.4, '#070b20', '#151b38', '#8fa6ff', 0.55, 1.15],
-  [24, '#050816', '#0e1328', '#8fa6ff', 0.55, 1.15],
+  [19.2, '#2b4590', '#ff8a4f', '#ff9450', 2.2, 2.4],
+  [20.2, '#141c4a', '#a8506e', '#ff8060', 0.6, 2.1],
+  [21.4, '#070b20', '#151b38', '#8fa6ff', 0.7, 1.9],
+  [24, '#050816', '#0e1328', '#8fa6ff', 0.7, 1.9],
 ].map((k) => ({ h: k[0], top: new THREE.Color(k[1]), hor: new THREE.Color(k[2]), sun: new THREE.Color(k[3]), sunI: k[4], hemiI: k[5] }));
 
 export class Sky {
@@ -178,7 +178,7 @@ export class Sky {
 
     // Ambient never goes fully black: nights are a readable deep blue.
     this.hemi.color.copy(this.top).lerp(this.horizon, 0.45).lerp(this._tmp.set('#6a7cb8'), night * 0.85);
-    this.hemi.groundColor.copy(this.horizon).multiplyScalar(0.5).lerp(this._tmp.set('#2c3350'), night * 0.85);
+    this.hemi.groundColor.copy(this.horizon).multiplyScalar(0.5).lerp(this._tmp.set('#3a4468'), night * 0.85);
     this.hemi.intensity = hemiI;
 
     const fog = this.scene.fog;
