@@ -21,6 +21,16 @@ export function registerApps(phone, game) {
   phone.register(SocialApp);
   phone.register(NewsApp);
   phone.register({
+    id: 'map',
+    name: 'Map',
+    icon: '🗺️',
+    color: 'linear-gradient(135deg,#22c55e,#15803d)',
+    render(root, { phone: p }) {
+      p.close();
+      game.map.open();
+    },
+  });
+  phone.register({
     id: 'settings',
     name: 'Settings',
     icon: '⚙️',

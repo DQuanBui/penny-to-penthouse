@@ -1,10 +1,14 @@
 // NPC registry + helpers that turn the compact rows into full characters
 // (deterministic look per NPC) and answer "where is this person right now?".
 import newyork from './newyork.js';
+import losangeles from './losangeles.js';
+import chicago from './chicago.js';
+import miami from './miami.js';
+import austin from './austin.js';
 import { mulberry32, hashStr, pick } from '../../core/utils.js';
 import { randomAppearance } from '../../characters/Customization.js';
 
-const BY_CITY = { newyork };
+const BY_CITY = { newyork, losangeles, chicago, miami, austin };
 const cache = new Map();
 
 /** All named NPCs of a city (with generated appearance and age). */

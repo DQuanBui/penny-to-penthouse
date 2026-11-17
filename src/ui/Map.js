@@ -3,6 +3,8 @@
 // GPS line that follows the streets.
 import { h } from './dom.js';
 import { PLACE_TYPES } from '../data/placeTypes.js';
+import { taxiQuote, takeTaxi } from '../world/Transit.js';
+import { fmtMoney } from '../core/utils.js';
 
 const PX = 2; // pixels per metre in the static image
 
@@ -221,7 +223,7 @@ export class CityMap {
     const list = () => {
       side.replaceChildren(
         h('div.map-side-title', 'Places'),
-        h('div.muted.small', 'Click a place to set a GPS waypoint.'),
+        h('div.muted.small', 'Click a place to set a GPS waypoint, or take a taxi straight there. Transit stations are cheaper.'),
         ...city.districts.map((d) =>
           h(
             'div.map-group',
@@ -230,7 +232,7 @@ export class CityMap {
               .filter((p) => p.district === d && (p.type !== 'home' || (game.state && p.id === 'home_' + game.state.home.districtId)))
               .map((p) =>
                 h(
-                  'button.map-place' + (this.waypoint?.id === p.id ? '.active' : ''),
+                  'div.map-place' + (this.waypoint?.id === p.id ? '.active' : ''),
                   {
                     onclick: () => {
                       this.setWaypoint(this.waypoint?.id === p.id ? null : p);
@@ -240,7 +242,19 @@ export class CityMap {
                   },
                   h('span', p.icon),
                   h('span.grow', p.type === 'home' ? 'My Home' : p.name),
-                  h('span.muted.small', PLACE_TYPES[p.type].label),
+                  game.state
+                    ? h(
+                        'button.btn.small.taxi',
+                        {
+                          title: 'Take a taxi here',
+                          onclick: (e) => {
+                            e.stopPropagation();
+                            takeTaxi(game, p);
+                          },
+                        },
+                        `🚕 ${fmtMoney(taxiQuote(game, p).fare)}`,
+                      )
+                    : h('span.muted.small', PLACE_TYPES[p.type].label),
                 ),
               ),
           ),

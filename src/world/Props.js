@@ -70,9 +70,11 @@ export function buildProps(ctx) {
   const benches = new InstanceBatch(benchGeo, new THREE.MeshStandardMaterial({ color: '#7a5a3c', roughness: 0.8 }), { castShadow: true });
   ctx.benchSpots = [];
 
+  // snowy-winter cities get white lawns
+  const snowy = ctx.season === 'winter' && cfg.weather?.snowInWinter;
   const grass = new InstanceBatch(
     new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial({ map: Tex.grass(), roughness: 1 }),
+    snowy ? new THREE.MeshStandardMaterial({ color: '#eef2f6', roughness: 0.9 }) : new THREE.MeshStandardMaterial({ map: Tex.grass(), roughness: 1 }),
     { receiveShadow: true },
   );
   const paths = new InstanceBatch(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#cfc3a8', roughness: 1 }), {

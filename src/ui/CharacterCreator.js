@@ -24,13 +24,19 @@ export class CharacterCreator {
    * @param onDone(profile)  profile = { name, archetype, appearance, traits }
    * @param onBack           optional
    */
-  constructor(game, onDone, onBack) {
+  constructor(game, onDone, onBack, initial) {
     this.game = game;
     this.onDone = onDone;
     this.onBack = onBack;
     this.tab = 'background';
     this.profile = { name: C.randomName(), archetype: 'dreamer', appearance: C.defaultAppearance(), traits: [] };
     this.applyArchetype('dreamer', true);
+    if (initial) {
+      // coming back from city select: keep everything the player already chose
+      const arch = ARCHETYPE_BY_ID[initial.archetype];
+      this.profile = { name: initial.name, archetype: initial.archetype, appearance: { ...initial.appearance }, traits: initial.traits.filter((t) => t !== arch.trait).slice(0, 2) };
+      this.tab = 'traits';
+    }
     this.spin = 0.4;
     this.spinVel = 0;
     this.zoom = 0; // 0 = full body, 1 = face

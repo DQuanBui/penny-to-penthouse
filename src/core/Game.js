@@ -38,6 +38,9 @@ import { Crowd } from '../characters/Crowd.js';
 import { NPCManager } from '../characters/NPC.js';
 import { openTalk } from '../ui/Talk.js';
 import { BuildMode } from '../build/BuildMode.js';
+import { Weather } from '../world/Weather.js';
+import { openStation } from '../world/Transit.js';
+import { CitySelect } from '../ui/CitySelect.js';
 import { fmtMoney } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
@@ -76,6 +79,7 @@ export class Game {
     this.crowd = new Crowd(this.scene);
     this.npcs = new NPCManager(this);
     this.build = new BuildMode(this);
+    this.weather = new Weather(this.scene, this.sky);
     this.inside = null; // { place, home, layout } while in an interior
     this._focus = new THREE.Vector3();
     this._winColor = new THREE.Color();
@@ -197,6 +201,22 @@ export class Game {
     return this.city;
   }
 
+  /** Trees and lawns follow the calendar: rebuild the city when the season turns. */
+  checkSeason() {
+    const season = calendar(this.state.time.total).seasonId;
+    if (!this.city || this.city.season === season || this.overlays.length || this.fading) return;
+    const swap = () => {
+      this.loadCity(this.state.cityId, season);
+      if (!this.inside) {
+        const w = this.cityWorld();
+        this.player.setWorld(w);
+        this.cam.setWorld(w);
+      }
+    };
+    if (this.inside) swap();
+    else this.fade(swap).then(() => this.events.emit('toast', { icon: { spring: '🌸', summer: '☀️', fall: '🍂', winter: '❄️' }[season], title: `${season[0].toUpperCase() + season.slice(1)} has arrived`, text: 'A new season in the city.', kind: 'info' }));
+  }
+
   cityWorld() {
     return { colliders: this.city.colliders, groundY: this.city.groundY };
   }
@@ -231,7 +251,7 @@ export class Game {
   locationLabel() {
     if (this.inside) return this.inside.home ? `Home · ${this.inside.place.district.name}` : this.inside.place.name;
     const d = this.city.districtAt(this.player.pos.x, this.player.pos.z);
-    return `${d.name}, ${this.city.cfg.name}`;
+    return `${this.weather.info.icon} ${d.name}, ${this.city.cfg.name}`;
   }
 
   /** What the Social app can post about from where the player stands. */
@@ -326,7 +346,7 @@ export class Game {
   }
 
   useStation(place) {
-    this.events.emit('toast', { icon: place.icon, title: place.name, text: 'Service starts soon.', kind: 'info' });
+    openStation(this, place);
   }
 
   // ----------------------------------------------------------------- flow
@@ -351,6 +371,9 @@ export class Game {
     this.sim = null;
     this.title?.close();
     this.title = new TitleScreen(this);
+    this.sky.overcast = this.sky.fogBoost = 0;
+    this.sky.tint.set('#ffffff');
+    this.weather.rain.visible = this.weather.snow.visible = false;
     this.mode = 'title';
   }
 
@@ -365,23 +388,45 @@ export class Game {
     else openSlots(this, 'new', go);
   }
 
-  openCreator() {
+  openCreator(initial) {
     this.title?.close();
     this.title = null;
     this.closeAllOverlays();
     this.input.gameplay = false;
     this.creator = new CharacterCreator(
       this,
-      (profile) => this.fade(() => this.beginLife(profile, 'newyork')),
+      (profile) => this.fade(() => this.openCitySelect(profile)),
       () =>
         this.fade(() => {
           this.closeCreator();
           this.toTitle();
         }),
+      initial,
     );
     this.creator.onResize(window.innerWidth, window.innerHeight);
     this.mode = 'creator';
   }
+  /** After the creator: compare the five cities over a live skyline. */
+  openCitySelect(profile) {
+    this.closeCreator();
+    this.mode = 'cityselect';
+    this.citySelect = new CitySelect(
+      this,
+      (cityId) =>
+        this.fade(() => {
+          this.citySelect.close();
+          this.citySelect = null;
+          this.beginLife(profile, cityId);
+        }),
+      () =>
+        this.fade(() => {
+          this.citySelect.close();
+          this.citySelect = null;
+          this.openCreator(profile);
+        }),
+    );
+  }
+
   closeCreator() {
     this.creator?.close();
     this.creator = null;
@@ -543,7 +588,7 @@ export class Game {
     if (this.mode === 'creator') {
       this.creator.update(dt);
       this.renderer.render(this.creator.scene, this.creator.camera);
-    } else if (this.mode === 'title') {
+    } else if (this.mode === 'title' || this.mode === 'cityselect') {
       this.updateTitle(dt, elapsed);
     } else if (this.mode === 'play') {
       this.updatePlay(dt, elapsed);
@@ -617,6 +662,8 @@ export class Game {
       this.city.update(elapsed, this.sky.night);
       this.updateLampLights(dt);
     }
+    this.weather.update(dt, this.city.cfg, st.time.total, this.camera.position, !inside);
+    this.crowd.densityMul = this.weather.info.crowd;
     this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside);
     this.npcs.update(dt, this.player.pos, !!inside);
 
@@ -633,6 +680,7 @@ export class Game {
       this._objT = 0.5;
       const o = computeObjective(this);
       this.hud.setObjective(o[0], o[1]);
+      this.checkSeason();
     }
     this.hud.update(dt);
 

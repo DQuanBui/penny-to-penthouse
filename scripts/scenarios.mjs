@@ -1,7 +1,7 @@
 // Scripted scenarios for scripts/smoke.mjs. Each gets { page, shot, wait }.
 
 /** Fresh storage -> title -> New Life -> random character -> in the world. */
-export async function startLife(page, wait) {
+export async function startLife(page, wait, city = 'New York', shot = null) {
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForSelector('.title-menu');
@@ -10,6 +10,14 @@ export async function startLife(page, wait) {
   await page.click('text=🎲 Random');
   await page.click('.tab:nth-child(4)');
   await page.click('text=Start Life');
+  await page.waitForSelector('.city-panel');
+  await page.click('.city-card:has-text("' + city + '")');
+  await wait(400);
+  if (shot) {
+    await wait(1200);
+    await shot('p9-cityselect');
+  }
+  await page.click('text=Move to');
   await page.waitForFunction(() => window.__game.mode === 'play');
   // software GL is slow: use the Low preset so UI animations finish before screenshots
   await page.evaluate(() => window.__game.settings.set('graphics', 'low'));
@@ -27,6 +35,68 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Phase 9: city select, every city generates, weather, transit and taxi. */
+  async cities({ page, shot, wait }) {
+    for (const [name, id] of [['Los Angeles', 'la'], ['Chicago', 'chi'], ['Miami', 'mia'], ['Austin', 'aus']]) {
+      await startLife(page, wait, name, id === 'la' ? shot : null);
+      const info = await page.evaluate(() => {
+        const g = window.__game;
+        const lm = g.city.landmarks[0];
+        g.player.teleport(lm.x + 34, lm.z + 34, -2.3);
+        g.cam.snapBehind(-2.3);
+        g.cam.pitch = 0.12;
+        g.state.time.total = 12 * 60;
+        return { city: g.city.cfg.id, places: g.city.places.length, landmarks: g.city.landmarks.map((l) => l.name), npcs: g.npcs.list.length, rent: g.state.home.rent };
+      });
+      console.log(JSON.stringify(info));
+      await wait(1800);
+      await shot('p9-' + id);
+    }
+    // Chicago winter: find a snowy and a rainy block
+    await startLife(page, wait, 'Chicago');
+    const found = await page.evaluate(() => {
+      const g = window.__game;
+      const out = {};
+      for (let d = 84; d < 112 && !out.snow; d++) {
+        g.state.time.total = d * 1440 + 13 * 60;
+        g.weather.update(0, g.city.cfg, g.state.time.total, g.camera.position, true);
+        if (g.weather.kind === 'snow') out.snow = d;
+      }
+      return out;
+    });
+    console.log('snow day', JSON.stringify(found));
+    await wait(5000);
+    await shot('p9-snow');
+    await page.evaluate(() => {
+      const g = window.__game;
+      for (let d = 0; d < 60; d++) {
+        g.state.time.total = d * 1440 + 13 * 60;
+        g.weather.update(0, g.city.cfg, g.state.time.total, g.camera.position, true);
+        if (g.weather.kind === 'rain') break;
+      }
+    });
+    await wait(5000);
+    await shot('p9-rain');
+    // transit
+    await page.evaluate(() => {
+      const g = window.__game;
+      const s = g.city.places.find((p) => p.station);
+      g.placePlayerAt(s);
+    });
+    await wait(500);
+    await key(page, 'KeyE');
+    await shot('p9-station');
+    const before = await page.evaluate(() => window.__game.locationLabel());
+    await page.locator('.menu-col .btn').first().click();
+    await wait(1500);
+    const after = await page.evaluate(() => ({ at: window.__game.locationLabel(), cash: window.__game.state.money.checking }));
+    console.log('transit', before, '->', JSON.stringify(after));
+    await key(page, 'KeyM');
+    await shot('p9-map');
+    await page.locator('.btn.taxi').nth(3).click();
+    await wait(1500);
+    console.log('taxi ->', await page.evaluate(() => window.__game.locationLabel() + ' $' + window.__game.state.money.checking));
+  },
   /** Phase 8: build mode — place, rotate, move, store, undo; renovate an owned two-storey home. */
   async build({ page, shot, wait }) {
     await startLife(page, wait);
@@ -476,6 +546,8 @@ export const scenarios = {
     await wait(400);
     await shot('p2-traits');
     await page.click('text=Start Life');
+    await page.waitForSelector('.city-panel');
+    await page.click('text=Move to');
     await wait(1500);
     await shot('p2-inworld');
   },

@@ -193,7 +193,7 @@ export class Crowd {
     this.group.visible = visible;
     if (!visible) return;
     const n = this.n;
-    const want = Math.round(n * crowdDensity(hour));
+    const want = Math.round(n * crowdDensity(hour) * (this.densityMul ?? 1));
     const groundY = this.city.groundY;
 
     for (let i = 0; i < n; i++) {

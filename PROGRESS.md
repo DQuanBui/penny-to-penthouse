@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 9 — data/cities/{losangeles,chicago,miami,austin}.js + data/npcs for each (registerNpcs), ui/CitySelect.js comparison screen in the New Life flow, world/Weather.js (rain, Chicago winter snow, Miami heat haze), world/Transit.js (station fast travel with fare, taxi from the Map app), Map phone app.
+RESUME HERE: Phase 10 — sim/Rivals.js + Rankings.js (20 AI rivals per city, leaderboard behind a provider interface, Hall of Fame across slots), data/goals.js + sim/Goals.js (life goals picked in the creator), data/achievements.js + sim/Achievements.js, data/events.js + sim/LifeEvents.js (choices), ui/Tutorial.js (First Day), phone apps Rankings / Goals / Calendar.
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
@@ -11,7 +11,7 @@ RESUME HERE: Phase 9 — data/cities/{losangeles,chicago,miami,austin}.js + data
 - [x] 6. Education and skills; remaining careers; side hustles; businesses
 - [x] 7. Finance depth: credit, card, loans, Invest app + market sim, Homes app, property, mortgages, renting out
 - [x] 8. Build mode + furniture catalog + style score
-- [ ] 9. City select + all 5 cities, weather, transit/fast travel, map
+- [x] 9. City select + all 5 cities, weather, transit/fast travel, map
 - [ ] 10. Rankings + AI rivals, goals, achievements, life events, tutorial
 - [ ] 11. Vehicles: dealer, driving, parking, traffic
 - [ ] 12. Polish: audio, post-processing, UI animation, balance pass, performance, bugs
@@ -50,9 +50,13 @@ RESUME HERE: Phase 9 — data/cities/{losangeles,chicago,miami,austin}.js + data
 - **Build mode**: build/BuildMode.js (B inside your home, own overlay + top-down camera; Game.updatePlay hands the frame to it while active). Furniture snaps to 0.5 m (build/Grid.js canPlace), inner walls are 1 m unit segments (build/Walls.js; a doorway = a missing segment). Two-storey homes: layout.upper {walls, items}, a lift pad switches floors (stairs-free). Renters may furnish only. Undo/redo = JSON snapshots of layout + storage + cash. Style score = Grid.styleScore(layout), stored on state.home.styleScore (and the property).
 - **Smoke tests**: software GL is slow, so scenarios switch to the Low preset and key() waits for game.fading to clear.
 
+- **Cities**: 5 data files in data/cities (+32-36 residents each in data/npcs). New Life flow = creator -> ui/CitySelect.js (live skyline preview) -> beginLife. The city is regenerated when the season changes (Game.checkSeason): fall colours, bare trees and white lawns in snowy-winter cities.
+- **Weather**: world/Weather.js weatherAt(city,total) is deterministic per 6-hour block (clear/cloudy/rain/snow/haze); drives sky overcast + fog, particles and crowd density.
+- **Transit**: world/Transit.js. Stations (E) = fare + fast travel between districts; taxi buttons in the map list (pricier, door to door).
+
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- Scenarios: build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
+- Scenarios: cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
 ## Known issues
