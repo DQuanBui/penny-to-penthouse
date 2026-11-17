@@ -71,7 +71,7 @@ export class Loans {
     const loan = {
       id: 'L' + (st.flags.loanId = (st.flags.loanId || 0) + 1),
       kind, label: label || LOAN_META[kind].name, icon: LOAN_META[kind].icon,
-      principal: amount, balance: amount, apr: opts.apr ?? q.apr, payment: Math.round(q.payment * 100) / 100, monthsLeft: q.months, propertyId: opts.propertyId || null,
+      principal: amount, balance: amount, apr: opts.apr ?? q.apr, payment: Math.round(q.payment * 100) / 100, monthsLeft: q.months, propertyId: opts.propertyId || null, vehicleId: opts.vehicleId || null,
     };
     st.loans.push(loan);
     if (opts.cash) this.sim.finance.earn(amount, 'other_in', `${loan.label} funds`);

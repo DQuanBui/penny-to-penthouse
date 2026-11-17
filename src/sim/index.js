@@ -13,6 +13,7 @@ import { Rivals } from './Rivals.js';
 import { Rankings } from './Rankings.js';
 import { Goals, Achievements } from './Goals.js';
 import { LifeEvents } from './LifeEvents.js';
+import { Garage } from './Garage.js';
 
 export function installSystems(sim) {
   sim.jobs = sim.use(new Jobs(sim));
@@ -27,6 +28,7 @@ export function installSystems(sim) {
   sim.re = sim.use(new RealEstate(sim));
   sim.re.refreshListings();
   sim.loans.applyStartingDebt();
+  sim.garage = sim.use(new Garage(sim));
   sim.rivals = sim.use(new Rivals(sim));
   sim.rivals.init();
   sim.rankings = new Rankings(sim);

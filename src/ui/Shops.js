@@ -14,6 +14,7 @@ import { LearnApp } from './Phone/Learn.js';
 import { HomesApp } from './Phone/Homes.js';
 import { FURNITURE, FURNITURE_CATS } from '../data/furniture.js';
 import { furnitureBlurb, furniturePrice } from '../build/BuildMode.js';
+import { VEHICLES, VEHICLE_BY_ID, CAR } from '../data/vehicles.js';
 import { fmtMoney } from '../core/utils.js';
 import { runActivity, openShift } from './Interact.js';
 
@@ -200,6 +201,46 @@ export const SERVICES = {
           refresh();
         }),
       ),
+    );
+  },
+  dealer(game, place, body, refresh) {
+    const st = game.state;
+    const garage = game.sim.garage;
+    SERVICES._carColor ||= {};
+    body.append(
+      discNote(game, place),
+      h('div.muted', 'A car makes the whole city five minutes away and unlocks rideshare shifts. Remember the monthly insurance and fuel.'),
+      st.vehicles.length
+        ? h(
+            'div.sec',
+            h('div.sec-title', 'Your cars'),
+            st.vehicles.map((v) =>
+              item(VEHICLE_BY_ID[v.model].icon, VEHICLE_BY_ID[v.model].name, `Worth ${fmtMoney(v.value)} · upkeep ${fmtMoney(garage.upkeep(v))}/mo`, garage.sellValue(v), () => {
+                const got = garage.sell(v.id);
+                game.events.emit('toast', { icon: '🏷️', title: 'Car sold', text: `${fmtMoney(got)} after paying off any loan.`, kind: 'info' });
+                refresh();
+              }, { label: `Sell ${fmtMoney(garage.sellValue(v))}` }),
+            ),
+          )
+        : null,
+      h('div.sec-title', 'Showroom'),
+      VEHICLES.map((d) => {
+        const color = SERVICES._carColor[d.id] || d.colors[0];
+        const q = garage.quote(d.id, CAR.minDown);
+        const buy = (pay) => {
+          const r = garage.buy(d.id, color, pay);
+          if (!r.ok) return game.events.emit('toast', { icon: '🚗', title: 'Could not buy', text: r.reason, kind: 'bad', long: true });
+          game.audio?.play('cash');
+          game.closeTop();
+        };
+        return h(
+          'div.card.job',
+          h('div.row.between', h('b', `${d.icon} ${d.name}`), h('b', fmtMoney(q.price))),
+          h('div.muted.small', `${d.desc} Top speed ${Math.round(d.top * 2.237)} mph · upkeep ${fmtMoney(Math.round(d.upkeep * (game.sim.city.priceIndex || 1)))}/mo · style ${d.style}`),
+          h('div.row', h('div.swatches.grow', d.colors.map((c) => h('button.swatch' + (c === color ? '.active' : ''), { style: { background: c }, onclick: () => ((SERVICES._carColor[d.id] = c), refresh()) }))), btn(`Finance · ${fmtMoney(q.down)} down + ${fmtMoney(q.payment)}/mo`, () => buy('loan'), 'small' + (q.approved && st.money.checking >= q.down ? '' : ' disabled')), btn('Buy', () => buy('cash'), 'small primary' + (st.money.checking >= q.price ? '' : ' disabled'))),
+          q.approved ? null : h('div.bad.small', `Financing: ${q.reason}`),
+        );
+      }),
     );
   },
   realestate(game) {

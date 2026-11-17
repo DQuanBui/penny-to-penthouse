@@ -44,6 +44,9 @@ import { CitySelect } from '../ui/CitySelect.js';
 import { Tutorial } from '../ui/Tutorial.js';
 import { openLifeEvent } from '../ui/EventDialog.js';
 import { recordHallOfFame } from '../sim/Rankings.js';
+import { VehicleManager, loadVehicleModels } from '../world/Vehicles.js';
+import { Traffic } from '../world/Traffic.js';
+import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { fmtMoney } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
@@ -83,6 +86,10 @@ export class Game {
     this.npcs = new NPCManager(this);
     this.build = new BuildMode(this);
     this.weather = new Weather(this.scene, this.sky);
+    this.vehicles = new VehicleManager(this);
+    this.traffic = new Traffic(this.scene);
+    this.events.on('carBought', () => this.vehicles.sync());
+    this.events.on('carSold', () => this.vehicles.sync());
     this.tutorial = new Tutorial(this);
     // HUD objective sources (see ui/Objectives.js)
     this.objectiveOverride = () => this.tutorial.objective();
@@ -135,7 +142,10 @@ export class Game {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO[q] || 1));
     this.renderer.shadowMap.enabled = q !== 'low';
     this.sky.setQuality(q);
-    if (this.city && this._crowdQ !== q) this.crowd.setCity(this.city, q);
+    if (this.city && this._crowdQ !== q) {
+      this.crowd.setCity(this.city, q);
+      this.traffic.setCity(this.city, q);
+    }
     this._crowdQ = q;
     this.cam.sensitivity = s.get('sensitivity');
     this.cam.invertY = s.get('invertY');
@@ -208,6 +218,9 @@ export class Game {
     this.map.setCity(this.city);
     this.crowd.setCity(this.city, this.quality);
     this.npcs.setCity(this.city);
+    this.traffic.setCity(this.city, this.quality);
+    this.vehicles.clear();
+    if (this.state) this.vehicles.sync();
     return this.city;
   }
 
@@ -364,7 +377,7 @@ export class Game {
   // ----------------------------------------------------------------- flow
   async start() {
     this.loop.start();
-    await Promise.all([loadGLBCharacters(), loadFurnitureModels()]); // optional models; resolve immediately when none exist
+    await Promise.all([loadGLBCharacters(), loadFurnitureModels(), loadVehicleModels()]); // optional models; resolve immediately when none exist
     const latest = latestSlot();
     const st = latest ? loadSlot(latest) : null;
     this.loadCity(st?.cityId || 'newyork', 'summer');
@@ -378,6 +391,8 @@ export class Game {
     this.input.gameplay = false;
     if (this.playerRig) this.playerRig.group.visible = false;
     this.npcs.clearOutdoor();
+    this.vehicles.exit(true);
+    this.vehicles.clear();
     this.crowd.group.visible = false;
     this.state = null;
     this.sim = null;
@@ -486,6 +501,8 @@ export class Game {
     this.loadCity(state.cityId, season);
     this.sim = new Sim(state, this.events, this.city.cfg);
     installSystems(this.sim);
+    this.vehicles.clear();
+    this.vehicles.sync();
     this.npcs.clearOutdoor();
     this.crowd.group.visible = true;
     this.setPlayerLook(state.profile.appearance);
@@ -507,6 +524,8 @@ export class Game {
   saveNow(quiet) {
     if (!this.state || this.mode !== 'play') return;
     const p = this.player.pos;
+    const dr = this.vehicles.driving;
+    if (dr) dr.v.pos = { x: dr.group.position.x, z: dr.group.position.z, ry: dr.group.rotation.y };
     // inside a building the save point is the pavement outside its door
     this.state.pos = this.inside ? { x: this.inside.place.x, z: this.inside.place.z, heading: Math.atan2(this.inside.place.nx, this.inside.place.nz) } : { x: p.x, z: p.z, heading: this.player.heading };
     const ok = saveSlot(this.slot, this.state, this.saveMeta());
@@ -525,6 +544,7 @@ export class Game {
           : 'You collapsed from exhaustion and woke up in the ER.';
     this.fade(() => {
       this.closeAllOverlays();
+      this.vehicles.exit(true);
       this.leaveInterior?.(true);
       const hosp = this.city.placeById.hospital || this.homePlace();
       this.placePlayerAt(hosp);
@@ -574,6 +594,11 @@ export class Game {
   /** Nearest thing the player can use right now: { label, action } or null. */
   findInteractable() {
     const p = this.player.pos;
+    if (this.vehicles.driving) return { label: `Get out · ${this.vehicles.mph()} mph`, key: 'F', action: () => this.vehicles.exit() };
+    if (!this.inside) {
+      const car = this.vehicles.nearest(p);
+      if (car) return { label: `Drive your ${VEHICLE_BY_ID[car.v.model].name}`, key: 'F', action: () => this.vehicles.enter(car) };
+    }
     const actor = this.npcs.nearest(p, !!this.inside);
     if (actor) return { label: `Talk to ${actor.npc.first}`, action: () => openTalk(this, actor.npc, actor) };
     if (this.inside) {
@@ -624,6 +649,7 @@ export class Game {
     this.sky.update(this.titleTime, dt, focus);
     this.city.update(elapsed, this.sky.night);
     for (const l of this.lampLights) l.intensity = 0;
+    this.traffic.update(dt, elapsed, 18, 0, 0, null, true, 1);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -649,7 +675,8 @@ export class Game {
           if (this.inside?.home) this.build.enter();
           else this.events.emit('toast', { icon: '🔨', title: 'Build mode', text: 'Go inside your home first, then press B.', kind: 'info' });
         }
-        if (input.pressed('KeyE') && this.interactable?.action) this.interactable.action();
+        if (input.pressed('KeyE') && this.interactable?.action && this.interactable.key !== 'F') this.interactable.action();
+        if (input.pressed('KeyF') && this.interactable?.key === 'F') this.interactable.action();
         if (import.meta.env.DEV && input.pressed('BracketRight')) this.sim.advance(60, { noCollapse: true });
       }
     }
@@ -669,8 +696,9 @@ export class Game {
     }
 
     // --- world ---
-    this.player.frozen = blocked;
-    this.player.update(dt, blocked ? null : input, this.cam.yaw);
+    const driving = this.vehicles.update(dt, blocked ? null : input);
+    this.player.frozen = blocked || driving;
+    if (!driving) this.player.update(dt, blocked ? null : input, this.cam.yaw);
     this.cam.update(dt, blocked ? null : input, this.player.pos);
     worldUniforms.uTime.value = elapsed;
     const inside = this.inside;
@@ -684,6 +712,7 @@ export class Game {
     this.crowd.densityMul = this.weather.info.crowd;
     this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside);
     this.npcs.update(dt, this.player.pos, !!inside);
+    this.traffic.update(dt, elapsed, hourOf(st.time.total), this.player.pos.x, this.player.pos.z, this.crowd, !inside, this.weather.info.crowd);
 
     this.tutorial.update();
 
@@ -692,7 +721,7 @@ export class Game {
     if (this._interactT <= 0) {
       this._interactT = 0.12;
       this.interactable = blocked ? null : this.findInteractable();
-      this.hud.setPrompt(this.interactable ? this.interactable.label : null, this.interactable?.action ? 'E' : '✕');
+      this.hud.setPrompt(this.interactable ? this.interactable.label : null, this.interactable?.action ? this.interactable.key || 'E' : '✕');
       if (this.interactable) this.hud.hint('interact', 'Press E to use doors, shops, people and furniture.');
     }
     this._objT = (this._objT || 0) - dt;

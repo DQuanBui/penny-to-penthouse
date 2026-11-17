@@ -23,6 +23,7 @@ export function taxiQuote(game, place) {
 function travel(game, place, minutes) {
   return game.fade(() => {
     game.closeAllOverlays();
+    game.vehicles?.exit(true);
     if (game.inside) game.leaveInterior(true);
     game.sim.advance(minutes, { rates: { energy: 1 } });
     game.placePlayerAt(place);

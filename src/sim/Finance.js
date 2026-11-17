@@ -4,6 +4,7 @@ import { calendar, dayOf } from '../core/Clock.js';
 import { HOME_BY_ID, rentFor } from '../data/homes.js';
 import { fmtMoney } from '../core/utils.js';
 import { creditEvent } from './Credit.js';
+import { VEHICLE_BY_ID } from '../data/vehicles.js';
 
 export const CATEGORIES = {
   // income
@@ -230,6 +231,7 @@ export class Finance {
     const insured = st.job && st.job.level >= 2;
     if (!insured) out.push({ label: 'Health insurance', amount: Math.round(B.healthInsurance * pi), cat: 'insurance', when: 'mid' });
     if (!home.owned && home.type !== 'couch') out.push({ label: "Renter's insurance", amount: B.rentersInsurance, cat: 'insurance', when: 'mid' });
+    for (const v of st.vehicles) out.push({ label: `Car insurance & fuel — ${VEHICLE_BY_ID[v.model]?.name || 'car'}`, amount: Math.round((VEHICLE_BY_ID[v.model]?.upkeep || 150) * pi), cat: 'transit', when: 'mid' });
     for (const e of st.bills.extras) out.push({ label: e.label, amount: e.amount, cat: e.cat || 'other', when: 'first', extra: e });
     for (const s of st.bills.subscriptions) out.push({ label: s.label, amount: s.amount, cat: s.cat || 'phone', when: 'mid' });
     return out;

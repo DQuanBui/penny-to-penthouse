@@ -4,6 +4,7 @@ import { BALANCE } from '../data/balance.js';
 import { clamp, lerp, fmtNum } from '../core/utils.js';
 import { mod, skillLevel } from './Player.js';
 import { relLevel } from './Relationships.js';
+import { VEHICLE_BY_ID } from '../data/vehicles.js';
 
 const S = BALANCE.social;
 
@@ -38,7 +39,10 @@ export class Social {
       if (l >= 3) best++;
     }
     const p = 11 * Math.log10(1 + st.social.followers) + friends * 2.2 + best * 2 + (st.profile.outfitStyle ?? 2) * 0.8 + (st.home.styleScore || 0) * 0.1 + Math.min(10, st.social.parties * 0.7);
-    st.social.popularity = clamp(p, 0, 100);
+    // a head-turning car helps too
+    let ride = 0;
+    for (const v of st.vehicles) ride = Math.max(ride, VEHICLE_BY_ID[v.model]?.style || 0);
+    st.social.popularity = clamp(p + ride * 0.5, 0, 100);
     return st.social.popularity;
   }
 

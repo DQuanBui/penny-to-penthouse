@@ -3,6 +3,7 @@
 import { h, btn } from '../dom.js';
 import { confirmBox } from '../Menus.js';
 import { HOME_BY_ID } from '../../data/homes.js';
+import { VEHICLE_BY_ID, CAR } from '../../data/vehicles.js';
 import { fmtMoney } from '../../core/utils.js';
 import { section, row, tabs, kv, empty } from './widgets.js';
 
@@ -51,6 +52,25 @@ export const HomesApp = {
         kv('Style score', String(Math.round(hm.styleScore || 0))),
         hm.roommate ? kv('Roommate', sim.rel.npc(hm.roommate)?.name || '—') : null,
         btn('📍 GPS home', () => (game.map.setWaypoint(place), phone.close()), 'small'),
+        state.vehicles.length
+          ? section(
+              'Garage',
+              state.vehicles.map((v) =>
+                row({
+                  icon: VEHICLE_BY_ID[v.model].icon,
+                  title: VEHICLE_BY_ID[v.model].name,
+                  sub: `Worth ${fmtMoney(v.value)} · ${fmtMoney(sim.garage.upkeep(v))}/mo upkeep`,
+                  right: btn(`Valet ${fmtMoney(CAR.valetFee)}`, () => {
+                    if (game.inside || game.vehicles.driving) return game.events.emit('toast', { icon: '🚗', title: 'Valet', text: 'Step outside first.', kind: 'info' });
+                    if (!sim.finance.spend(CAR.valetFee, 'transit', 'Car valet')) return;
+                    game.vehicles.valet(v.id);
+                    phone.close();
+                    game.events.emit('toast', { icon: '🚗', title: 'Your car is here', text: 'Parked at the nearest kerb. Press F next to it.', kind: 'good' });
+                  }, 'small'),
+                }),
+              ),
+            )
+          : null,
         h('div.tip', hm.owned ? '💡 Press B inside to build: walls, floors, paint and furniture. Style raises mood, popularity and resale value.' : '💡 Renters can place furniture (B inside your home) but not move walls. Buying builds equity instead of paying a landlord.'),
       );
     } else if (this.tab === 'rent') {

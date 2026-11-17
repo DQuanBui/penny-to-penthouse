@@ -40,6 +40,74 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Phase 11: buy a car at the dealer, drive it, park it, traffic on the roads. */
+  async drive({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.money.checking = 60000;
+      g.state.time.total = 9 * 60;
+      g.enterPlace(g.city.placeById.dealer);
+    });
+    await wait(1600);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.npcs.clearIndoor();
+      const pt = g.interior.points.find((p) => p.use === 'service');
+      g.player.teleport(pt.x, pt.z, Math.PI);
+    });
+    await wait(400);
+    await key(page, 'KeyE');
+    await shot('p11-dealer');
+    await page.locator('.card.job').nth(1).locator('.btn.primary').click();
+    await wait(400);
+    await page.evaluate(() => window.__game.leaveInterior());
+    await wait(1500);
+    const car = await page.evaluate(() => {
+      const g = window.__game;
+      const c = [...g.vehicles.cars.values()][0];
+      const p = c.group.position;
+      g.player.teleport(p.x + 2.4, p.z, 0);
+      g.cam.snapBehind(c.group.rotation.y + 0.5);
+      return { cars: g.state.vehicles.length, cash: g.state.money.checking, pos: [Math.round(p.x), Math.round(p.z)], traffic: g.traffic.alive.reduce((a, b) => a + b, 0) };
+    });
+    console.log('bought', JSON.stringify(car));
+    await wait(700);
+    await shot('p11-car');
+    await key(page, 'KeyF');
+    await page.keyboard.down('KeyW');
+    await wait(3500);
+    await shot('p11-driving');
+    await page.keyboard.down('KeyA');
+    await wait(900);
+    await page.keyboard.up('KeyA');
+    await wait(1200);
+    await page.keyboard.up('KeyW');
+    await page.keyboard.down('KeyS');
+    await wait(2500);
+    await page.keyboard.up('KeyS');
+    const d = await page.evaluate(() => {
+      const g = window.__game;
+      const c = g.vehicles.driving;
+      return c ? { speed: +c.speed.toFixed(1), pos: [Math.round(c.group.position.x), Math.round(c.group.position.z)], onRoad: g.vehicles.onRoad(c.group.position.x, c.group.position.z) } : null;
+    });
+    console.log('driving', JSON.stringify(d));
+    await page.evaluate(() => window.__game.vehicles.driving && (window.__game.vehicles.driving.speed = 0));
+    await key(page, 'KeyF');
+    const e = await page.evaluate(() => {
+      const g = window.__game;
+      const v = g.state.vehicles[0];
+      return { driving: !!g.vehicles.driving, parked: v.pos && [Math.round(v.pos.x), Math.round(v.pos.z)], playerOnKerb: g.city.groundY(g.player.pos.x, g.player.pos.z) > 0, bills: g.sim.finance.monthlyBills().map((b) => b.label.split(' — ')[0]) };
+    });
+    console.log('parked', JSON.stringify(e));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.time.total = 21 * 60;
+      g.cam.pitch = 0.25;
+    });
+    await wait(2500);
+    await shot('p11-night-traffic');
+  },
   /** Phase 10: tutorial, life events, Goals / Rankings / Calendar apps, achievements. */
   async life({ page, shot, wait }) {
     await startLife(page, wait, 'Austin', null, { tutorial: true });
