@@ -10,6 +10,7 @@ import { npcsOf, npcWhere } from '../data/npcs/index.js';
 import { relLevel, REL_ICONS } from '../sim/Relationships.js';
 import { hourOf } from '../core/Clock.js';
 import { mulberry32, hashStr, dampAngle } from '../core/utils.js';
+import { glbNpcModels } from './GLBCharacters.js';
 
 const SHOW_DIST = 75;
 const MAX_OUT = 10;
@@ -59,7 +60,10 @@ export class NPCManager {
   }
 
   makeActor(npc, look) {
-    const rig = createRig(look || npc.look);
+    // optional GLB models (public/models/characters, not named player*) dress the NPCs
+    const models = glbNpcModels();
+    const base = look || npc.look;
+    const rig = createRig(models.length ? { ...base, model: models[hashStr(npc ? npc.id : JSON.stringify(base).slice(0, 40)) % models.length] } : base);
     const actor = { npc, rig, sit: false, talking: false, heading: 0, baseHeading: 0, tagLevel: -2 };
     this.refreshTag(actor);
     return actor;

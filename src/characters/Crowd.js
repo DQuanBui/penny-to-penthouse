@@ -5,7 +5,8 @@
 // All state lives in typed arrays — no per-frame allocations.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { buildCharacter } from './CharacterFactory.js';
+import { createRig } from './CharacterFactory.js';
+import { glbNpcModels } from './GLBCharacters.js';
 import { randomAppearance, CLOTH_COLORS } from './Customization.js';
 import { animateRig } from './Animation.js';
 import { mulberry32 } from '../core/utils.js';
@@ -100,7 +101,9 @@ export class Crowd {
     this.inst.instanceColor.needsUpdate = true;
     this.group.add(this.inst);
     for (let k = 0; k < r; k++) {
-      const rig = buildCharacter(randomAppearance(this.rng));
+      const models = glbNpcModels();
+      const look = randomAppearance(this.rng);
+      const rig = createRig(models.length ? { ...look, model: models[k % models.length] } : look);
       rig.group.visible = false;
       rig.agent = -1;
       this.group.add(rig.group);

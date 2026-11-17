@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 13 — write README.md and ASSETS.md (deploy workflow already exists and is live), final push. After that: optional polish (see Known issues).
+RESUME HERE: All 13 phases are complete and deployed. Next ideas: more per-city flavour (district-specific events), richer car and character meshes, an online leaderboard provider (sim/Rankings.js interface), mobile/touch controls.
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
@@ -15,7 +15,7 @@ RESUME HERE: Phase 13 — write README.md and ASSETS.md (deploy workflow already
 - [x] 10. Rankings + AI rivals, goals, achievements, life events, tutorial
 - [x] 11. Vehicles: dealer, driving, parking, traffic
 - [x] 12. Polish: audio, post-processing, UI animation, balance pass, performance, bugs
-- [ ] 13. README, ASSETS.md, GitHub Pages workflow
+- [x] 13. README, ASSETS.md, GitHub Pages workflow
 
 ## Decisions
 - **Stack**: Vite 8 + three r187, vanilla ES modules. `playwright-core` (dev only) drives installed Edge for `npm run smoke` (headless console-error check + screenshots in scripts/shots/).
