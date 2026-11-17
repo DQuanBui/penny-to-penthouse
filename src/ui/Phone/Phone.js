@@ -58,6 +58,7 @@ export class Phone {
         },
       });
       this.game.audio?.play('swoosh');
+      this.game.events.emit('phoneOpened', {});
     }
     this.statusTime.textContent = fmtClock(this.game.state.time.total);
     if (appId && this.app(appId)) this.go(appId);

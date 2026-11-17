@@ -1,15 +1,15 @@
 // Scripted scenarios for scripts/smoke.mjs. Each gets { page, shot, wait }.
 
 /** Fresh storage -> title -> New Life -> random character -> in the world. */
-export async function startLife(page, wait, city = 'New York', shot = null) {
+export async function startLife(page, wait, city = 'New York', shot = null, opts = {}) {
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForSelector('.title-menu');
   await page.click('text=New Life');
   await page.waitForSelector('.creator-panel');
   await page.click('text=🎲 Random');
-  await page.click('.tab:nth-child(4)');
-  await page.click('text=Start Life');
+  await page.click('.tab:nth-child(5)');
+  await page.click('text=Choose a city');
   await page.waitForSelector('.city-panel');
   await page.click('.city-card:has-text("' + city + '")');
   await wait(400);
@@ -19,6 +19,11 @@ export async function startLife(page, wait, city = 'New York', shot = null) {
   }
   await page.click('text=Move to');
   await page.waitForFunction(() => window.__game.mode === 'play');
+  if (!opts.tutorial) {
+    // skip the First Day offer and start outdoors, as the older scenarios expect
+    await page.click('text=Skip — I will figure it out');
+    await page.evaluate(() => window.__game.leaveInterior(true));
+  }
   // software GL is slow: use the Low preset so UI animations finish before screenshots
   await page.evaluate(() => window.__game.settings.set('graphics', 'low'));
   await wait(600);
@@ -35,6 +40,64 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Phase 10: tutorial, life events, Goals / Rankings / Calendar apps, achievements. */
+  async life({ page, shot, wait }) {
+    await startLife(page, wait, 'Austin', null, { tutorial: true });
+    await wait(600);
+    await shot('p10-tutorial-offer');
+    await page.click('text=Start "First Day"');
+    await wait(500);
+    const s0 = await page.evaluate(() => ({ inside: !!window.__game.inside, step: window.__game.state.flags.tutorial.step, obj: window.__game.tutorial.objective() }));
+    console.log('start', JSON.stringify(s0));
+    await page.keyboard.down('KeyW');
+    await wait(2500);
+    await page.keyboard.up('KeyW');
+    await page.keyboard.down('KeyS');
+    await wait(2500);
+    await page.keyboard.up('KeyS');
+    await wait(600);
+    await shot('p10-step-phone');
+    await key(page, 'Tab');
+    await page.click('.app-icon:has-text("Goals")');
+    await wait(300);
+    await shot('p10-goals');
+    await page.click('.seg-btn:has-text("Achievements")');
+    await wait(200);
+    await page.click('.app-back');
+    await page.click('.app-icon:has-text("Rankings")');
+    await wait(300);
+    await shot('p10-rankings');
+    await page.click('.seg-btn:has-text("National")');
+    await page.click('.chip:has-text("Popularity")');
+    await page.click('.seg-btn:has-text("Hall of Fame")');
+    await wait(200);
+    await page.click('.app-back');
+    await page.click('.app-icon:has-text("Calendar")');
+    await wait(300);
+    await shot('p10-calendar');
+    await key(page, 'Escape');
+    const s1 = await page.evaluate(() => {
+      const g = window.__game;
+      const out = { step: g.state.flags.tutorial.step, waypoint: g.map.waypoint && g.map.waypoint.label };
+      g.sim.events.trigger('inheritance');
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 11 * 60;
+      return out;
+    });
+    console.log('after phone', JSON.stringify(s1));
+    await page.waitForSelector('.event-text', { timeout: 15000 });
+    await wait(400);
+    await shot('p10-event');
+    await page.locator('.btn.answer').nth(1).click();
+    await wait(300);
+    await shot('p10-event-result');
+    await page.click('text=Continue');
+    const s2 = await page.evaluate(() => {
+      const g = window.__game;
+      g.sim.advance(1440 * 30, { noDecay: true, noCollapse: true });
+      return { holdings: Object.keys(g.state.portfolio.holdings), ach: Object.keys(g.state.achievements), events: g.state.stats.eventsSeen, pending: g.state.events.pending && g.state.events.pending.id, rank: g.sim.rankings.rank('netWorth', 'city') };
+    });
+    console.log('month later', JSON.stringify(s2));
+  },
   /** Phase 9: city select, every city generates, weather, transit and taxi. */
   async cities({ page, shot, wait }) {
     for (const [name, id] of [['Los Angeles', 'la'], ['Chicago', 'chi'], ['Miami', 'mia'], ['Austin', 'aus']]) {
@@ -420,7 +483,7 @@ export const scenarios = {
     await page.evaluate(() => window.__game.leaveInterior());
     await wait(1200);
     await key(page, 'Tab');
-    await page.click('.app-icon:nth-child(2)');
+    await page.click('.app-icon:has-text("Jobs")');
     await wait(300);
     await shot('p4-jobs');
     await page.locator('.card.job').nth(1).locator('text=Apply').click();
@@ -545,7 +608,10 @@ export const scenarios = {
     await page.click('.tab:nth-child(4)');
     await wait(400);
     await shot('p2-traits');
-    await page.click('text=Start Life');
+    await page.click('.tab:nth-child(5)');
+    await wait(400);
+    await shot('p10-creator-goals');
+    await page.click('text=Choose a city');
     await page.waitForSelector('.city-panel');
     await page.click('text=Move to');
     await wait(1500);

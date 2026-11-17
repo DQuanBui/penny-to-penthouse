@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { h, clear, btn } from './dom.js';
 import { ARCHETYPES, ARCHETYPE_BY_ID, SKILL_BY_ID } from '../data/archetypes.js';
 import { TRAITS, TRAIT_BY_ID } from '../data/traits.js';
+import { GOALS, MAX_GOALS } from '../data/goals.js';
 import * as C from '../characters/Customization.js';
 import { createRig } from '../characters/CharacterFactory.js';
 import { glbPlayerModels } from '../characters/GLBCharacters.js';
@@ -16,6 +17,7 @@ const TABS = [
   ['look', '2 · Look'],
   ['style', '3 · Outfit'],
   ['traits', '4 · Traits'],
+  ['goals', '5 · Goals'],
 ];
 
 export class CharacterCreator {
@@ -29,13 +31,13 @@ export class CharacterCreator {
     this.onDone = onDone;
     this.onBack = onBack;
     this.tab = 'background';
-    this.profile = { name: C.randomName(), archetype: 'dreamer', appearance: C.defaultAppearance(), traits: [] };
+    this.profile = { name: C.randomName(), archetype: 'dreamer', appearance: C.defaultAppearance(), traits: [], goals: ['millionaire'] };
     this.applyArchetype('dreamer', true);
     if (initial) {
       // coming back from city select: keep everything the player already chose
       const arch = ARCHETYPE_BY_ID[initial.archetype];
-      this.profile = { name: initial.name, archetype: initial.archetype, appearance: { ...initial.appearance }, traits: initial.traits.filter((t) => t !== arch.trait).slice(0, 2) };
-      this.tab = 'traits';
+      this.profile = { name: initial.name, archetype: initial.archetype, appearance: { ...initial.appearance }, traits: initial.traits.filter((t) => t !== arch.trait).slice(0, 2), goals: [...(initial.goals || ['millionaire'])] };
+      this.tab = 'goals';
     }
     this.spin = 0.4;
     this.spinVel = 0;
@@ -146,6 +148,7 @@ export class CharacterCreator {
     p.appearance = C.randomAppearance();
     p.archetype = arch.id;
     p.traits = shuffle(Math.random, TRAITS.filter((t) => t.id !== arch.trait)).slice(0, 2).map((t) => t.id);
+    p.goals = shuffle(Math.random, GOALS).slice(0, 2).map((g) => g.id);
     this.justPicked = true;
     this.spinVel = 6;
     this.rebuildRig();
@@ -226,11 +229,13 @@ export class CharacterCreator {
   next() {
     const i = TABS.findIndex((t) => t[0] === this.tab);
     const p = this.profile;
+    if (this.tab === 'traits' && p.traits.length < 2) return this.renderBody('Pick two traits to continue.');
     if (i < TABS.length - 1) return this.setTab(TABS[i + 1][0]);
     if (!p.name.trim()) p.name = C.randomName();
-    if (p.traits.length < 2) return this.renderBody('Pick two traits to continue.');
+    if (p.traits.length < 2) return this.setTab('traits');
+    if (!p.goals.length) return this.renderBody('Pick at least one life goal.');
     const arch = ARCHETYPE_BY_ID[p.archetype];
-    this.onDone({ name: p.name.trim().slice(0, 24), archetype: p.archetype, appearance: { ...p.appearance }, traits: [arch.trait, ...p.traits] });
+    this.onDone({ name: p.name.trim().slice(0, 24), archetype: p.archetype, appearance: { ...p.appearance }, traits: [arch.trait, ...p.traits], goals: [...p.goals] });
   }
 
   renderBody(warn) {
@@ -240,8 +245,8 @@ export class CharacterCreator {
     queueMicrotask(() => (b.scrollTop = keepScroll));
     const p = this.profile;
     const a = p.appearance;
-    const last = this.tab === 'traits';
-    this.nextBtn.textContent = last ? 'Start Life →' : 'Next →';
+    const last = this.tab === 'goals';
+    this.nextBtn.textContent = last ? 'Choose a city →' : 'Next →';
 
     const chips = (title, opts, cur, key) =>
       h('div.opt', h('div.opt-title', title), h('div.chips', opts.map((o) => h('button.chip' + (o === cur ? '.active' : ''), { onclick: () => this.setLook(key, o) }, C.label(o)))));
@@ -337,6 +342,28 @@ export class CharacterCreator {
         swatches('Shoe colour', C.CLOTH_COLORS, a.shoeColor, 'shoeColor'),
         chips('Accessory', C.ACCESSORIES, a.accessory, 'accessory'),
         swatches('Accessory colour', C.CLOTH_COLORS, a.accColor || '#c53a3a', 'accColor'),
+      );
+    } else if (this.tab === 'goals') {
+      b.append(
+        h('div.pad' + (warn ? '.bad' : '.muted'), warn || `What do you want out of this life? Pick up to ${MAX_GOALS} goals (${p.goals.length}/${MAX_GOALS}). They are tracked in the Goals app.`),
+        h(
+          'div.trait-grid',
+          GOALS.map((g) =>
+            h(
+              'button.trait-card' + (p.goals.includes(g.id) ? '.active' : ''),
+              {
+                onclick: () => {
+                  if (p.goals.includes(g.id)) p.goals = p.goals.filter((x) => x !== g.id);
+                  else if (p.goals.length < MAX_GOALS) p.goals.push(g.id);
+                  else p.goals = [...p.goals.slice(1), g.id];
+                  this.renderBody();
+                },
+              },
+              h('div.trait-name', `${g.icon} ${g.name}`),
+              h('div.trait-desc', g.desc),
+            ),
+          ),
+        ),
       );
     } else {
       const arch = ARCHETYPE_BY_ID[p.archetype];

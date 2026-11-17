@@ -9,6 +9,10 @@ import { Hustles } from './Hustles.js';
 import { Businesses } from './Business.js';
 import { Market } from './Market.js';
 import { RealEstate } from './RealEstate.js';
+import { Rivals } from './Rivals.js';
+import { Rankings } from './Rankings.js';
+import { Goals, Achievements } from './Goals.js';
+import { LifeEvents } from './LifeEvents.js';
 
 export function installSystems(sim) {
   sim.jobs = sim.use(new Jobs(sim));
@@ -23,5 +27,13 @@ export function installSystems(sim) {
   sim.re = sim.use(new RealEstate(sim));
   sim.re.refreshListings();
   sim.loans.applyStartingDebt();
+  sim.rivals = sim.use(new Rivals(sim));
+  sim.rivals.init();
+  sim.rankings = new Rankings(sim);
+  sim.events = sim.use(new LifeEvents(sim));
+  sim.goals = sim.use(new Goals(sim));
+  sim.achievements = sim.use(new Achievements(sim));
+  // qualifications the character started with do not count as "graduating"
+  sim.state.flags.startQuals ??= sim.state.education.degrees.length + sim.state.education.certs.length;
   return sim;
 }

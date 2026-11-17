@@ -7,6 +7,7 @@ import { LearnApp } from './Learn.js';
 import { GigsApp, VenturesApp } from './Ventures.js';
 import { InvestApp, NewsApp } from './Invest.js';
 import { HomesApp } from './Homes.js';
+import { RankingsApp, GoalsApp, CalendarApp } from './Rankings.js';
 import { openSettings } from '../Menus.js';
 
 export function registerApps(phone, game) {
@@ -20,6 +21,9 @@ export function registerApps(phone, game) {
   phone.register(ContactsApp);
   phone.register(SocialApp);
   phone.register(NewsApp);
+  phone.register(GoalsApp);
+  phone.register(RankingsApp);
+  phone.register(CalendarApp);
   phone.register({
     id: 'map',
     name: 'Map',

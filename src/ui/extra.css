@@ -638,3 +638,17 @@
 div.map-place {
   color: var(--text);
 }
+
+/* ---------- rankings, goals, events ---------- */
+.lrow.me {
+  outline: 2px solid var(--accent);
+  background: rgba(255, 179, 71, 0.14);
+}
+.lrow.locked {
+  opacity: 0.5;
+}
+.event-text {
+  font-size: 1.08em;
+  line-height: 1.5;
+  margin-bottom: 0.3em;
+}

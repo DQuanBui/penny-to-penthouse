@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Phase 10 — sim/Rivals.js + Rankings.js (20 AI rivals per city, leaderboard behind a provider interface, Hall of Fame across slots), data/goals.js + sim/Goals.js (life goals picked in the creator), data/achievements.js + sim/Achievements.js, data/events.js + sim/LifeEvents.js (choices), ui/Tutorial.js (First Day), phone apps Rankings / Goals / Calendar.
+RESUME HERE: Phase 11 — data/vehicles.js, dealer service (buy with cash or auto loan), world/Vehicles.js (drivable car: F enter/exit, W/S throttle/brake, A/D steer, parking), world/Traffic.js (simple AI cars on the road grid obeying signals), car costs (insurance/fuel), rideshare hustle uses your car.
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
@@ -12,7 +12,7 @@ RESUME HERE: Phase 10 — sim/Rivals.js + Rankings.js (20 AI rivals per city, le
 - [x] 7. Finance depth: credit, card, loans, Invest app + market sim, Homes app, property, mortgages, renting out
 - [x] 8. Build mode + furniture catalog + style score
 - [x] 9. City select + all 5 cities, weather, transit/fast travel, map
-- [ ] 10. Rankings + AI rivals, goals, achievements, life events, tutorial
+- [x] 10. Rankings + AI rivals, goals, achievements, life events, tutorial
 - [ ] 11. Vehicles: dealer, driving, parking, traffic
 - [ ] 12. Polish: audio, post-processing, UI animation, balance pass, performance, bugs
 - [ ] 13. README, ASSETS.md, GitHub Pages workflow
@@ -54,15 +54,15 @@ RESUME HERE: Phase 10 — sim/Rivals.js + Rankings.js (20 AI rivals per city, le
 - **Weather**: world/Weather.js weatherAt(city,total) is deterministic per 6-hour block (clear/cloudy/rain/snow/haze); drives sky overcast + fog, particles and crowd density.
 - **Transit**: world/Transit.js. Stations (E) = fare + fast travel between districts; taxi buttons in the map list (pricier, door to door).
 
+- **Phase 10**: sim/Rivals.js (20 AI residents per city x 5 cities, daily growth) + sim/Rankings.js (LeaderboardProvider interface, LocalProvider; Hall of Fame in localStorage p2p.hof.v1). data/goals.js (picked in creator tab 5, max 3) + data/achievements.js checked daily by sim/Goals.js. data/events.js + sim/LifeEvents.js: one event every 2-3 days, shown by ui/EventDialog.js between 8:00 and 22:00; headless runs set sim.events.policy. ui/Tutorial.js "First Day" (event-driven, tolerant of out-of-order actions). A new life starts inside the rented room.
+
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- Scenarios: cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
+- Scenarios: life (tutorial, events, Goals/Rankings/Calendar), cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
-## Known issues
-- GitHub repo `DQuanBui/penny-to-penthouse` did not exist / `gh` not logged in at start → commits are local until the repo exists (see end of file for push steps).
+## Deployment
+- Repo: https://github.com/DQuanBui/penny-to-penthouse (public). Play: https://dquanbui.github.io/penny-to-penthouse/
+- .github/workflows/deploy.yml builds and deploys to GitHub Pages on every push to main, so only push commits whose smoke scenarios pass.
 
-## Push to GitHub (when ready)
-1. Create an empty public repo named `penny-to-penthouse` on github.com (no README).
-2. `git remote add origin https://github.com/DQuanBui/penny-to-penthouse.git` then `git push -u origin main`.
-3. Repo Settings → Pages → Source = "GitHub Actions".
+## Known issues

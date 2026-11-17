@@ -41,6 +41,9 @@ import { BuildMode } from '../build/BuildMode.js';
 import { Weather } from '../world/Weather.js';
 import { openStation } from '../world/Transit.js';
 import { CitySelect } from '../ui/CitySelect.js';
+import { Tutorial } from '../ui/Tutorial.js';
+import { openLifeEvent } from '../ui/EventDialog.js';
+import { recordHallOfFame } from '../sim/Rankings.js';
 import { fmtMoney } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
@@ -80,6 +83,13 @@ export class Game {
     this.npcs = new NPCManager(this);
     this.build = new BuildMode(this);
     this.weather = new Weather(this.scene, this.sky);
+    this.tutorial = new Tutorial(this);
+    // HUD objective sources (see ui/Objectives.js)
+    this.objectiveOverride = () => this.tutorial.objective();
+    this.goalObjective = () => {
+      const g = this.sim.goals.current();
+      return g ? [`Goal: ${g.def.name}`, `${Math.round(g.pct * 100)}% there. Open Goals on your phone for details.`] : null;
+    };
     this.inside = null; // { place, home, layout } while in an interior
     this._focus = new THREE.Vector3();
     this._winColor = new THREE.Color();
@@ -267,9 +277,9 @@ export class Game {
 
   // ------------------------------------------------------------ interiors
   /** Walk through a door: fade into the place's interior scene. */
-  enterPlace(place) {
+  enterPlace(place, instant) {
     if (place.station) return this.useStation(place);
-    this.fade(() => {
+    const go = () => {
       const st = this.state;
       const home = place.type === 'home';
       const layout = home ? (st.home.layout ||= defaultHomeLayout(st.home.type)) : commercialLayout(place);
@@ -295,7 +305,9 @@ export class Game {
       if (home) this.hud.hint('home', 'This is your place. Walk up to furniture and press E: bed to sleep, fridge to eat, shower to wash.', 9);
       else if (PLACE_TYPES[place.type].service) this.hud.hint('counter', 'Walk up to the counter and press E to be served.', 7);
       if (home) this.hud.hint('buildkey', 'Press B at home to furnish and decorate in build mode.', 8);
-    });
+    };
+    if (instant) go();
+    else this.fade(go);
   }
 
   /** Rebuild the current interior (after furniture or ownership changes). */
@@ -439,7 +451,12 @@ export class Game {
     this.setupLife(state);
     this.placePlayerAt(this.homePlace());
     this.saveNow(true);
+    // wake up in your rented room, next to the bed
+    this.enterPlace(this.homePlace(), true);
+    const bed = this.interior.points.find((p) => p.use === 'sleep');
+    if (bed) this.player.teleport(bed.x, bed.z, 0.6);
     this.events.emit('lifeStarted', {});
+    this.tutorial.offer();
   }
 
   loadGame(slot) {
@@ -484,7 +501,7 @@ export class Game {
   }
 
   saveMeta() {
-    return { netWorth: Math.round(this.sim.finance.netWorth()), job: this.sim.jobs?.title() || '' };
+    return { netWorth: Math.round(this.sim.finance.netWorth()), job: this.sim.jobs?.title() || '', popularity: Math.round(this.state.social.popularity) };
   }
 
   saveNow(quiet) {
@@ -493,6 +510,7 @@ export class Game {
     // inside a building the save point is the pavement outside its door
     this.state.pos = this.inside ? { x: this.inside.place.x, z: this.inside.place.z, heading: Math.atan2(this.inside.place.nx, this.inside.place.nz) } : { x: p.x, z: p.z, heading: this.player.heading };
     const ok = saveSlot(this.slot, this.state, this.saveMeta());
+    recordHallOfFame(this.state, this.sim.rankings.me());
     if (!quiet) this.events.emit('toast', ok ? { icon: '💾', title: 'Game saved', text: `Slot ${this.slot}`, kind: 'good' } : { icon: '⚠️', title: 'Save failed', text: 'Browser storage is unavailable.', kind: 'bad' });
     this.events.emit('slotsChanged');
   }
@@ -667,6 +685,8 @@ export class Game {
     this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside);
     this.npcs.update(dt, this.player.pos, !!inside);
 
+    this.tutorial.update();
+
     // --- interaction prompt + HUD ---
     this._interactT = (this._interactT || 0) - dt;
     if (this._interactT <= 0) {
@@ -681,6 +701,9 @@ export class Game {
       const o = computeObjective(this);
       this.hud.setObjective(o[0], o[1]);
       this.checkSeason();
+      // a life event is waiting: show it at a calm moment during the day
+      const hr = hourOf(st.time.total);
+      if (st.events.pending && !blocked && !this.overlays.length && hr >= 8 && hr < 22) openLifeEvent(this);
     }
     this.hud.update(dt);
 

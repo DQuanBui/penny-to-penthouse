@@ -34,6 +34,7 @@ export async function runActivity(game, id, opts = {}) {
   }
   game.events.emit('toast', { icon: a.icon, title: a.label, text: `${parts.join('  ')}${res.cost ? `  ·  ${fmtMoney(-res.cost)}` : ''}  ·  ${a.minutes} min`, kind: 'info' });
   game.audio?.play(res.cost ? 'cash' : 'click');
+  game.events.emit('activityDone', { id });
   opts.then?.();
   return res;
 }

@@ -127,6 +127,7 @@ export class Jobs {
     const hired = this.sim.rng() < p;
     st.jobLog.applied[careerId] = this.sim.day;
     if (hired) this.hire(careerId, level);
+    this.sim.bus.emit('interview', { hired, career: careerId });
     return { hired, chance: p };
   }
 
