@@ -11,6 +11,7 @@ import { buildRoads } from './Roads.js';
 import { buildProps, buildStation } from './Props.js';
 import { buildLandmarks } from './Landmarks.js';
 import { buildStorefronts } from './Storefronts.js';
+import { buildStreetscape, addRooftops } from './Streetscape.js';
 import { labelTexture, iconTexture } from './Textures.js';
 
 export const K = { BLOCK: 58, SIDEWALK: 5, ROAD: 14, PITCH: 72, CURB: 0.15, PROM: 26 };
@@ -222,6 +223,7 @@ export function generateCity(cfg, opts = {}) {
 
   // --- 5. Landmarks, roads, props -------------------------------------------
   buildLandmarks(ctx);
+  addRooftops(ctx);
   group.add(batch.build());
   const rm = roofs.build();
   if (rm) group.add(rm);
@@ -245,6 +247,7 @@ export function generateCity(cfg, opts = {}) {
   }
 
   buildProps(ctx);
+  buildStreetscape(ctx);
   decoratePlaces(ctx);
   const fronts = buildStorefronts(ctx);
 

@@ -142,7 +142,7 @@ export class VehicleManager {
       if (!v.pos) {
         // a new car waits at the kerb outside the dealer (or your home)
         const p = game.city.placeById.dealer || game.homePlace();
-        v.pos = this.kerbSpot(p.x + p.nx * 6, p.z + p.nz * 6);
+        v.pos = this.freeKerbSpot(p.x + p.nx * 6, p.z + p.nz * 6) || this.kerbSpot(p.x + p.nx * 6, p.z + p.nz * 6);
       }
       car.group.position.set(v.pos.x, 0, v.pos.z);
       car.group.rotation.y = v.pos.ry;
@@ -212,12 +212,30 @@ export class VehicleManager {
     return best;
   }
 
+  /** Nearest kerb space not taken by a parked car (slides along the street), or null. */
+  freeKerbSpot(x, z) {
+    const base = this.kerbSpot(x, z);
+    const fx = Math.sin(base.ry);
+    const fz = Math.cos(base.ry);
+    const cols = this.game.city.colliders;
+    for (const off of [0, 6.4, -6.4, 12.8, -12.8, 19.2, -19.2]) {
+      const sx = base.x + fx * off;
+      const sz = base.z + fz * off;
+      if (!this.onRoad(sx, sz)) continue;
+      let free = true;
+      for (const t of [-2.2, 0, 2.2]) if (cols.pointBlocked(sx + fx * t, 0.6, sz + fz * t, 0.25)) free = false;
+      for (const car of this.cars.values()) if (car !== this.driving && Math.hypot(car.group.position.x - sx, car.group.position.z - sz) < 4.6) free = false;
+      if (free) return { x: sx, z: sz, ry: base.ry };
+    }
+    return null;
+  }
+
   /** Bring a car to the kerb nearest the player (valet). */
   valet(vid) {
     const car = this.cars.get(vid);
     if (!car || this.driving) return false;
     const p = this.game.playerMapPos();
-    car.v.pos = this.kerbSpot(p.x, p.z);
+    car.v.pos = this.freeKerbSpot(p.x, p.z) || this.kerbSpot(p.x, p.z);
     car.group.position.set(car.v.pos.x, 0, car.v.pos.z);
     car.group.rotation.y = car.v.pos.ry;
     return true;
@@ -245,8 +263,8 @@ export class VehicleManager {
     if (!silent && Math.abs(car.speed) > 2.5) return game.events.emit('toast', { icon: '🚗', title: 'Slow down first', text: 'Stop the car before getting out.', kind: 'info' });
     // park at the kerb when on a street, otherwise leave it where it stands
     const g = car.group;
-    const spot = this.kerbSpot(g.position.x, g.position.z);
-    if (Math.hypot(spot.x - g.position.x, spot.z - g.position.z) < 9) {
+    const spot = this.freeKerbSpot(g.position.x, g.position.z);
+    if (spot && Math.hypot(spot.x - g.position.x, spot.z - g.position.z) < 22) {
       g.position.set(spot.x, 0, spot.z);
       g.rotation.y = spot.ry;
     }

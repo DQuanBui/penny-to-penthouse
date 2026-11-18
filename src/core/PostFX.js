@@ -34,7 +34,7 @@ export class PostFX {
     const target = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 4 });
     this.composer = new EffectComposer(r, target);
     this.renderPass = new RenderPass(new THREE.Scene(), new THREE.PerspectiveCamera());
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.3, 0.55, 1.0);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.3, 0.55, 1.25); // threshold above sunlit paint: only lights and neon bloom
     this.vignette = new ShaderPass(VignetteShader);
     this.composer.addPass(this.renderPass);
     this.composer.addPass(this.bloom);
