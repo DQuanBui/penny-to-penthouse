@@ -20,6 +20,8 @@ export default {
   zoo: 'Biscayne Wild Zoo',
   university: 'Bayfront University',
   school: 'Palm Grove Elementary',
+  airport: 'Bayside International Airport',
+  hotel: 'Ocean Breeze Resort',
   waterfront: ['east', 'south'],
   waterName: 'the Bay',
   promenade: 'beach',

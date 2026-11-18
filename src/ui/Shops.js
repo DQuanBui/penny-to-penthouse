@@ -19,6 +19,7 @@ import { fmtMoney } from '../core/utils.js';
 import { runActivity, openShift } from './Interact.js';
 import { shelterService } from './Pets.js';
 import { minorService, schoolService } from './SmallBusiness.js';
+import { flightsService, hotelService } from './Travel.js';
 
 /** A purchasable row. */
 function item(icon, title, sub, price, onBuy, opts = {}) {
@@ -259,6 +260,8 @@ export const SERVICES = {
   shelter: shelterService,
   minor: minorService,
   school: schoolService,
+  flights: flightsService,
+  hotel: hotelService,
   mall(game, place, body) {
     body.append(h('div.muted', 'Three floors of shopping. Walk up to the fashion counter, the tech counter or the food court inside.'));
   },

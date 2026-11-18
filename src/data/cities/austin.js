@@ -20,6 +20,8 @@ export default {
   zoo: 'Hill Country Zoo',
   university: 'Hill Country University',
   school: 'Bluebonnet Elementary',
+  airport: 'Bluebonnet International Airport',
+  hotel: 'The Capitol Lodge',
   waterfront: ['south'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

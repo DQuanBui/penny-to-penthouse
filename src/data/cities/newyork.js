@@ -20,6 +20,8 @@ export default {
   zoo: 'Liberty Wild Zoo',
   university: 'Hudson Heights University',
   school: 'P.S. 47 Riverside School',
+  airport: 'Hudson International Airport',
+  hotel: 'The Hudson Grand',
   waterfront: ['south', 'west'],
   waterName: 'the Harbor',
   promenade: 'boardwalk',

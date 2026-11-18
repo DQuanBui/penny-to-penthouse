@@ -32,6 +32,8 @@ export const ACHIEVEMENTS = [
   { id: 'kind_heart', name: 'Kind Heart', icon: '💛', desc: 'Help people on the street ten times.', check: (sim) => (sim.state.stats.kindness || 0) >= 10 },
   { id: 'zoo_day', name: 'Day at the Zoo', icon: '🦒', desc: 'Visit the city zoo and watch the animals.', check: (sim) => (sim.state.stats.zooAnimals || 0) >= 1 },
   { id: 'community_hero', name: 'Community Hero', icon: '🏫', desc: 'Volunteer at a school three times.', check: (sim) => (sim.state.stats.volunteered || 0) >= 3 },
+  { id: 'frequent_flyer', name: 'Frequent Flyer', icon: '✈️', desc: 'Take two flights.', check: (sim) => (sim.state.stats.flights || 0) >= 2 },
+  { id: 'globetrotter', name: 'Globetrotter', icon: '🌎', desc: 'Visit all five cities.', check: (sim) => Object.keys(sim.state.stats.citiesVisited || {}).length >= 5 },
   { id: 'patron', name: 'Patron of the Arts', icon: '🎸', desc: 'Tip street musicians five times.', check: (sim) => (sim.state.stats.buskerTips || 0) >= 5 },
   { id: 'workhorse', name: 'Workhorse', icon: '⏱️', desc: 'Work 100 shifts.', check: (sim) => sim.state.stats.shifts >= 100 },
   { id: 'master', name: 'Mastery', icon: '🧠', desc: 'Bring any skill to level 10.', check: (sim) => Object.values(sim.state.skills).some((v) => v >= 9.999) },

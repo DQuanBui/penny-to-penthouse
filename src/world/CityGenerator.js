@@ -16,6 +16,7 @@ import { buildStreetscape, addRooftops } from './Streetscape.js';
 import { decorateParks } from './Parks.js';
 import { buildZoo } from './Zoo.js';
 import { buildCampus, buildSchool } from './Campus.js';
+import { buildAirport, airportSide } from './Airport.js';
 import { labelTexture, iconTexture } from './Textures.js';
 
 export const K = { BLOCK: 58, SIDEWALK: 5, ROAD: 14, PITCH: 72, CURB: 0.15, PROM: 26 };
@@ -100,6 +101,26 @@ export function generateCity(cfg, opts = {}) {
   const schoolD = [...districts].sort((a, c) => a.rentMul - c.rentMul).find((d) => d !== zooDistrict) || districts[2];
   const schoolBlock = pickBlock(schoolD);
   if (schoolBlock) schoolBlock.kind = 'school';
+  // the airport terminal sits on an edge block facing open land; its airfield is beyond the edge
+  const airSide = airportSide(cfg);
+  const mid = Math.floor(N / 2);
+  const edgeAt = (k) => blocks.find((b) => (airSide === 'east' ? b.i === N - 1 && b.j === k : airSide === 'west' ? b.i === 0 && b.j === k : airSide === 'north' ? b.j === 0 && b.i === k : b.j === N - 1 && b.i === k));
+  let airBlock = null;
+  for (const k of [mid, mid - 1, mid + 1, mid - 2, mid + 2]) {
+    const b = edgeAt(k);
+    if (b && b.kind === 'build') {
+      airBlock = b;
+      break;
+    }
+  }
+  if (airBlock) airBlock.kind = 'airport';
+  const airfield = (i, j) => {
+    if (!airBlock) return false;
+    if (airSide === 'east') return i >= N && Math.abs(j - airBlock.j) <= 3;
+    if (airSide === 'west') return i < 0 && Math.abs(j - airBlock.j) <= 3;
+    if (airSide === 'north') return j < 0 && Math.abs(i - airBlock.i) <= 3;
+    return j >= N && Math.abs(i - airBlock.i) <= 3;
+  };
   for (const b of blocks) if (b.kind === 'build') makeLots(b, rng);
 
   // --- 2. Assign places to street-facing lots -------------------------------
@@ -108,6 +129,8 @@ export function generateCity(cfg, opts = {}) {
   const wanted = [];
   for (const d of districts) wanted.push({ type: 'home', name: `${d.name} Residences`, district: d.id, id: 'home_' + d.id });
   for (const p of cfg.places) wanted.push({ ...p, id: p.id || p.type });
+  // a grand hotel in the priciest district (where you stay when visiting)
+  wanted.push({ type: 'hotel', name: cfg.hotel || `Grand ${cfg.name} Hotel`, district: [...districts].sort((a, c) => c.rentMul - a.rentMul)[0].id, id: 'hotel' });
   for (const d of districts) {
     const mine = wanted.filter((p) => p.district === d.id);
     const order = shuffle(rng, blocks.filter((b) => b.district === d && b.kind === 'build')).sort(
@@ -271,6 +294,7 @@ export function generateCity(cfg, opts = {}) {
   for (let j = -ring; j < N + ring; j++) {
     for (let i = -ring; i < N + ring; i++) {
       if (i >= 0 && i < N && j >= 0 && j < N) continue;
+      if (airfield(i, j)) continue; // open land for the runway
       if ((water.west && i < 0) || (water.east && i >= N) || (water.north && j < 0) || (water.south && j >= N)) continue;
       const x0 = blockMin(i);
       const z0 = blockMin(j);
@@ -296,6 +320,7 @@ export function generateCity(cfg, opts = {}) {
   buildLandmarks(ctx);
   if (campusBlock) buildCampus(ctx, campusBlock);
   if (schoolBlock) buildSchool(ctx, schoolBlock);
+  if (airBlock) buildAirport(ctx, airBlock, airSide);
   addRooftops(ctx);
   group.add(batch.build());
   const rm = roofs.build();
@@ -341,7 +366,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, sitters: ctx.sitters || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, sitters: ctx.sitters || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */

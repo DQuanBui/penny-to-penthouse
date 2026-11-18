@@ -39,6 +39,7 @@ export function newState(profile, city) {
     vehicles: [],
     activeVehicle: null,
     pet: null, // your dog (sim/Pets.js)
+    trip: null, // { cityId, since } while visiting another city (sim/Trips.js)
     relationships: {},
     social: { followers: arch.followers || 0, popularity: 0, posts: [], lastPostDay: -9, parties: 0 },
     portfolio: { holdings: {}, realized: 0, dividends: 0 },

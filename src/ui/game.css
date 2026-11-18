@@ -1082,3 +1082,45 @@ input.text.amount {
     opacity: 0;
   }
 }
+
+/* ---------- flight card ---------- */
+.travel-card {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 10px;
+  background: radial-gradient(circle at 50% 40%, #27406b, #0b1022 70%);
+  color: #fff;
+  pointer-events: none;
+  animation: travelIn 0.4s ease;
+}
+.travel-plane {
+  font-size: 64px;
+  animation: travelFly 1.8s ease-in-out infinite;
+}
+.travel-title {
+  font-size: 2em;
+  font-weight: 800;
+}
+.travel-sub {
+  color: var(--muted);
+}
+@keyframes travelFly {
+  0% {
+    transform: translate(-60px, 10px) rotate(-8deg);
+  }
+  50% {
+    transform: translate(60px, -10px) rotate(4deg);
+  }
+  100% {
+    transform: translate(-60px, 10px) rotate(-8deg);
+  }
+}
+@keyframes travelIn {
+  from {
+    opacity: 0;
+  }
+}

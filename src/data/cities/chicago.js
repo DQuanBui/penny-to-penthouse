@@ -20,6 +20,8 @@ export default {
   zoo: 'Lakeshore Zoo',
   university: 'Lakeshore University',
   school: 'Prairie Avenue School',
+  airport: 'Lakefront International Airport',
+  hotel: 'The Lakeview Grand',
   waterfront: ['east'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

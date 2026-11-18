@@ -21,6 +21,8 @@ export default {
   zoo: 'Sunset Canyon Zoo',
   university: 'Pacific Coast University',
   school: 'Sunset Hills Elementary',
+  airport: 'Pacific Gateway Airport',
+  hotel: 'Hotel Palisade',
   waterfront: ['west'],
   waterName: 'the Pacific',
   promenade: 'beach',

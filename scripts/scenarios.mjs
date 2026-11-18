@@ -167,6 +167,138 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Airport visuals: terminal front, airfield with a landing plane. */
+  async airfield({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 10 * 60;
+      const ap = g.city.placeById.airport;
+      // forecourt, looking at the terminal entrance
+      const face = Math.atan2(-ap.nx, -ap.nz);
+      g.player.teleport(ap.x + ap.nx * 26, ap.z + ap.nz * 26, face);
+      g.cam.snapBehind(face);
+      g.cam.pitch = 0.18;
+      g.cam.dist = 10;
+    });
+    await wait(2500);
+    await shot('airport-front');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const a = g.city.airport;
+      const A = g.airTraffic.active;
+      A.phase = 'landing';
+      A.t = 24;
+      A.plane.visible = true;
+      // stand on the far side of the edge road and look out over the airfield
+      const ex = a.ox ? a.ox * (a.edge - 2) : g.player.pos.x;
+      const ez = a.ox ? a.place.doorZ - 40 : a.oz * (a.edge - 2);
+      const face = Math.atan2(a.ox, a.oz) + 0.35;
+      g.player.teleport(ex, ez, face);
+      g.playerRig.group.visible = false;
+      g.cam.snapBehind(face);
+      g.cam.pitch = -0.05;
+      g.cam.dist = g.cam.minDist;
+    });
+    await wait(2000);
+    await shot('airport-field');
+    await page.evaluate(() => (window.__game.playerRig.group.visible = true));
+  },
+  /** Airport and flights: visit another city, stay at the hotel, fly home. */
+  async travel({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 10 * 60;
+      g.state.money.checking = 5000;
+      const ap = g.city.placeById.airport;
+      const ho = g.city.placeById.hotel;
+      g.player.teleport(ap.x - ap.nx * 14, ap.z - ap.nz * 14, Math.atan2(ap.nx, ap.nz) + Math.PI);
+      g.cam.snapBehind(Math.atan2(ap.nx, ap.nz) + Math.PI);
+      g.cam.pitch = 0.05;
+      g.cam.dist = 8;
+      return { airport: ap && ap.name, hotel: ho && ho.name, side: g.city.airport.side };
+    });
+    console.log('nyc', JSON.stringify(info));
+    await wait(2500);
+    await shot('travel-airport');
+    // look out over the airfield as a plane lands
+    await page.evaluate(() => {
+      const g = window.__game;
+      const a = g.city.airport;
+      const A = g.airTraffic.active;
+      A.phase = 'landing';
+      A.t = 22;
+      A.plane.visible = true;
+      g.player.teleport(a.place.doorX + a.ox * 20 + a.oz * 22, a.place.doorZ + a.oz * 20 - a.ox * 22, Math.atan2(a.ox, a.oz));
+      g.cam.snapBehind(Math.atan2(a.ox, a.oz) + 0.3);
+      g.cam.pitch = 0.02;
+    });
+    await wait(1500);
+    await shot('travel-airfield');
+    // check in and fly to Chicago
+    await page.evaluate(() => {
+      const g = window.__game;
+      const ap = g.city.placeById.airport;
+      g.placePlayerAt(ap);
+      g.enterPlace(ap, true);
+      const c = g.interior.points.find((p) => p.use === 'service');
+      g.player.teleport(c.x, c.z, Math.PI);
+    });
+    await page.waitForFunction(() => window.__game.interactable && /counter/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog:has-text("Departures")');
+    await shot('travel-departures');
+    await page.locator('.dialog .slot:has-text("Chicago") button').click();
+    await wait(800);
+    await shot('travel-flying');
+    await page.waitForFunction(() => window.__game.city.cfg.id === 'chicago' && !window.__game.fading, null, { timeout: 60000 });
+    await wait(1500);
+    const s1 = await page.evaluate(() => {
+      const g = window.__game;
+      return { city: g.city.cfg.id, trip: g.state.trip, home: g.homePlace().name, simCity: g.sim.city.id, cars: g.vehicles.cars.size, money: Math.round(g.state.money.checking) };
+    });
+    console.log('arrived', JSON.stringify(s1));
+    await shot('travel-arrived');
+    // the hotel room
+    const room = await page.evaluate(() => {
+      const g = window.__game;
+      const ho = g.city.placeById.hotel;
+      g.placePlayerAt(ho);
+      g.enterPlace(ho, true);
+      return { inside: !!g.inside, uses: g.interior.points.map((p) => p.use) };
+    });
+    console.log('hotel room', JSON.stringify(room));
+    await wait(1000);
+    await shot('travel-hotel');
+    const night = await page.evaluate(() => {
+      const g = window.__game;
+      const m0 = g.state.money.checking;
+      g.sim.advance(1440, { noDecay: true, noCollapse: true });
+      return { charged: Math.round(m0 - g.state.money.checking), tx: g.state.money.txs.slice(-6).map((t) => t.label).filter((l) => /Hotel/.test(l)) };
+    });
+    console.log('hotel night', JSON.stringify(night));
+    // save and load while away
+    const loaded = await page.evaluate(async () => {
+      const g = window.__game;
+      g.leaveInterior(true);
+      g.saveNow();
+      g.loadGame(g.slot);
+      await new Promise((r) => setTimeout(r, 4000));
+      return { city: g.city.cfg.id, trip: g.state.trip && g.state.trip.cityId, sim: g.sim.city.id };
+    });
+    console.log('reloaded', JSON.stringify(loaded));
+    // fly home
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.travelTo('newyork', 120);
+    });
+    await page.waitForFunction(() => window.__game.city.cfg.id === 'newyork' && !window.__game.fading, null, { timeout: 60000 });
+    await wait(1000);
+    console.log('home', JSON.stringify(await page.evaluate(() => ({ city: window.__game.city.cfg.id, trip: window.__game.state.trip, cars: window.__game.vehicles.cars.size, flights: window.__game.state.stats.flights }))));
+  },
   /** University campus and a neighbourhood school. */
   async campus({ page, shot, wait }) {
     await startLife(page, wait);

@@ -165,6 +165,19 @@ export function commercialLayout(place) {
         { id: 'armchair', x: 11.2, z: 6.8, r: 3 },
         { id: 'plant_floor', x: 0.6, z: 8.4, r: 0 },
       ]);
+    case 'terminal':
+      return L(20, 14, 'tile', '#e6ebf0', [
+        { id: 'reception', x: 5, z: 1.6, r: 0 },
+        { id: 'reception', x: 10, z: 1.6, r: 0, use: '' },
+        { id: 'reception', x: 15, z: 1.6, r: 0, use: '' },
+        { id: 'tv_cinema', x: 10, z: 0.3, r: 0, use: '' },
+        ...[6.5, 8.2, 9.9].flatMap((z) => [{ id: 'airport_seats', x: 5.5, z, r: 0 }, { id: 'airport_seats', x: 14.5, z, r: 0 }]),
+        { id: 'plant_tree', x: 0.8, z: 0.8, r: 0 },
+        { id: 'plant_tree', x: 19.2, z: 0.8, r: 0 },
+        { id: 'plant_floor', x: 19.4, z: 13.4, r: 0 },
+      ]);
+    case 'hotelroom':
+      return L(9, 7, 'carpet', '#e9dfcf', autoFurnish(9, 7, ['bed_queen', 'lamp_table', 'wardrobe', 'desk_wood', 'tv_small', 'mini_fridge', 'shower_basic', 'toilet', 'sink', 'armchair', 'plant_floor']));
     case 'lecture':
       return L(16, 12, 'wood', '#e6dccb', [
         { id: 'chalkboard_wall', x: 8, z: 0.25, r: 0 },

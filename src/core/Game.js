@@ -41,6 +41,8 @@ import { BuildMode } from '../build/BuildMode.js';
 import { PetFollower, ShelterDogs } from '../world/Pet.js';
 import { ZooLife } from '../world/Zoo.js';
 import { CampusLife } from '../world/Campus.js';
+import { AirTraffic } from '../world/Airport.js';
+import { openService } from '../ui/Shops.js';
 import { openPet } from '../ui/Pets.js';
 import { PhotoMode } from '../ui/PhotoMode.js';
 import { shopOpen, opensAt } from '../data/shops.js';
@@ -119,6 +121,7 @@ export class Game {
     this.shelterDogs = new ShelterDogs();
     this.zooLife = new ZooLife(this);
     this.campusLife = new CampusLife(this);
+    this.airTraffic = new AirTraffic(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -264,6 +267,7 @@ export class Game {
     this.streetLife.setCity(this.city);
     this.zooLife.setCity(this.city);
     this.campusLife.setCity(this.city);
+    this.airTraffic.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -275,7 +279,7 @@ export class Game {
     const season = calendar(this.state.time.total).seasonId;
     if (!this.city || this.city.season === season || this.overlays.length || this.fading) return;
     const swap = () => {
-      this.loadCity(this.state.cityId, season);
+      this.loadCity(this.state.trip?.cityId || this.state.cityId, season);
       if (!this.inside) {
         const w = this.cityWorld();
         this.player.setWorld(w);
@@ -340,7 +344,49 @@ export class Game {
     this.player.setRig(this.playerRig);
   }
 
+  /** Staying at this city's hotel tonight (on a trip, or a booked night)? */
+  hotelAccess() {
+    const st = this.state;
+    return st.trip?.cityId === this.city.cfg.id || (st.flags.hotelUntil || 0) > st.time.total;
+  }
+
+  enterHotelRoom(place) {
+    this.enterPlace(place);
+  }
+
+  /** Fly to another city (or back home): a short flight card, then the new city. */
+  async travelTo(cityId, minutes) {
+    const st = this.state;
+    this.closeAllOverlays();
+    this.photoMode.toggle(false);
+    const dest = getCity(cityId);
+    const card = h('div.travel-card', h('div.travel-plane', '✈️'), h('div.travel-title', cityId === st.cityId ? `Flying home to ${dest.name}` : `Flying to ${dest.name}`), h('div.travel-sub', `${Math.floor(minutes / 60)}h ${minutes % 60}m · window seat · snacks served`));
+    this.ui.append(card);
+    await this.fade(async () => {
+      await new Promise((r) => setTimeout(r, 1500));
+      if (this.vehicles.driving) this.vehicles.exit(true);
+      this.leaveInterior(true);
+      this.sim.advance(minutes, { noCollapse: true });
+      (st.stats.citiesVisited ||= {})[st.cityId] = 1;
+      st.stats.citiesVisited[cityId] = 1;
+      st.stats.flights = (st.stats.flights || 0) + 1;
+      st.trip = cityId === st.cityId ? null : { cityId, since: this.sim.day };
+      this.loadCity(cityId, calendar(st.time.total).seasonId);
+      this.npcs.clearOutdoor();
+      const w = this.cityWorld();
+      this.player.setWorld(w);
+      this.cam.setWorld(w);
+      this.placePlayerAt(this.city.placeById.airport || this.homePlace());
+      this.syncPet();
+      this.map.setWaypoint(st.trip ? this.city.placeById.hotel : this.homePlace());
+    });
+    card.remove();
+    this.events.emit('toast', st.trip ? { icon: '🛬', title: `Welcome to ${dest.name}!`, text: `Your room is booked at ${this.city.placeById.hotel?.name}. Follow the waypoint. Fly home from the airport any time.`, kind: 'good', long: true } : { icon: '🏠', title: 'Home sweet home', text: `Back in ${dest.name}.`, kind: 'good' });
+    this.saveNow(true);
+  }
+
   homePlace() {
+    if (this.state?.trip && this.city.placeById.hotel) return this.city.placeById.hotel;
     return this.city.placeById['home_' + this.state.home.districtId] || this.city.places.find((p) => p.type === 'home');
   }
 
@@ -379,6 +425,8 @@ export class Game {
   enterPlace(place, instant) {
     if (place.station) return this.useStation(place);
     if (place.outdoor) return this.zooLife.openBooth(place);
+    // the hotel: guests go up to their room, everyone else books at the front desk
+    if (place.type === 'hotel' && !this.hotelAccess()) return openService(this, place);
     const go = () => {
       const st = this.state;
       const home = place.type === 'home';
@@ -612,8 +660,9 @@ export class Game {
     this.leaveInterior(true);
     this.state = state;
     const season = calendar(state.time.total).seasonId;
-    this.loadCity(state.cityId, season);
-    this.sim = new Sim(state, this.events, this.city.cfg);
+    this.loadCity(state.trip?.cityId || state.cityId, season);
+    // the sim (prices, rent, rankings) always belongs to your home city
+    this.sim = new Sim(state, this.events, getCity(state.cityId));
     installSystems(this.sim);
     this.vehicles.clear();
     this.vehicles.sync();
@@ -907,6 +956,7 @@ export class Game {
     this.cityEvents.update(dt, this.player.pos, !!inside);
     this.zooLife.update(dt, this.player.pos, !inside);
     this.campusLife.update(dt, this.player.pos, !inside);
+    this.airTraffic.update(dt, this.player.pos, !inside);
     this.npcs.update(dt, this.player.pos, !!inside);
     if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {
       const w = inside ? this.interior.world : this.city;

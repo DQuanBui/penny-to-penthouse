@@ -103,6 +103,7 @@ export class VehicleManager {
     const game = this.game;
     const st = game.state;
     if (!st || !game.city) return;
+    if (st.trip) return; // your cars are parked back home
     for (const [id, car] of this.cars) {
       if (!st.vehicles.find((v) => v.id === id)) {
         if (this.driving === car) this.exit(true);
