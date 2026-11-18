@@ -48,6 +48,7 @@ import { VehicleManager, loadVehicleModels } from '../world/Vehicles.js';
 import { Traffic } from '../world/Traffic.js';
 import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { PostFX } from './PostFX.js';
+import { pushOutOBB } from '../world/Collision.js';
 import { AudioEngine } from '../audio/AudioEngine.js';
 import { fmtMoney } from './utils.js';
 
@@ -255,7 +256,45 @@ export class Game {
   }
 
   cityWorld() {
-    return { colliders: this.city.colliders, groundY: this.city.groundY };
+    return { colliders: this.city.colliders, groundY: this.city.groundY, obstacles: (pos, r, y) => this.pushOutOfMovers(pos, r, y) };
+  }
+
+  /**
+   * Things that move or get parked: the player cannot walk through cars or
+   * people. Returns true when the player was pushed.
+   */
+  pushOutOfMovers(pos, r, y) {
+    let hit = false;
+    if (y < 1.5) {
+      for (const o of this.vehicles.parkedOBBs()) if (pushOutOBB(pos, r, o)) hit = true;
+      if (this.traffic.pushOut(pos, r)) hit = true;
+    }
+    // pedestrians: soft circles
+    const cr = this.crowd;
+    const rr = r + 0.28;
+    for (let i = 0; i < cr.n; i++) {
+      if (!cr.alive[i]) continue;
+      const dx = pos.x - cr.x[i];
+      const dz = pos.z - cr.z[i];
+      const d2 = dx * dx + dz * dz;
+      if (d2 >= rr * rr || d2 < 1e-6) continue;
+      const d = Math.sqrt(d2);
+      pos.x += (dx / d) * (rr - d);
+      pos.z += (dz / d) * (rr - d);
+      hit = true;
+    }
+    for (const a of this.npcs.out.values()) {
+      const p = a.rig.group.position;
+      const dx = pos.x - p.x;
+      const dz = pos.z - p.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 >= rr * rr || d2 < 1e-6) continue;
+      const d = Math.sqrt(d2);
+      pos.x += (dx / d) * (rr - d);
+      pos.z += (dz / d) * (rr - d);
+      hit = true;
+    }
+    return hit;
   }
 
   setPlayerLook(appearance) {
@@ -741,6 +780,7 @@ export class Game {
     this.crowd.densityMul = this.weather.info.crowd;
     this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside);
     this.npcs.update(dt, this.player.pos, !!inside);
+    this.traffic.parked = this.vehicles.parkedOBBs();
     this.traffic.update(dt, elapsed, hourOf(st.time.total), this.player.pos.x, this.player.pos.z, this.crowd, !inside, this.weather.info.crowd);
 
     this.tutorial.update();

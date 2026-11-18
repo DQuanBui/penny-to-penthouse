@@ -7,6 +7,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { loadAssetManifest } from '../core/Assets.js';
 import { clamp, damp, dampAngle } from '../core/utils.js';
+import { obbOverlap } from './Collision.js';
 
 export const LANE_IN = 1.75; // driving lanes (AI traffic)
 export const LANE_OUT = 5.25; // kerb lanes (parking)
@@ -153,6 +154,50 @@ export class VehicleManager {
     this.driving = null;
   }
 
+  /** Collision box of a car mesh at a pose (reuses `out`). */
+  obbOf(car, x, z, ry, out = {}) {
+    const sz = car.def.size;
+    out.x = x;
+    out.z = z;
+    out.ry = ry;
+    out.hw = 0.92 * sz[0];
+    out.hl = 2.17 * sz[2];
+    return out;
+  }
+
+  /** Boxes of every parked (not driven) player car. */
+  parkedOBBs() {
+    const out = (this._parked ||= []);
+    out.length = 0;
+    for (const car of this.cars.values()) {
+      if (car === this.driving) continue;
+      const g = car.group.position;
+      out.push(this.obbOf(car, g.x, g.z, car.group.rotation.y, (car._obb ||= {})));
+    }
+    return out;
+  }
+
+  /** Can the driven car stand at this pose? (asphalt only, no cars, no kerb-side objects) */
+  poseFree(car, x, z, ry) {
+    const game = this.game;
+    const s = Math.sin(ry);
+    const c = Math.cos(ry);
+    const box = this.obbOf(car, x, z, ry, (this._me ||= {}));
+    for (const [lx, lz] of CORNERS) {
+      const px = x + c * lx * car.def.size[0] + s * lz * car.def.size[2];
+      const pz = z - s * lx * car.def.size[0] + c * lz * car.def.size[2];
+      if (!this.onRoad(px, pz)) return false;
+      if (game.city.colliders.pointBlocked(px, 0.6, pz, 0)) return false; // parked cars, bollards
+    }
+    for (const car2 of this.cars.values()) {
+      if (car2 === car) continue;
+      const g = car2.group.position;
+      if (obbOverlap(box, this.obbOf(car2, g.x, g.z, car2.group.rotation.y, (this._other ||= {})))) return false;
+    }
+    if (game.traffic?.overlapsOBB(box)) return false;
+    return true;
+  }
+
   nearest(pos, reach = 3.4) {
     let best = null;
     let bd = reach * reach;
@@ -268,23 +313,15 @@ export class VehicleManager {
     const ry = g.rotation.y + turn * dt;
     const nx = g.position.x + Math.sin(ry) * car.speed * dt;
     const nz = g.position.z + Math.cos(ry) * car.speed * dt;
-    // stay on the asphalt: test the four corners
-    const s = Math.sin(ry);
-    const c = Math.cos(ry);
-    let ok = true;
-    for (const [lx, lz] of CORNERS) {
-      if (!this.onRoad(nx + c * lx + s * lz, nz - s * lx + c * lz)) {
-        ok = false;
-        break;
-      }
-    }
-    if (ok && game.traffic?.blocked(nx, nz, 2.6)) ok = false;
-    if (ok) {
+    // stay on the asphalt and never pass through another car
+    if (this.poseFree(car, nx, nz, ry)) {
       g.position.set(nx, 0, nz);
       g.rotation.y = ry;
     } else {
-      g.rotation.y = ry; // let the player steer out of a scrape
-      car.speed *= -0.25;
+      // bump: stop, bounce back a little, and allow steering on the spot if there is room
+      if (Math.abs(car.speed) > 3) game.audio?.play('bump');
+      car.speed *= -0.2;
+      if (this.poseFree(car, g.position.x, g.position.z, ry)) g.rotation.y = ry;
     }
     // the player "is" the car while driving (map, crowd, sky all follow it)
     game.player.pos.set(g.position.x, 0, g.position.z);

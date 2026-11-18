@@ -40,6 +40,79 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Cars are solid: walking into a parked car, into traffic, and driving into a car. */
+  async collide({ page, shot, wait }) {
+    await startLife(page, wait);
+    const setup = await page.evaluate(() => {
+      const g = window.__game;
+      g.state.money.checking = 80000;
+      g.sim.garage.buy('metro', '#c53a3a', 'cash');
+      g.sim.garage.buy('dart', '#3f5f8a', 'cash');
+      g.vehicles.sync();
+      const [a, b] = [...g.vehicles.cars.values()];
+      // second car parked 7 m behind the first, same lane
+      const ga = a.group;
+      b.v.pos = { x: ga.position.x - Math.sin(ga.rotation.y) * 7, z: ga.position.z - Math.cos(ga.rotation.y) * 7, ry: ga.rotation.y };
+      g.vehicles.sync();
+      // stand 4 m to the side of car A, facing it
+      const rx = Math.cos(ga.rotation.y);
+      const rz = -Math.sin(ga.rotation.y);
+      const sx = ga.position.x + rx * 4;
+      const sz = ga.position.z + rz * 4;
+      const head = Math.atan2(-rx, -rz);
+      g.player.teleport(sx, sz, head);
+      g.cam.snapBehind(head);
+      g.cam._init = false;
+      return { car: [ga.position.x, ga.position.z], start: [sx, sz] };
+    });
+    await page.keyboard.down('KeyW');
+    await wait(3500);
+    await page.keyboard.up('KeyW');
+    await shot('fix-walk-into-car');
+    const walk = await page.evaluate(([cx, cz]) => {
+      const g = window.__game;
+      return { distToCarCentre: +Math.hypot(g.player.pos.x - cx, g.player.pos.z - cz).toFixed(2) };
+    }, setup.car);
+    console.log('walk into parked car', JSON.stringify(walk), walk.distToCarCentre > 1.1 ? 'OK (blocked)' : 'FAIL (walked through)');
+    // drive car A backwards into car B
+    await page.evaluate(() => {
+      const g = window.__game;
+      const a = [...g.vehicles.cars.values()][0];
+      g.vehicles.enter(a);
+    });
+    await page.keyboard.down('KeyS');
+    await wait(4000);
+    await page.keyboard.up('KeyS');
+    const drive = await page.evaluate(() => {
+      const g = window.__game;
+      const [a, b] = [...g.vehicles.cars.values()];
+      return { gap: +Math.hypot(a.group.position.x - b.group.position.x, a.group.position.z - b.group.position.z).toFixed(2) };
+    });
+    console.log('reverse into parked car', JSON.stringify(drive), drive.gap > 4.2 ? 'OK (blocked)' : 'FAIL (overlap)');
+    await shot('fix-drive-into-car');
+    // walk into a traffic car
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.vehicles.exit(true);
+    });
+    const t = await page.evaluate(() => {
+      const g = window.__game;
+      const tr = g.traffic;
+      let best = -1;
+      for (let i = 0; i < tr.n; i++) if (tr.alive[i] && (best < 0 || Math.hypot(tr.x[i] - g.player.pos.x, tr.z[i] - g.player.pos.z) < Math.hypot(tr.x[best] - g.player.pos.x, tr.z[best] - g.player.pos.z))) best = i;
+      // freeze it and put the player right inside it
+      tr.max[best] = 0;
+      tr.speed[best] = 0;
+      g.player.teleport(tr.x[best] + 0.2, tr.z[best] + 0.1, 0);
+      return best;
+    });
+    await wait(600);
+    const inside = await page.evaluate((i) => {
+      const g = window.__game;
+      return +Math.hypot(g.player.pos.x - g.traffic.x[i], g.player.pos.z - g.traffic.z[i]).toFixed(2);
+    }, t);
+    console.log('player inside traffic car pushed out to', inside, inside > 1.1 ? 'OK' : 'FAIL');
+  },
   /** Phase 12: post-processing on Medium, audio engine running, dev debug panel. */
   async polish({ page, shot, wait }) {
     await startLife(page, wait);

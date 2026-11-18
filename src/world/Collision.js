@@ -105,3 +105,57 @@ export class ColliderWorld {
     return false;
   }
 }
+
+// ---- oriented boxes (cars) ----------------------------------------------------
+// An OBB is { x, z, ry, hw, hl }: centre, heading (forward = (sin ry, cos ry)),
+// half width and half length.
+
+/**
+ * Push a circle out of an oriented box. Mutates pos. Returns true on contact.
+ */
+export function pushOutOBB(pos, r, o) {
+  const s = Math.sin(o.ry);
+  const c = Math.cos(o.ry);
+  const dx = pos.x - o.x;
+  const dz = pos.z - o.z;
+  const lx = dx * c - dz * s; // along the box's right axis
+  const lz = dx * s + dz * c; // along its forward axis
+  if (Math.abs(lx) > o.hw + r || Math.abs(lz) > o.hl + r) return false;
+  const cx = lx < -o.hw ? -o.hw : lx > o.hw ? o.hw : lx;
+  const cz = lz < -o.hl ? -o.hl : lz > o.hl ? o.hl : lz;
+  const ex = lx - cx;
+  const ez = lz - cz;
+  const d2 = ex * ex + ez * ez;
+  if (d2 >= r * r) return false;
+  let nx;
+  let nz;
+  if (d2 > 1e-8) {
+    const d = Math.sqrt(d2);
+    nx = cx + (ex / d) * r;
+    nz = cz + (ez / d) * r;
+  } else if (o.hw - Math.abs(lx) < o.hl - Math.abs(lz)) {
+    nx = (lx < 0 ? -1 : 1) * (o.hw + r);
+    nz = lz;
+  } else {
+    nx = lx;
+    nz = (lz < 0 ? -1 : 1) * (o.hl + r);
+  }
+  pos.x = o.x + c * nx + s * nz;
+  pos.z = o.z - s * nx + c * nz;
+  return true;
+}
+
+/** Do two oriented boxes overlap? (separating-axis test) */
+export function obbOverlap(a, b) {
+  const axes = [a.ry, a.ry + Math.PI / 2, b.ry, b.ry + Math.PI / 2];
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  for (const ang of axes) {
+    const ax = Math.sin(ang);
+    const az = Math.cos(ang);
+    const ra = a.hl * Math.abs(Math.sin(a.ry) * ax + Math.cos(a.ry) * az) + a.hw * Math.abs(Math.cos(a.ry) * ax - Math.sin(a.ry) * az);
+    const rb = b.hl * Math.abs(Math.sin(b.ry) * ax + Math.cos(b.ry) * az) + b.hw * Math.abs(Math.cos(b.ry) * ax - Math.sin(b.ry) * az);
+    if (Math.abs(dx * ax + dz * az) > ra + rb) return false;
+  }
+  return true;
+}

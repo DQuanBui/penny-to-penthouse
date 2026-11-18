@@ -157,6 +157,10 @@ export class AudioEngine {
         this.tone(d, { f: 120, f2: 62, dur: 0.14, gain: 0.3 });
         this.burst(d, { f: 1400, dur: 0.05, gain: 0.08 });
         break;
+      case 'bump':
+        this.tone(d, { f: 90, f2: 40, dur: 0.25, gain: 0.35 });
+        this.burst(d, { f: 900, dur: 0.18, gain: 0.18 });
+        break;
       case 'step':
         this.burst(d, { f: 500 + Math.random() * 250, dur: 0.06, gain: 0.07 });
         break;

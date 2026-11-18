@@ -6,6 +6,7 @@ import { carGeometry, LANE_IN } from './Vehicles.js';
 import { crowdDensity } from '../characters/Crowd.js';
 import { CLOTH_COLORS } from '../characters/Customization.js';
 import { mulberry32, damp } from '../core/utils.js';
+import { obbOverlap, pushOutOBB } from './Collision.js';
 
 const COUNTS = { low: 8, medium: 16, high: 26 };
 const CAR_COLORS = ['#f4f4f2', '#1d1f24', '#8a8d92', '#b0463c', '#27406b', '#d9c7a8', '#3f5f4a', '#e9c04c', ...CLOTH_COLORS.slice(8, 11)];
@@ -103,13 +104,42 @@ export class Traffic {
     this.alive[i] = 0;
   }
 
-  /** Is any traffic car within r of a point? (used by the player's car and spawning) */
+  /** Is any traffic car within r of a point? (used when spawning) */
   blocked(x, z, r, ignore = -1) {
     for (let i = 0; i < this.n; i++) {
       if (!this.alive[i] || i === ignore) continue;
       if ((this.x[i] - x) ** 2 + (this.z[i] - z) ** 2 < r * r) return true;
     }
     return false;
+  }
+
+  /** Does any traffic car overlap this oriented box? */
+  overlapsOBB(box) {
+    const o = (this._obb ||= { hw: 0.92, hl: 2.17 });
+    for (let i = 0; i < this.n; i++) {
+      if (!this.alive[i]) continue;
+      if ((this.x[i] - box.x) ** 2 + (this.z[i] - box.z) ** 2 > 49) continue;
+      o.x = this.x[i];
+      o.z = this.z[i];
+      o.ry = this.ry[i];
+      if (obbOverlap(box, o)) return true;
+    }
+    return false;
+  }
+
+  /** Push a circle (the walking player) out of every nearby traffic car. */
+  pushOut(pos, r) {
+    const o = (this._push ||= { hw: 0.92, hl: 2.17 });
+    let hit = false;
+    for (let i = 0; i < this.n; i++) {
+      if (!this.alive[i]) continue;
+      if ((this.x[i] - pos.x) ** 2 + (this.z[i] - pos.z) ** 2 > 16) continue;
+      o.x = this.x[i];
+      o.z = this.z[i];
+      o.ry = this.ry[i];
+      if (pushOutOBB(pos, r, o)) hit = true;
+    }
+    return hit;
   }
 
   /** Pick the next intersection after arriving at (ti,tj). */
@@ -209,6 +239,13 @@ export class Traffic {
           const ahead = (px - this.x[i]) * hx + (pz - this.z[i]) * hz;
           const side = Math.abs((px - this.x[i]) * hz - (pz - this.z[i]) * hx);
           if (ahead > 0 && ahead < look + 3 && side < 2.6) target = 0;
+        }
+        // the player's parked cars (they may have been left in a lane)
+        for (const o of this.parked || []) {
+          if (target === 0) break;
+          const ahead = (o.x - this.x[i]) * hx + (o.z - this.z[i]) * hz;
+          const side = Math.abs((o.x - this.x[i]) * hz - (o.z - this.z[i]) * hx);
+          if (ahead > 0 && ahead < look + 4 && side < 2.4) target = 0;
         }
         if (target > 0 && crowd && crowd.n) {
           for (let k = 0; k < crowd.n; k++) {
