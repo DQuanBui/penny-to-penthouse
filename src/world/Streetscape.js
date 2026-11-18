@@ -6,7 +6,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { InstanceBatch, FACADE } from './Buildings.js';
-import { carGeometry, LANE_OUT } from './Vehicles.js';
+import { LANE_OUT } from './Vehicles.js';
+import { carGeometry, carMaterial } from './CarModel.js';
 import { pick } from '../core/utils.js';
 
 const CAR_COLORS = ['#f4f4f2', '#1d1f24', '#8a8d92', '#b0463c', '#27406b', '#d9c7a8', '#3f5f4a', '#5a6270', '#a8adb4', '#7a2230', '#2f4f6f', '#c9b16b'];
@@ -55,7 +56,7 @@ export function buildStreetscape(ctx) {
   };
 
   // ---- parked cars -----------------------------------------------------------
-  const cars = new InstanceBatch(carGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.38, metalness: 0.35 }), { castShadow: true });
+  const cars = new InstanceBatch(carGeometry(), carMaterial(), { castShadow: true });
   ctx.parkedCars = [];
   for (const b of blocks) {
     // [side, kerb-lane position, heading, along-axis]

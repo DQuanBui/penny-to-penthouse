@@ -2,41 +2,17 @@
 // driving on the road network, and kerb-side parking.
 // Optional models: public/models/vehicles/<vehicle id>.glb replace the mesh.
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { loadAssetManifest } from '../core/Assets.js';
 import { clamp, damp, dampAngle } from '../core/utils.js';
 import { obbOverlap } from './Collision.js';
+import { carGeometry, carMaterial } from './CarModel.js';
 
 export const LANE_IN = 1.75; // driving lanes (AI traffic)
 export const LANE_OUT = 5.25; // kerb lanes (parking)
 
-/** Base car geometry (front faces +Z). Body is white so a colour can tint it. */
-export function carGeometry() {
-  const paint = (g, r, gr, b) => {
-    const n = g.attributes.position.count;
-    const c = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) {
-      c[i * 3] = r;
-      c[i * 3 + 1] = gr;
-      c[i * 3 + 2] = b;
-    }
-    g.deleteAttribute('uv');
-    g.setAttribute('color', new THREE.BufferAttribute(c, 3));
-    return g;
-  };
-  const parts = [
-    paint(new THREE.BoxGeometry(1.8, 0.52, 4.3).translate(0, 0.56, 0), 1, 1, 1),
-    paint(new THREE.BoxGeometry(1.62, 0.2, 3.9).translate(0, 0.9, -0.05), 1, 1, 1),
-    paint(new THREE.BoxGeometry(1.56, 0.48, 2.2).translate(0, 1.2, -0.2), 0.1, 0.13, 0.18),
-    paint(new THREE.BoxGeometry(1.5, 0.05, 2.0).translate(0, 1.46, -0.2), 1, 1, 1),
-    paint(new THREE.BoxGeometry(1.5, 0.12, 0.06).translate(0, 0.7, 2.16), 2.2, 2.0, 1.5),
-    paint(new THREE.BoxGeometry(1.5, 0.1, 0.06).translate(0, 0.72, -2.16), 1.6, 0.1, 0.1),
-  ];
-  for (const x of [-0.9, 0.9]) for (const z of [-1.35, 1.35]) parts.push(paint(new THREE.CylinderGeometry(0.34, 0.34, 0.26, 12).rotateZ(Math.PI / 2).translate(x, 0.34, z), 0.03, 0.03, 0.035));
-  return mergeGeometries(parts);
-}
+export { carGeometry } from './CarModel.js';
 
 const glb = new Map();
 let glbLoaded = false;
@@ -56,6 +32,7 @@ export async function loadVehicleModels() {
 }
 
 let sharedGeo = null;
+let sharedMat = null;
 export function buildCarMesh(modelId, color) {
   const def = VEHICLE_BY_ID[modelId];
   const src = glb.get(modelId);
@@ -72,7 +49,9 @@ export function buildCarMesh(modelId, color) {
     return group;
   }
   sharedGeo ||= carGeometry();
-  const mesh = new THREE.Mesh(sharedGeo, new THREE.MeshStandardMaterial({ vertexColors: true, color, roughness: 0.32, metalness: 0.45 }));
+  // a one-instance InstancedMesh so only the paint takes the colour
+  const mesh = new THREE.InstancedMesh(sharedGeo, (sharedMat ||= carMaterial({ roughness: 0.25, metalness: 0.5 })), 1);
+  mesh.setColorAt(0, new THREE.Color(color));
   mesh.scale.set(def.size[0], def.size[1], def.size[2]);
   mesh.castShadow = true;
   group.add(mesh);

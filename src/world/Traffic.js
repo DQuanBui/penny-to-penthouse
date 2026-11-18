@@ -2,7 +2,8 @@
 // at red lights, keep their distance and always yield to pedestrians, the
 // player and the player's car. One InstancedMesh; state in typed arrays.
 import * as THREE from 'three';
-import { carGeometry, LANE_IN } from './Vehicles.js';
+import { LANE_IN } from './Vehicles.js';
+import { carGeometry, carMaterial } from './CarModel.js';
 import { crowdDensity } from '../characters/Crowd.js';
 import { CLOTH_COLORS } from '../characters/Customization.js';
 import { mulberry32, damp } from '../core/utils.js';
@@ -51,7 +52,7 @@ export class Traffic {
     this.fromX = new Float32Array(n);
     this.fromZ = new Float32Array(n);
     this.alive = new Uint8Array(n);
-    this.inst = new THREE.InstancedMesh(carGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.35 }), n);
+    this.inst = new THREE.InstancedMesh(carGeometry(), carMaterial(), n);
     this.inst.castShadow = true;
     this.inst.frustumCulled = false;
     for (let i = 0; i < n; i++) this.inst.setColorAt(i, this._c.set(CAR_COLORS[Math.floor(this.rng() * CAR_COLORS.length)]));
