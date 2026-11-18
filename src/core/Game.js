@@ -46,6 +46,7 @@ import { openLifeEvent } from '../ui/EventDialog.js';
 import { recordHallOfFame } from '../sim/Rankings.js';
 import { VehicleManager, loadVehicleModels } from '../world/Vehicles.js';
 import { Traffic } from '../world/Traffic.js';
+import { Animals } from '../world/Animals.js';
 import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { PostFX } from './PostFX.js';
 import { pushOutOBB } from '../world/Collision.js';
@@ -96,6 +97,8 @@ export class Game {
     this.weather = new Weather(this.scene, this.sky);
     this.vehicles = new VehicleManager(this);
     this.traffic = new Traffic(this.scene);
+    this.animals = new Animals(this.scene);
+    this.animals.onScare = () => this.audio.play('flap');
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
     this.tutorial = new Tutorial(this);
@@ -154,6 +157,7 @@ export class Game {
     if (this.city && this._crowdQ !== q) {
       this.crowd.setCity(this.city, q);
       this.traffic.setCity(this.city, q);
+      this.animals.setCity(this.city, q);
     }
     this._crowdQ = q;
     this.cam.sensitivity = s.get('sensitivity');
@@ -234,6 +238,7 @@ export class Game {
     this.crowd.setCity(this.city, this.quality);
     this.npcs.setCity(this.city);
     this.traffic.setCity(this.city, this.quality);
+    this.animals.setCity(this.city, this.quality);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
     return this.city;
@@ -447,6 +452,7 @@ export class Game {
     this.vehicles.exit(true);
     this.vehicles.clear();
     this.crowd.group.visible = false;
+    this.animals.group.visible = false;
     this.state = null;
     this.sim = null;
     this.title?.close();
@@ -779,6 +785,7 @@ export class Game {
     this.weather.update(dt, this.city.cfg, st.time.total, this.camera.position, !inside);
     this.crowd.densityMul = this.weather.info.crowd;
     this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside, elapsed);
+    this.animals.update(dt, this.crowd, this.player.pos.x, this.player.pos.z, this.sky.night, !inside);
     this.npcs.update(dt, this.player.pos, !!inside);
     this.traffic.parked = this.vehicles.parkedOBBs();
     this.traffic.update(dt, elapsed, hourOf(st.time.total), this.player.pos.x, this.player.pos.z, this.crowd, !inside, this.weather.info.crowd);

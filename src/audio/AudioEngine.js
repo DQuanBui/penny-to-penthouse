@@ -157,6 +157,9 @@ export class AudioEngine {
         this.tone(d, { f: 120, f2: 62, dur: 0.14, gain: 0.3 });
         this.burst(d, { f: 1400, dur: 0.05, gain: 0.08 });
         break;
+      case 'flap':
+        for (let i = 0; i < 7; i++) this.burst(d, { type: 'bandpass', f: 900 + Math.random() * 600, q: 1.5, t: i * 0.055, dur: 0.05, gain: 0.07 });
+        break;
       case 'bump':
         this.tone(d, { f: 90, f2: 40, dur: 0.25, gain: 0.35 });
         this.burst(d, { f: 900, dur: 0.18, gain: 0.18 });

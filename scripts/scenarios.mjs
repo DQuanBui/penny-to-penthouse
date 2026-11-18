@@ -40,6 +40,74 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  async animals({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 10 * 60;
+    });
+    await wait(4000);
+    // follow a dog walker
+    const dog = await page.evaluate(() => {
+      const g = window.__game;
+      const cr = g.crowd;
+      for (let k = 0; k < 40; k++) {
+        const a = k * 8 + 3;
+        if (cr.alive[a] && cr.cur[a] > 0) {
+          const ry = cr.ry[a];
+          g.player.teleport(cr.x[a] + Math.sin(ry) * 6 + Math.cos(ry) * 2.5, cr.z[a] + Math.cos(ry) * 6 - Math.sin(ry) * 2.5, ry + Math.PI);
+          g.cam.snapBehind(ry + Math.PI - 0.5);
+          g.cam.pitch = 0.12;
+          g.cam.dist = 5;
+          g.cam._init = false;
+          return k;
+        }
+      }
+      return -1;
+    });
+    console.log('dog walker', dog);
+    await wait(1500);
+    await shot('animals-dog');
+    // walk into a pigeon flock
+    const fl = await page.evaluate(() => {
+      const g = window.__game;
+      const an = g.animals;
+      const f = an.flock.findIndex((x) => x.state === 'ground');
+      if (f < 0) return null;
+      const F = an.flock[f];
+      g.player.teleport(F.x + 6, F.z, -Math.PI / 2);
+      g.cam.snapBehind(-Math.PI / 2);
+      g.cam.pitch = 0.2;
+      g.cam._init = false;
+      return f;
+    });
+    console.log('flock', fl);
+    await wait(1200);
+    await shot('animals-pigeons');
+    await page.keyboard.down('KeyW');
+    await wait(2400);
+    await page.keyboard.up('KeyW');
+    await wait(500);
+    await shot('animals-pigeons-fly');
+    const st = await page.evaluate((f) => window.__game.animals.flock[f].state, fl);
+    console.log('flock state after approach', st);
+    // park with ducks, looking up at birds
+    await page.evaluate(() => {
+      const g = window.__game;
+      const b = g.animals.parks[0];
+      g.player.teleport(b.cx + 4.5, b.cz + 1.5, -Math.PI / 2);
+      g.cam.snapBehind(-Math.PI / 2 + 0.3);
+      g.cam.pitch = 0.35;
+      g.cam.dist = 6;
+      g.cam._init = false;
+    });
+    await wait(2000);
+    await shot('animals-ducks');
+  },
   /** Photograph storefronts of several place types, day and night. */
   async fronts({ page, shot, wait }) {
     await startLife(page, wait);
