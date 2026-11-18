@@ -53,7 +53,8 @@ export function decorateParks(ctx) {
     if (b.kind !== 'park') continue;
     const cx = b.cx;
     const cz = b.cz;
-    const h = (K.BLOCK - 4) / 2 - 0.6;
+    // hedge line just inside the lawn, clear of the sidewalk people walk on
+    const h = K.BLOCK / 2 - K.SIDEWALK - 0.5;
     // hedges around the edge, with gaps where the paths enter
     for (const [ax, sgn] of [['x', -1], ['x', 1], ['z', -1], ['z', 1]]) {
       for (const seg of [-1, 1]) {

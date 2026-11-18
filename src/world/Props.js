@@ -161,7 +161,7 @@ export function buildProps(ctx) {
 
     // --- Parks, courtyards and yards ---------------------------------------
     if (b.kind === 'park') {
-      const inner = BLOCK - 4;
+      const inner = BLOCK - 2 * K.SIDEWALK; // lawn inside a full sidewalk ring
       grass.add(b.cx, Y + 0.012, b.cz, { sx: inner, sz: inner });
       paths.add(b.cx, Y + 0.02, b.cz, { sx: inner, sz: 2.4 });
       paths.add(b.cx, Y + 0.02, b.cz, { sx: 2.4, sz: inner });

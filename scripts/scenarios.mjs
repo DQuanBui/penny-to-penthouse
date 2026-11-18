@@ -167,6 +167,44 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Pedestrians stay on the pavement: never inside hedges, props or on park lawns. */
+  async walkers({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60;
+      const park = g.city.blocks.find((b) => b.kind === 'park');
+      g.player.teleport(park.cx + 30, park.cz + 30, -2.35);
+      g.cam.snapBehind(-2.35);
+      g.cam.pitch = 0.3;
+      g.cam.dist = 9;
+    });
+    let worst = { blocked: 0, lawn: 0 };
+    let samples = 0;
+    for (let k = 0; k < 25; k++) {
+      const r = await page.evaluate(() => {
+        const g = window.__game;
+        const c = g.crowd;
+        const parks = g.city.blocks.filter((b) => b.kind === 'park');
+        let blocked = 0;
+        let lawn = 0;
+        let alive = 0;
+        for (let i = 0; i < c.n; i++) {
+          if (!c.alive[i]) continue;
+          alive++;
+          if (g.city.colliders.pointBlocked(c.x[i], 0.55, c.z[i], 0.0)) blocked++;
+          for (const b of parks) if (Math.abs(c.x[i] - b.cx) < 23.8 && Math.abs(c.z[i] - b.cz) < 23.8) lawn++;
+        }
+        return { alive, blocked, lawn };
+      });
+      samples += r.alive;
+      worst = { blocked: Math.max(worst.blocked, r.blocked), lawn: Math.max(worst.lawn, r.lawn) };
+      await wait(500);
+    }
+    console.log('walkers', JSON.stringify({ samples, worst }));
+    await shot('walkers-park');
+  },
   /** City buses: running routes and pulling up at shelters. */
   async buses({ page, shot, wait }) {
     await startLife(page, wait);

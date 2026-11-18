@@ -199,6 +199,8 @@ export class Crowd {
     this.waitSig = new Uint8Array(n); // 1 = waiting to cross on a signal
     this.crossAxis = new Uint8Array(n); // 1 crossing along x, 2 along z
     this.chat = new Uint8Array(n); // talks on the phone / to a friend while paused
+    this.off = new Float32Array(n); // sidestep: current offset from the walking line (m, to the right)
+    this.tOff = new Float32Array(n); // ...and where it is heading
     this.bi = new Int16Array(n);
     this.bj = new Int16Array(n);
     this.alive = new Uint8Array(n);
@@ -225,6 +227,13 @@ export class Crowd {
   chooseNext(i, allowReverse) {
     const c = this.city;
     const K = c.K;
+    // back onto the walking line before snapping to the corner
+    if (this.off[i]) {
+      this.x[i] += this.hz[i] * this.off[i];
+      this.z[i] -= this.hx[i] * this.off[i];
+      this.off[i] = 0;
+    }
+    this.tOff[i] = 0;
     const x0 = c.blockMin(this.bi[i]) + INSET;
     const x1 = x0 + K.BLOCK - INSET * 2;
     const z0 = c.blockMin(this.bj[i]) + INSET;
@@ -308,8 +317,47 @@ export class Crowd {
     const jogger = this.rng() < 0.06;
     this.speed[i] = jogger ? 2.6 + this.rng() * 0.6 : 1.05 + this.rng() * 0.55;
     this.pause[i] = 0;
+    this.off[i] = 0;
+    this.tOff[i] = 0;
     this.ry[i] = Math.atan2(this.hx[i], this.hz[i]);
     this.alive[i] = 1;
+  }
+
+  /**
+   * Walk around anything solid on the pavement (hedges, bins, patios, shelters,
+   * a parked bike...) by sliding sideways within the sidewalk.
+   */
+  steer(i) {
+    const col = this.city.colliders;
+    const hx = this.hx[i];
+    const hz = this.hz[i];
+    // the walking line under the agent, and the right-hand direction
+    const lx = this.x[i] + hz * this.off[i];
+    const lz = this.z[i] - hx * this.off[i];
+    const rx = -hz;
+    const rz = hx;
+    const free = (o) => {
+      for (const a of [0.6, 1.3]) {
+        if (col.pointBlocked(lx + rx * o + hx * a, 0.55, lz + rz * o + hz * a, 0.32)) return false;
+      }
+      return true;
+    };
+    const cur = this.tOff[i];
+    // near the corner, head back to the line so the turn is seamless
+    const pref = this.left[i] < 2.5 ? 0 : cur;
+    if (free(pref)) {
+      this.tOff[i] = pref !== 0 && free(0) ? 0 : pref;
+      return;
+    }
+    for (const o of [cur + 0.9, cur - 0.9, cur + 1.8, cur - 1.8, 0]) {
+      if (Math.abs(o) <= 1.9 && free(o)) {
+        this.tOff[i] = o;
+        return;
+      }
+    }
+    // boxed in: wait a moment
+    this.pause[i] = 0.8;
+    this.chat[i] = 0;
   }
 
   /** May agent i start crossing right now? (walk signal) */
@@ -333,6 +381,7 @@ export class Crowd {
     const groundY = this.city.groundY;
     const phase = this.city.signalPhase(elapsed);
     const gait = this.gait;
+    this._frame = ((this._frame || 0) + 1) & 1023;
 
     for (let i = 0; i < n; i++) {
       if (i >= want) {
@@ -358,6 +407,15 @@ export class Crowd {
       }
       // step aside politely if the player is right in the way
       if (v > 0 && d2 < 0.9 * 0.9 && -(dx * this.hx[i] + dz * this.hz[i]) > 0) v = 0;
+      // sidewalks only: look ahead for obstacles (a quarter of the agents each frame)
+      if (v > 0 && !this.crossAxis[i] && ((i + this._frame) & 3) === 0) this.steer(i);
+      const dOff = Math.max(-dt * 1.3, Math.min(dt * 1.3, this.tOff[i] - this.off[i]));
+      if (dOff) {
+        this.off[i] += dOff;
+        this.x[i] -= this.hz[i] * dOff;
+        this.z[i] += this.hx[i] * dOff;
+        v *= 0.8;
+      }
       this.cur[i] = v;
       this.x[i] += this.hx[i] * v * dt;
       this.z[i] += this.hz[i] * v * dt;
