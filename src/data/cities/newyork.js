@@ -49,5 +49,6 @@ export default {
     { type: 'bar', name: 'Velvet Hour Lounge', district: 'brooklyn' },
     { type: 'realestate', name: 'Keystone Realty', district: 'midtown' },
     { type: 'dealer', name: 'Apex Motors', district: 'queens' },
+    { type: 'mall', name: 'Liberty Galleria', district: 'midtown' },
   ],
 };

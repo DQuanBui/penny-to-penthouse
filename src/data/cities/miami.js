@@ -49,5 +49,6 @@ export default {
     { type: 'college', name: 'Biscayne State College', district: 'brickell' },
     { type: 'bar', name: 'Club Marea', district: 'south_beach' },
     { type: 'dealer', name: 'Apex Motors', district: 'south_beach' },
+    { type: 'mall', name: 'Bayside Galleria', district: 'brickell' },
   ],
 };

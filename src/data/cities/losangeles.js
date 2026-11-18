@@ -50,5 +50,6 @@ export default {
     { type: 'bar', name: 'The Neon Palm', district: 'hollywood' },
     { type: 'realestate', name: 'Coastline Realty', district: 'santa_monica' },
     { type: 'dealer', name: 'Apex Motors', district: 'downtown' },
+    { type: 'mall', name: 'Sunset Galleria', district: 'santa_monica' },
   ],
 };

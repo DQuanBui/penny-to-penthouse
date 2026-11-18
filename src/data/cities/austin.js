@@ -49,5 +49,6 @@ export default {
     { type: 'bar', name: 'The Armadillo Stage', district: 'east_austin' },
     { type: 'realestate', name: 'Keystone Realty', district: 'south_congress' },
     { type: 'dealer', name: 'Apex Motors', district: 'the_domain' },
+    { type: 'mall', name: 'Domain Galleria', district: 'the_domain' },
   ],
 };

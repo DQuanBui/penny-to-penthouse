@@ -12,6 +12,9 @@ import { PLACE_TYPES } from '../data/placeTypes.js';
 
 export const ROOM_H = 3.0;
 
+/** Prompt text for counters that offer a specific service (mall). */
+const SVC_LABEL = { clothing: 'Fashion counter', electronics: 'Tech counter', cafe: 'Food court' };
+
 const USE_LABEL = {
   sleep: 'Sleep', relax: 'Relax', computer: 'Use the computer', read: 'Read a book', eat: 'Open the fridge', cook: 'Cook a meal',
   shower: 'Take a shower', bath: 'Take a bath', wardrobe: 'Change outfit', tv: 'Watch TV', game: 'Play video games', music: 'Listen to music',
@@ -127,6 +130,26 @@ export function commercialLayout(place) {
         { id: 'plant_tree', x: 12.3, z: 0.7, r: 0 },
         { id: 'painting_l', x: 10.4, z: 0.3, r: 0 },
         ...cafeTables(2, 3.6, 4, 2, 2.8, 2.6),
+      ]);
+    case 'mall':
+      // atrium with three counters: fashion, tech and a food court
+      return L(20, 14, 'tile', '#f1f3f5', [
+        { id: 'shop_counter', x: 3.5, z: 1.6, r: 0, svc: 'clothing' },
+        { id: 'clothes_rack', x: 1.4, z: 0.3, r: 0 },
+        { id: 'clothes_rack', x: 5.6, z: 0.3, r: 0 },
+        { id: 'clothes_rack', x: 3.5, z: 4.2, r: 0 },
+        { id: 'shop_counter', x: 16.5, z: 1.6, r: 0, svc: 'electronics' },
+        { id: 'shop_shelf', x: 14.4, z: 0.3, r: 0 },
+        { id: 'shop_shelf', x: 18.6, z: 0.3, r: 0 },
+        { id: 'tv_big', x: 16.5, z: 0.3, r: 0 },
+        { id: 'bar_counter', x: 10, z: 1.6, r: 0, svc: 'cafe' },
+        { id: 'plant_tree', x: 7.6, z: 0.8, r: 0 },
+        { id: 'plant_tree', x: 12.4, z: 0.8, r: 0 },
+        { id: 'sofa', x: 6.5, z: 9.5, r: 1 },
+        { id: 'sofa', x: 13.5, z: 9.5, r: 3 },
+        { id: 'plant_floor', x: 0.5, z: 13.4, r: 0 },
+        { id: 'plant_floor', x: 19.5, z: 13.4, r: 0 },
+        ...cafeTables(8.3, 5.4, 3, 2, 1.7, 2.3),
       ]);
     case 'shop': {
       const rack = place.type === 'clothing' ? 'clothes_rack' : 'shop_shelf';
@@ -401,7 +424,7 @@ export class Interior {
         // interaction spot: just in front of the item
         const a = (it.r || 0) * (Math.PI / 2);
         const reach = def.d / 2 + 0.45;
-        this.points.push({ x: it.x + Math.sin(a) * reach, z: it.z + Math.cos(a) * reach, ix: it.x, iz: it.z, r: Math.max(1.15, def.w / 2 + 0.5), use, item: it, def, label: USE_LABEL[use] || 'Use' });
+        this.points.push({ x: it.x + Math.sin(a) * reach, z: it.z + Math.cos(a) * reach, ix: it.x, iz: it.z, r: Math.max(1.15, def.w / 2 + 0.5), use, item: it, def, label: it.svc ? SVC_LABEL[it.svc] || USE_LABEL[use] : USE_LABEL[use] || 'Use' });
       }
       if (def.light && lampI < this.lamps.length) {
         this.lamps[lampI].position.set(it.x, Math.min(2.4, (def.p?.h || 2) + 0.2), it.z);

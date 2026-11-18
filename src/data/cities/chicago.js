@@ -49,5 +49,6 @@ export default {
     { type: 'bar', name: 'The Blue Note Room', district: 'river_north' },
     { type: 'realestate', name: 'Keystone Realty', district: 'river_north' },
     { type: 'dealer', name: 'Apex Motors', district: 'hyde_park' },
+    { type: 'mall', name: 'Magnificent Galleria', district: 'river_north' },
   ],
 };

@@ -49,7 +49,7 @@ export function useFurniture(game, point) {
   if (use === 'eat') return openFridge(game, q);
   if (use === 'computer') return openComputer(game, q);
   if (use === 'wardrobe') return openWardrobe(game);
-  if (use === 'service') return openService(game, game.inside.place);
+  if (use === 'service') return openService(game, game.inside.place, item.svc);
   if (use === 'work') return openShift(game, game.inside.place);
   if (use === 'workout') return useGym(game, q);
   if (simple[use]) {

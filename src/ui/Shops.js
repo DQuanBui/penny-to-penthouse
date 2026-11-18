@@ -254,6 +254,9 @@ export const SERVICES = {
     HomesApp.tab = 'buy';
     game.phone.open('homes');
   },
+  mall(game, place, body) {
+    body.append(h('div.muted', 'Three floors of shopping. Walk up to the fashion counter, the tech counter or the food court inside.'));
+  },
   bank(game) {
     game.closeTop();
     game.phone.open('bank');
@@ -261,9 +264,9 @@ export const SERVICES = {
 };
 
 /** Open the counter dialog for a place. */
-export function openService(game, place) {
+export function openService(game, place, svcOverride) {
   const meta = PLACE_TYPES[place.type];
-  const service = meta.service;
+  const service = svcOverride || meta.service;
   // workplaces without a shop: go straight to the shift dialog
   if (service === 'work') return openShift(game, place);
   const body = tolerant(h('div.menu-col'));

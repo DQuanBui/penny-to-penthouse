@@ -10,6 +10,7 @@ import { ColliderWorld } from './Collision.js';
 import { buildRoads } from './Roads.js';
 import { buildProps, buildStation } from './Props.js';
 import { buildLandmarks } from './Landmarks.js';
+import { buildStorefronts } from './Storefronts.js';
 import { labelTexture, iconTexture } from './Textures.js';
 
 export const K = { BLOCK: 58, SIDEWALK: 5, ROAD: 14, PITCH: 72, CURB: 0.15, PROM: 26 };
@@ -123,13 +124,14 @@ export function generateCity(cfg, opts = {}) {
   const roofs = new InstanceBatch(roofGeo, new THREE.MeshStandardMaterial({ roughness: 0.9 }), { castShadow: true });
   const plain = { type: FACADE.PLAIN };
 
-  const addBuilding = (x0, z0, x1, z1, h, st, isPlace) => {
+  const addBuilding = (x0, z0, x1, z1, h, st, isPlace, over) => {
     const w = x1 - x0;
     const d = z1 - z0;
     const cx = (x0 + x1) / 2;
     const cz = (z0 + z1) / 2;
-    const color = pick(rng, st.palette);
-    const type = FACADE_ID[pick(rng, st.facade)] ?? FACADE.MASONRY;
+    const color = over?.color || pick(rng, st.palette);
+    const type = FACADE_ID[over?.facade || pick(rng, st.facade)] ?? FACADE.MASONRY;
+    if (over?.tiers) st = { ...st, tiers: true };
     const style = { floorH: st.floorH * (0.95 + rng() * 0.1), bay: st.bay * (0.9 + rng() * 0.25), seed: rng() * 100, type };
     batch.add(cx, cz, w, d, h, color, style);
     colliders.add(x0, z0, x1, z1, h);
@@ -154,7 +156,11 @@ export function generateCity(cfg, opts = {}) {
     for (const lot of b.lots) {
       if (lot.empty) continue;
       let h = (h0 + (h1 - h0) * Math.pow(rng(), 1.7)) * hm;
+      // some places have a building of their own (bank tower, hospital, mall...)
+      const over = lot.place ? PLACE_TYPES[lot.place.type].look?.building : null;
       if (lot.place) h = Math.max(h, 9);
+      if (over) h = over.minH + (over.maxH - over.minH) * rng();
+      lot.h = h;
       if (st.lots === 'houses' && !lot.place) {
         // detached house with a pitched roof, set back behind a small yard
         const w = 10 + rng() * 2.5;
@@ -173,7 +179,7 @@ export function generateCity(cfg, opts = {}) {
         const x1 = lot.x1 - (lot.sides.includes('e') ? 0 : gap);
         const z0 = lot.z0 + (lot.sides.includes('n') ? 0 : gap);
         const z1 = lot.z1 - (lot.sides.includes('s') ? 0 : gap);
-        addBuilding(x0, z0, x1, z1, h, st, !!lot.place);
+        addBuilding(x0, z0, x1, z1, h, st, !!lot.place, over);
         if (st.lots === 'rows' && !lot.place) {
           // brownstone stoop
           const [nx, nz] = NORMALS[lot.sides[0]];
@@ -240,6 +246,7 @@ export function generateCity(cfg, opts = {}) {
 
   buildProps(ctx);
   decoratePlaces(ctx);
+  const fronts = buildStorefronts(ctx);
 
   // --- 6. Queries ---------------------------------------------------------------
   const inBlockAxis = (v) => {
@@ -280,6 +287,7 @@ export function generateCity(cfg, opts = {}) {
       ctx.poolMat.opacity = night * 0.42;
       ctx.lampMat.color.setRGB(0.05 + night * 2.2, 0.045 + night * 1.7, 0.035 + night * 1.0);
       for (const f of ctx.animated) f(elapsed);
+      fronts.update(night);
     },
     dispose() {
       group.traverse((o) => {
@@ -355,44 +363,28 @@ function makeLots(b, rng) {
 /** Doors, awnings, signs and floating markers for every enterable place. */
 function decoratePlaces(ctx) {
   const { group, places, K: KK } = ctx;
-  const doorGeo = new THREE.BoxGeometry(2.0, 2.7, 0.16).translate(0, 1.35, 0);
-  const doors = new InstanceBatch(doorGeo, new THREE.MeshStandardMaterial({ color: '#141b28', roughness: 0.25, metalness: 0.4 }));
-  const frames = new InstanceBatch(new THREE.BoxGeometry(2.5, 3.0, 0.1).translate(0, 1.5, 0), new THREE.MeshStandardMaterial({ color: '#e8e2d6', roughness: 0.7 }));
-  const awn = new InstanceBatch(new THREE.BoxGeometry(5.2, 0.18, 1.7).translate(0, 0, 0.85), new THREE.MeshStandardMaterial({ roughness: 0.8 }), { castShadow: true });
   const signGeo = new THREE.PlaneGeometry(5, 1.25);
   ctx.markers = [];
   for (const p of places) {
     const ry = Math.atan2(p.nx, p.nz);
-    if (!p.station) {
-      doors.add(p.doorX + p.nx * 0.06, KK.CURB, p.doorZ + p.nz * 0.06, { ry });
-      frames.add(p.doorX + p.nx * 0.02, KK.CURB, p.doorZ + p.nz * 0.02, { ry });
-      awn.add(p.doorX, KK.CURB + 3.35, p.doorZ, { ry, color: p.color });
-    }
-    const mat = new THREE.MeshBasicMaterial({ map: labelTexture(p.name, { icon: p.icon, accent: p.color }), toneMapped: false });
-    mat.userData.ownMap = true;
-    const sign = new THREE.Mesh(signGeo, mat);
+    // shops, offices and homes get full storefronts (world/Storefronts.js); stations keep a two-sided sign
     if (p.station) {
+      const mat = new THREE.MeshBasicMaterial({ map: labelTexture(p.name, { icon: p.icon, accent: p.color }), toneMapped: false });
+      mat.userData.ownMap = true;
+      const sign = new THREE.Mesh(signGeo, mat);
       sign.scale.setScalar(0.7);
       sign.position.set(p.doorX, KK.CURB + 3.6, p.doorZ);
-    } else {
-      sign.position.set(p.doorX + p.nx * 0.14, KK.CURB + 4.5, p.doorZ + p.nz * 0.14);
-    }
-    sign.rotation.y = ry;
-    group.add(sign);
-    if (p.station) {
+      sign.rotation.y = ry;
+      group.add(sign);
       const back = sign.clone();
       back.rotation.y = ry + Math.PI;
       group.add(back);
     }
     const mk = new THREE.Sprite(new THREE.SpriteMaterial({ map: iconTexture(p.icon, p.color), transparent: true, depthWrite: false, fog: false }));
-    mk.scale.setScalar(2.1);
-    mk.position.set(p.doorX + p.nx * 1.2, KK.CURB + (p.station ? 5.4 : 7.2), p.doorZ + p.nz * 1.2);
+    mk.scale.setScalar(1.7);
+    mk.position.set(p.doorX + p.nx * 1.2, KK.CURB + (p.station ? 5.4 : 8.6), p.doorZ + p.nz * 1.2);
     group.add(mk);
     p.marker = mk;
     ctx.markers.push(mk);
-  }
-  for (const b of [doors, frames, awn]) {
-    const m = b.build();
-    if (m) group.add(m);
   }
 }

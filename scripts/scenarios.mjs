@@ -40,6 +40,55 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Photograph storefronts of several place types, day and night. */
+  async fronts({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 15 * 60;
+    });
+    const look = async (type, name, tod) => {
+      const ok = await page.evaluate(([t, tod2]) => {
+        const g = window.__game;
+        const p = g.city.places.find((q) => q.type === t);
+        if (!p) return false;
+        if (tod2) g.state.time.total = tod2 * 60;
+        const ry = Math.atan2(p.nx, p.nz);
+        // stand across the sidewalk and look back at the facade
+        g.player.teleport(p.x + p.nx * 7.5 + p.nz * 2.5, p.z + p.nz * 7.5 - p.nx * 2.5, ry + Math.PI);
+        g.cam.snapBehind(ry + Math.PI);
+        g.cam.yaw = ry - 0.25;
+        g.cam.pitch = 0.08;
+        g.cam.dist = 7;
+        g.cam._init = false;
+        return true;
+      }, [type, tod]);
+      if (!ok) return console.log('no place', type);
+      await wait(2600);
+      await shot('front-' + name);
+    };
+    await look('cafe', 'cafe');
+    await look('bank', 'bank');
+    await look('office_finance', 'finance');
+    await look('clothing', 'clothing');
+    await look('mall', 'mall');
+    await look('restaurant', 'restaurant-night', 21);
+    await look('bar', 'bar-night', 22);
+    await look('electronics', 'electronics-night', 21);
+    // mall interior + counters
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.time.total = 13 * 60;
+      g.enterPlace(g.city.places.find((q) => q.type === 'mall'));
+    });
+    await wait(1800);
+    const pts = await page.evaluate(() => window.__game.interior.points.filter((p) => p.use === 'service').map((p) => p.label));
+    console.log('mall counters', JSON.stringify(pts));
+    await shot('mall-inside');
+  },
   /** Close-ups of procedural characters (face, body, outfits). */
   async faces({ page, shot, wait }) {
     await page.evaluate(() => localStorage.clear());
