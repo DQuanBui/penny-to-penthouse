@@ -167,6 +167,92 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Pedestrians meet: step closer, shake hands, chat, wave goodbye; others keep right to pass. */
+  async meet({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60;
+    });
+    await wait(3000);
+    // two near agents on the same sidewalk line, walking towards each other
+    const setup = await page.evaluate(() => {
+      const g = window.__game;
+      const c = g.crowd;
+      let i = -1;
+      for (let k = 0; k < c.n; k++) if (c.alive[k] && !c.crossAxis[k] && c.rigOf[k] >= 0 && c.left[k] > 12) { i = k; break; }
+      let j = -1;
+      for (let k = 0; k < c.n; k++) if (k !== i && c.alive[k] && c.rigOf[k] >= 0) { j = k; break; }
+      if (i < 0 || j < 0) return null;
+      c.x[j] = c.x[i] + c.hx[i] * 2.2;
+      c.z[j] = c.z[i] + c.hz[i] * 2.2;
+      c.hx[j] = -c.hx[i];
+      c.hz[j] = -c.hz[i];
+      c.bi[j] = c.bi[i];
+      c.bj[j] = c.bj[i];
+      c.left[j] = 20;
+      c.crossAxis[j] = 0;
+      c.waitSig[j] = 0;
+      for (const p of [i, j]) {
+        c.pause[p] = 0;
+        c.meetCD[p] = 0;
+        c.off[p] = c.tOff[p] = 0;
+        c.hold[p] = 0;
+      }
+      c.ry[j] = Math.atan2(c.hx[j], c.hz[j]);
+      // force the greeting (normally a 35% chance)
+      const r = c.rng;
+      c.rng = () => 0.01;
+      c.socialize(g.player.pos.x, g.player.pos.z);
+      c.rng = r;
+      const mx = (c.x[i] + c.x[j]) / 2;
+      const mz = (c.z[i] + c.z[j]) / 2;
+      // stand on whichever side of them is open pavement
+      let side = Math.atan2(-c.hz[i], c.hx[i]);
+      const blocked = (an) => g.city.colliders.pointBlocked(mx + Math.sin(an) * 3, 0.6, mz + Math.cos(an) * 3, 0.6);
+      if (blocked(side)) side += Math.PI;
+      g.player.teleport(mx + Math.sin(side) * 2.6, mz + Math.cos(side) * 2.6, side + Math.PI);
+      g.cam.snapBehind(side + Math.PI);
+      g.cam.pitch = 0.12;
+      g.cam.dist = g.cam.minDist;
+      g.playerRig.group.visible = false;
+      window.__pair = [i, j];
+      return { i, j, meet: [c.meet[i], c.meet[j]] };
+    });
+    console.log('pair', JSON.stringify(setup));
+    await page.waitForFunction(() => window.__game.crowd.meetT[window.__pair[0]] > 0.4, null, { timeout: 20000 });
+    const s1 = await page.evaluate(() => {
+      const c = window.__game.crowd;
+      const [i, j] = window.__pair;
+      return { dist: Math.hypot(c.x[i] - c.x[j], c.z[i] - c.z[j]).toFixed(2), shakeAnim: c.rigs[c.rigOf[i]]?.anim.shake?.toFixed(2) };
+    });
+    console.log('greeting', JSON.stringify(s1));
+    await shot('meet-handshake');
+    await wait(4000);
+    await shot('meet-chat');
+    await page.waitForFunction(() => window.__game.crowd.meet[window.__pair[0]] < 0, null, { timeout: 120000 });
+    await wait(2500);
+    const s2 = await page.evaluate(() => {
+      const c = window.__game.crowd;
+      const [i, j] = window.__pair;
+      return { dist: Math.hypot(c.x[i] - c.x[j], c.z[i] - c.z[j]).toFixed(2), moving: [c.cur[i] > 0, c.cur[j] > 0] };
+    });
+    console.log('parted', JSON.stringify(s2));
+    await page.evaluate(() => (window.__game.playerRig.group.visible = true));
+    // background: how many greetings happen on their own
+    const n = await page.evaluate(async () => {
+      const c = window.__game.crowd;
+      let count = 0;
+      const seen = new Set();
+      for (let k = 0; k < 40; k++) {
+        for (let i = 0; i < c.n; i++) if (c.meet[i] >= 0 && !seen.has(i)) (seen.add(i), count++);
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      return count / 2;
+    });
+    console.log('greetings in 20s', n);
+  },
   /** People with jobs and styles; someone sitting on the pavement. */
   async people({ page, shot, wait }) {
     await startLife(page, wait);

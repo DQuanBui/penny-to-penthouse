@@ -202,6 +202,10 @@ export class Crowd {
     this.chat = new Uint8Array(n); // talks on the phone / to a friend while paused
     this.off = new Float32Array(n); // sidestep: current offset from the walking line (m, to the right)
     this.tOff = new Float32Array(n); // ...and where it is heading
+    this.hold = new Float32Array(n); // seconds to keep the current sidestep (passing someone)
+    this.meet = new Int16Array(n).fill(-1); // partner while stopped to greet someone
+    this.meetT = new Float32Array(n);
+    this.meetCD = new Float32Array(n);
     this.bi = new Int16Array(n);
     this.bj = new Int16Array(n);
     this.alive = new Uint8Array(n);
@@ -331,6 +335,10 @@ export class Crowd {
     this.pause[i] = 0;
     this.off[i] = 0;
     this.tOff[i] = 0;
+    this.hold[i] = 0;
+    this.meet[i] = -1;
+    this.meetT[i] = 0;
+    this.meetCD[i] = 10 + this.rng() * 30;
     this.ry[i] = Math.atan2(this.hx[i], this.hz[i]);
     this.alive[i] = 1;
   }
@@ -355,8 +363,9 @@ export class Crowd {
       return true;
     };
     const cur = this.tOff[i];
-    // near the corner, head back to the line so the turn is seamless
-    const pref = this.left[i] < 2.5 ? 0 : cur;
+    // near the corner, head back to the line so the turn is seamless (unless passing someone)
+    const pref = this.left[i] < 2.5 && this.hold[i] <= 0 ? 0 : cur;
+    if (this.hold[i] > 0 && free(pref)) return;
     if (free(pref)) {
       this.tOff[i] = pref !== 0 && free(0) ? 0 : pref;
       return;
@@ -370,6 +379,51 @@ export class Crowd {
     // boxed in: wait a moment
     this.pause[i] = 0.8;
     this.chat[i] = 0;
+  }
+
+  /**
+   * People walking towards each other either keep right to pass, or now and
+   * then stop to greet: face each other, shake hands, chat, wave goodbye.
+   */
+  socialize(px, pz) {
+    const idx = this._near || (this._near = []);
+    idx.length = 0;
+    for (let i = 0; i < this.n; i++) {
+      if (this.alive[i] && !this.crossAxis[i] && this.meet[i] < 0 && (this.x[i] - px) ** 2 + (this.z[i] - pz) ** 2 < 55 * 55) idx.push(i);
+    }
+    for (let a = 0; a < idx.length; a++) {
+      const i = idx[a];
+      if (this.meet[i] >= 0) continue;
+      for (let b = a + 1; b < idx.length; b++) {
+        const j = idx[b];
+        if (this.meet[j] >= 0) continue;
+        const dx = this.x[j] - this.x[i];
+        const dz = this.z[j] - this.z[i];
+        if (dx * dx + dz * dz > 2.4 * 2.4) continue;
+        const dot = this.hx[i] * this.hx[j] + this.hz[i] * this.hz[j];
+        if (dot > -0.5 || dx * this.hx[i] + dz * this.hz[i] <= 0) continue;
+        const free = this.pause[i] <= 0 && this.pause[j] <= 0;
+        if (free && this.meetCD[i] <= 0 && this.meetCD[j] <= 0 && this.rng() < 0.35) {
+          const T = 6 + this.rng() * 7;
+          for (const [p, q] of [[i, j], [j, i]]) {
+            this.meet[p] = q;
+            this.meetT[p] = 0;
+            this.pause[p] = T;
+            this.chat[p] = 0;
+            this.meetCD[p] = 45 + this.rng() * 40;
+            this.tOff[p] = Math.max(-1.9, Math.min(1.9, this.off[p] + 0.42));
+            this.hold[p] = T + 2;
+          }
+          break;
+        }
+        // just passing: both keep to their right
+        for (const p of [i, j]) {
+          if (this.hold[p] > 0) continue;
+          this.tOff[p] = Math.max(-1.9, Math.min(1.9, this.off[p] + 0.5));
+          this.hold[p] = 2.2;
+        }
+      }
+    }
   }
 
   /** Set an agent's far-away colours from an appearance. */
@@ -408,6 +462,11 @@ export class Crowd {
     const phase = this.city.signalPhase(elapsed);
     const gait = this.gait;
     this._frame = ((this._frame || 0) + 1) & 1023;
+    this._socialT = (this._socialT || 0) - dt;
+    if (this._socialT <= 0) {
+      this._socialT = 0.25;
+      this.socialize(px, pz);
+    }
 
     for (let i = 0; i < n; i++) {
       if (i >= want) {
@@ -422,8 +481,20 @@ export class Crowd {
         this.spawn(i, px, pz, false);
         continue;
       }
+      if (this.hold[i] > 0) this.hold[i] -= dt;
+      if (this.meetCD[i] > 0) this.meetCD[i] -= dt;
+      let approach = false;
+      if (this.meet[i] >= 0) {
+        const mp = this.meet[i];
+        // step up to arm's length before greeting
+        const gap = (this.x[mp] - this.x[i]) * this.hx[i] + (this.z[mp] - this.z[i]) * this.hz[i];
+        if (this.meetT[i] > 0 || gap <= 0.7) this.meetT[i] += dt;
+        else approach = true;
+        if (this.pause[i] <= 0 || !this.alive[mp] || this.meet[mp] !== i) this.meet[i] = -1;
+      }
       let v = this.speed[i];
-      if (this.pause[i] > 0) {
+      if (approach) v = 0.7;
+      else if (this.pause[i] > 0) {
         this.pause[i] -= dt;
         v = 0;
       } else if (this.waitSig[i] && this.left[i] > this.city.K.ROAD + INSET * 2 - 0.05) {
@@ -451,8 +522,9 @@ export class Crowd {
         this.z[i] += this.hz[i] * this.left[i];
         this.chooseNext(i, false);
       }
-      // turn smoothly into the new direction
-      const want2 = Math.atan2(this.hx[i], this.hz[i]);
+      // turn smoothly into the new direction (or towards the person being greeted)
+      const mp = this.meet[i];
+      const want2 = mp >= 0 ? Math.atan2(this.x[mp] - this.x[i], this.z[mp] - this.z[i]) : Math.atan2(this.hx[i], this.hz[i]);
       let da = want2 - this.ry[i];
       while (da > Math.PI) da -= Math.PI * 2;
       while (da < -Math.PI) da += Math.PI * 2;
@@ -515,7 +587,9 @@ export class Crowd {
       if (a < 0) continue;
       rig.group.position.set(this.x[a], groundY(this.x[a], this.z[a]), this.z[a]);
       rig.group.rotation.y = this.ry[a];
-      animateRig(rig, dt, { speed: this.cur[a], grounded: true, talking: this.pause[a] > 0 && this.chat[a] === 1 });
+      const met = this.meet[a] >= 0;
+      const mt = this.meetT[a];
+      animateRig(rig, dt, { speed: this.cur[a], grounded: true, shaking: met && mt > 0.15 && mt < 2.0, waving: met && mt > 0 && this.pause[a] < 1.1, talking: (this.pause[a] > 0 && this.chat[a] === 1) || (met && mt >= 2.0 && this.pause[a] >= 1.1) });
     }
 
     // impostors

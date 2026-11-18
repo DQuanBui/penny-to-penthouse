@@ -25,6 +25,7 @@ export function animateRig(rig, dt, p) {
   a.floor = damp(a.floor || 0, p.floor ? 1 : 0, 7, dt);
   a.talk = damp(a.talk, p.talking ? 1 : 0, 6, dt);
   a.wave = damp(a.wave, p.waving ? 1 : 0, 8, dt);
+  a.shake = damp(a.shake || 0, p.shaking ? 1 : 0, 8, dt);
   // one full cycle = two steps
   const stride = lerp(1.45, 2.5, run);
   if (moving) a.phase += (speed / stride) * Math.PI * 2 * dt;
@@ -103,6 +104,12 @@ export function animateRig(rig, dt, p) {
     fRx = lerp(fRx, -1.3 + Math.sin(t * 3.4) * 0.3, g);
     aLx = lerp(aLx, -0.25 + Math.sin(t * 2.1 + 1) * 0.1, g * 0.7);
     fLx = lerp(fLx, -0.9 + Math.sin(t * 2.9 + 2) * 0.25, g * 0.7);
+  }
+  // handshake: right arm out in front, forearm pumping
+  if (a.shake > 0.01) {
+    aRx = lerp(aRx, -0.9, a.shake);
+    aRz = lerp(aRz, 0.16, a.shake);
+    fRx = lerp(fRx, -0.42 + Math.sin(t * 13) * 0.13, a.shake);
   }
   // waving with the right arm
   if (a.wave > 0.01) {
