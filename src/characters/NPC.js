@@ -5,7 +5,9 @@
 import * as THREE from 'three';
 import { createRig } from './CharacterFactory.js';
 import { animateRig } from './Animation.js';
-import { randomAppearance } from './Customization.js';
+import { randomAppearance, roleAppearance, randomRole } from './Customization.js';
+import { PLACE_TYPES } from '../data/placeTypes.js';
+import { SHOP_TYPES } from '../data/shops.js';
 import { npcsOf, npcWhere } from '../data/npcs/index.js';
 import { relLevel, REL_ICONS } from '../sim/Relationships.js';
 import { hourOf } from '../core/Clock.js';
@@ -162,11 +164,33 @@ export class NPCManager {
       const who = workers.shift();
       add(who ? this.makeActor(who) : this.makeActor(null, randomAppearance(mulberry32(hashStr(place.id + 'staff')))), x, z, a);
     }
-    const spots = interior.freeSpots(workers.length + guests.length, rng);
+    const spots = interior.freeSpots(workers.length + guests.length + 10, rng);
     for (const n of workers.slice(0, 3).concat(guests)) {
       const s = spots.shift();
       if (!s) break;
       add(this.makeActor(n), s.x, s.z, rng() * Math.PI * 2);
+    }
+    // everyday customers, so no business ever feels empty (bars fill up at night)
+    const meta = PLACE_TYPES[place.type];
+    if (meta.minor || ['cafe', 'restaurant', 'bar', 'mall', 'gym', 'clothing', 'grocery', 'electronics'].includes(place.type)) {
+      const hr = hourOf(this.game.state.time.total);
+      const nightlife = SHOP_TYPES[place.type]?.cat === 'night' || place.type === 'bar';
+      const busy = nightlife ? (hr >= 21 || hr < 2 ? 8 : 3) : hr >= 11 && hr < 14 ? 5 : 3;
+      const n = Math.max(0, busy - guests.length);
+      const floor = place.type === 'club' ? interior.layout.items.find((it) => it.id === 'dance_floor') : null;
+      for (let k = 0; k < n; k++) {
+        const look = roleAppearance(randomRole(rng), rng);
+        const actor = this.makeActor(null, look);
+        if (floor && k < n - 1) {
+          // most of the club is on the dance floor
+          actor.dance = true;
+          add(actor, floor.x + (rng() - 0.5) * 4, floor.z + (rng() - 0.5) * 3, rng() * Math.PI * 2);
+          continue;
+        }
+        const s = spots.shift();
+        if (!s) break;
+        add(actor, s.x, s.z, rng() * Math.PI * 2);
+      }
     }
   }
 
@@ -224,7 +248,11 @@ export class NPCManager {
     a.heading = dampAngle(a.heading, target, 5, dt);
     g.rotation.y = a.heading;
     if (a.tag) a.tag.visible = dx * dx + dz * dz < 14 * 14;
-    animateRig(a.rig, dt, { speed: 0, grounded: true, sitting: a.sit && !a.talking, talking: a.talking, waving: near && !a.talking && !a.sit && a.npc && a.tagLevel >= 2 && (a.waveT = (a.waveT || 0) + dt) < 1.6 });
+    if (a.dance) {
+      animateRig(a.rig, dt, { speed: 0, grounded: true, dancing: true });
+      return;
+    }
+    animateRig(a.rig, dt, { speed: 0, grounded: true, sitting: a.sit && !a.talking, talking: a.talking || (!a.npc && !near && Math.sin(a.heading * 7 + performance.now() / 4000) > 0.6), waving: near && !a.talking && !a.sit && a.npc && a.tagLevel >= 2 && (a.waveT = (a.waveT || 0) + dt) < 1.6 });
     if (!near) a.waveT = 0;
   }
 

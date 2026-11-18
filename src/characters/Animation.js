@@ -26,6 +26,7 @@ export function animateRig(rig, dt, p) {
   a.talk = damp(a.talk, p.talking ? 1 : 0, 6, dt);
   a.wave = damp(a.wave, p.waving ? 1 : 0, 8, dt);
   a.shake = damp(a.shake || 0, p.shaking ? 1 : 0, 8, dt);
+  a.dance = damp(a.dance || 0, p.dancing ? 1 : 0, 5, dt);
   // one full cycle = two steps
   const stride = lerp(1.45, 2.5, run);
   if (moving) a.phase += (speed / stride) * Math.PI * 2 * dt;
@@ -105,6 +106,19 @@ export function animateRig(rig, dt, p) {
     aLx = lerp(aLx, -0.25 + Math.sin(t * 2.1 + 1) * 0.1, g * 0.7);
     fLx = lerp(fLx, -0.9 + Math.sin(t * 2.9 + 2) * 0.25, g * 0.7);
   }
+  // dancing: bounce to the beat, arms up and swinging
+  if (a.dance > 0.01) {
+    const d = a.dance;
+    const beat = t * 7.6 + (a.danceSeed || (a.danceSeed = Math.random() * 6));
+    aLz = lerp(aLz, 1.0 + Math.sin(beat * 0.5) * 0.9, d);
+    aRz = lerp(aRz, -1.0 - Math.sin(beat * 0.5 + 1.4) * 0.9, d);
+    fLx = lerp(fLx, -0.9 + Math.sin(beat) * 0.4, d);
+    fRx = lerp(fRx, -0.9 - Math.sin(beat) * 0.4, d);
+    b.hips.position.y -= Math.abs(Math.sin(beat)) * 0.05 * d;
+    b.hips.rotation.y += Math.sin(beat * 0.5) * 0.25 * d;
+    b.chest.rotation.z = Math.sin(beat * 0.5) * 0.12 * d;
+    b.head.rotation.x += Math.sin(beat) * 0.12 * d;
+  } else b.chest.rotation.z = 0;
   // handshake: right arm out in front, forearm pumping
   if (a.shake > 0.01) {
     aRx = lerp(aRx, -0.9, a.shake);

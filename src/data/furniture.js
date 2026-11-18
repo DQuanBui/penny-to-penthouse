@@ -98,6 +98,15 @@ export const FURNITURE = [
   F('gym_weights', 'Weight Bench', 'shop', 0, 1, 2, 0.9, 0, 'weights', { shop: true, use: 'workout', q: 1.2, p: {} }),
   F('gym_shower', 'Locker Room Shower', 'shop', 0, 1, 1, 2.1, 0, 'shower', { shop: true, use: 'shower', q: 1, p: { color: '#dfe7ee' } }),
   F('show_car', 'Showroom Car', 'shop', 0, 2, 4.5, 1.4, 0, 'car', { shop: true, p: { color: '#c53a3a' } }),
+  F('washer', 'Washing Machine', 'shop', 0, 1, 1, 1.0, 0, 'washer', { shop: true, p: {} }),
+  F('barber_chair', 'Barber Chair', 'shop', 0, 1, 1, 1.1, 0, 'barberChair', { shop: true, p: { color: '#7a1f24' } }),
+  F('arcade_cab', 'Arcade Cabinet', 'shop', 0, 1, 1, 1.9, 0, 'arcade', { shop: true, light: 1, p: { color: '#3a2a8a' } }),
+  F('dj_booth', 'DJ Booth', 'shop', 0, 3, 1, 1.2, 0, 'djBooth', { shop: true, light: 2, p: {} }),
+  F('dance_floor', 'Dance Floor', 'shop', 0, 5, 4, 0, 0, 'danceFloor', { shop: true, p: {} }),
+  F('dartboard', 'Dartboard', 'shop', 0, 1, 0.5, 0, 0, 'dartboard', { shop: true, wall: true, p: {} }),
+  F('display_case', 'Display Case', 'shop', 0, 2.5, 1, 1.1, 0, 'displayCase', { shop: true, use: 'service', p: { color: '#f1e3c8' } }),
+  F('cinema_seats', 'Cinema Seats', 'shop', 0, 5, 1, 0.9, 0, 'cinemaSeats', { shop: true, p: { color: '#8a1f2a' } }),
+  F('mirror_station', 'Mirror Station', 'shop', 0, 1, 0.5, 0, 0, 'mirror', { shop: true, wall: true, p: {} }),
   F('camera_rig', 'Camera Rig', 'shop', 0, 1, 1, 1.7, 0, 'camera', { shop: true, use: 'work', p: {} }),
 ];
 export const FURNITURE_BY_ID = Object.fromEntries(FURNITURE.map((f) => [f.id, f]));

@@ -167,6 +167,124 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Neighbourhood businesses: named storefronts, hours, interiors, menus, barber, map filters. */
+  async shops({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.money.checking = 3000;
+      const minor = g.city.places.filter((p) => p.minor);
+      const types = {};
+      for (const p of minor) types[p.type] = (types[p.type] || 0) + 1;
+      const names = new Set(minor.map((p) => p.name));
+      return { total: g.city.places.length, minor: minor.length, uniqueNames: names.size, types };
+    });
+    console.log('businesses', JSON.stringify(info));
+    // a street of storefronts at dusk
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.time.total = 19.5 * 60;
+      const p = g.city.places.find((q) => q.type === 'pub') || g.city.places.find((q) => q.minor);
+      g.placePlayerAt(p);
+      const tx = -p.nz;
+      const tz = p.nx;
+      g.player.teleport(p.x + p.nx * 3 + tx * 10, p.z + p.nz * 3 + tz * 10, Math.atan2(-tx, -tz));
+      g.cam.snapBehind(Math.atan2(-tx, -tz) - 0.35);
+      g.cam.pitch = 0.12;
+      window.__pub = p;
+    });
+    await wait(1800);
+    await shot('shops-street');
+    const types = ['pub', 'club', 'pizza', 'deli', 'barber', 'laundromat', 'cinema', 'arcade', 'bookstore', 'diner', 'bakery', 'pharmacy', 'salon', 'florist'];
+    for (const t of types) {
+      const ok = await page.evaluate((type) => {
+        const g = window.__game;
+        const p = g.city.places.find((q) => q.type === type);
+        if (!p) return null;
+        const hrs = { club: 23, pub: 20, cinema: 20, arcade: 20 }[type] || 12;
+        g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 1440 + hrs * 60;
+        g.leaveInterior(true);
+        g.placePlayerAt(p);
+        g.enterPlace(p, true);
+        const L = g.inside.layout;
+        g.player.teleport(L.w / 2, L.d - 1.4, Math.PI);
+        g.cam.snapBehind(Math.PI + 0.4);
+        g.cam.pitch = 0.6;
+        return { type, name: p.name, counters: g.interior.points.filter((q) => q.use === 'service').length, points: g.interior.points.map((q) => q.use) };
+      }, t);
+      console.log(t, JSON.stringify(ok));
+      if (ok && ['pub', 'club', 'laundromat', 'arcade', 'cinema', 'barber'].includes(t)) {
+        await wait(1200);
+        await shot('shops-in-' + t);
+      }
+    }
+    // buy a beer at the pub
+    await page.evaluate(() => {
+      const g = window.__game;
+      const p = g.city.places.find((q) => q.type === 'pub');
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 1440 + 20 * 60;
+      g.leaveInterior(true);
+      g.placePlayerAt(p);
+      g.enterPlace(p, true);
+      const c = g.interior.points.find((q) => q.use === 'service');
+      g.player.teleport(c.x, c.z, Math.PI);
+    });
+    await page.waitForFunction(() => window.__game.interactable && /counter/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog:has-text("Draft beer")');
+    await shot('shops-menu');
+    const fun0 = await page.evaluate(() => window.__game.state.needs.fun);
+    await page.locator('.dialog .slot:has-text("Draft beer") button').click();
+    await wait(1500);
+    console.log('beer', JSON.stringify(await page.evaluate((f0) => ({ funBefore: Math.round(f0), funAfter: Math.round(window.__game.state.needs.fun) }), fun0)));
+    // closed at night: the bakery door
+    const closed = await page.evaluate(() => {
+      const g = window.__game;
+      g.leaveInterior(true);
+      const p = g.city.places.find((q) => q.type === 'bakery');
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 23 * 60;
+      g.placePlayerAt(p);
+      return p.name;
+    });
+    await wait(800);
+    console.log('closed door', closed, await page.evaluate(() => window.__game.interactable && window.__game.interactable.label));
+    // barber: new hairstyle
+    await page.evaluate(() => {
+      const g = window.__game;
+      const p = g.city.places.find((q) => q.type === 'barber');
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 1440 + 11 * 60;
+      g.placePlayerAt(p);
+      g.enterPlace(p, true);
+      const c = g.interior.points.find((q) => q.use === 'service');
+      g.player.teleport(c.x, c.z, Math.PI);
+      window.__hair0 = g.state.profile.appearance.hair;
+    });
+    await page.waitForFunction(() => window.__game.interactable && /counter/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.click('.dialog .slot:has-text("Haircut") button');
+    await page.waitForSelector('.dialog:has-text("What are we doing today")');
+    await page.click('.dialog .chip:has-text("Mohawk")');
+    await shot('shops-barber');
+    await page.click('text=Get the cut');
+    await wait(1500);
+    console.log('hair', await page.evaluate(() => [window.__hair0, window.__game.state.profile.appearance.hair]));
+    // map filter
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.closeAllOverlays();
+      g.state.events.pending = null;
+      g.leaveInterior(true);
+    });
+    await wait(800);
+    await page.evaluate(() => window.__game.map.open());
+    await wait(500);
+    console.log('map state', JSON.stringify(await page.evaluate(() => ({ open: window.__game.map.isOpen(), overlays: window.__game.overlays.length, chips: document.querySelectorAll('.map-filter .chip').length, side: !!document.querySelector('.map-side-title'), dialogs: [...document.querySelectorAll('.dialog-title')].map((d) => d.textContent) }))));
+    await page.click('.map-filter .chip:has-text("Nightlife")');
+    await wait(600);
+    await shot('shops-map');
+    console.log('map nightlife rows', await page.evaluate(() => document.querySelectorAll('.map-place').length));
+  },
   /** Pedestrians meet: step closer, shake hands, chat, wave goodbye; others keep right to pass. */
   async meet({ page, shot, wait }) {
     await startLife(page, wait);

@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { mulberry32, pick, shuffle } from '../core/utils.js';
 import { DISTRICT_STYLES } from '../data/districtStyles.js';
 import { PLACE_TYPES } from '../data/placeTypes.js';
+import { SHOP_TYPES, SHOP_IDS, STYLE_MIX } from '../data/shops.js';
 import { BuildingBatch, InstanceBatch, FACADE } from './Buildings.js';
 import { ColliderWorld } from './Collision.js';
 import { buildRoads } from './Roads.js';
@@ -117,6 +118,57 @@ export function generateCity(cfg, opts = {}) {
         break;
       }
     });
+  }
+
+  // --- 2b. Neighbourhood businesses on the remaining street-facing lots ---------
+  const usedNames = new Set(places.map((p) => p.name));
+  for (const b of blocks) {
+    if (b.kind !== 'build') continue;
+    const style = b.district.style;
+    const max = b.style.lots === 'houses' ? 1 : 3;
+    let count = 0;
+    for (const lot of shuffle(rng, b.lots)) {
+      if (count >= max) break;
+      if (lot.place || !lot.sides.length || lot.empty || rng() > 0.55) continue;
+      const side = pick(rng, lot.sides);
+      const [nx, nz] = NORMALS[side];
+      if ((nz ? lot.x1 - lot.x0 : lot.z1 - lot.z0) < 7.5) continue;
+      // what kind of business suits this part of town
+      const mix = STYLE_MIX[style] || {};
+      let total = 0;
+      for (const id of SHOP_IDS) total += SHOP_TYPES[id].weight * (mix[id] || 1);
+      let r = rng() * total;
+      let type = SHOP_IDS[0];
+      for (const id of SHOP_IDS) {
+        r -= SHOP_TYPES[id].weight * (mix[id] || 1);
+        if (r <= 0) {
+          type = id;
+          break;
+        }
+      }
+      const pool = SHOP_TYPES[type].names;
+      let name = pool[Math.floor(rng() * pool.length)];
+      for (let k = 0; k < pool.length && usedNames.has(name); k++) name = pool[(pool.indexOf(name) + 1) % pool.length];
+      for (const sfx of [b.district.name, 'Uptown', 'Downtown', 'Express', '& Co.', 'II', 'No. 3']) {
+        if (!usedNames.has(name)) break;
+        name = `${pool[Math.floor(rng() * pool.length)]} ${sfx}`;
+      }
+      usedNames.add(name);
+      const mx = (lot.x0 + lot.x1) / 2;
+      const mz = (lot.z0 + lot.z1) / 2;
+      const fx = nx ? (nx > 0 ? lot.x1 : lot.x0) : mx;
+      const fz = nz ? (nz > 0 ? lot.z1 : lot.z0) : mz;
+      const meta = PLACE_TYPES[type];
+      const place = {
+        id: `shop_${b.i}_${b.j}_${count}`, type, name, district: b.district, icon: meta.icon, color: meta.color, label: meta.label, minor: true,
+        nx, nz, doorX: fx, doorZ: fz, x: fx + nx * 1.6, z: fz + nz * 1.6, lot,
+      };
+      lot.place = place;
+      lot.side = side;
+      places.push(place);
+      reserved.push({ x: fx + nx * 4, z: fz + nz * 4 });
+      count++;
+    }
   }
 
   // --- 3. Buildings ------------------------------------------------------------

@@ -388,6 +388,77 @@ const SHAPES = {
     for (const x of [-0.9, 0.9]) for (const z of [-1.35, 1.35]) S.cyl(0.34, 0.34, 0.24, x, 0.34, z, '#15171c', 14, 0, Math.PI / 2);
     S.glow(new THREE.BoxGeometry(1.5, 0.1, 0.04).translate(0, 0.62, 2.16), '#fff3c8', 0.8);
   },
+  washer(S) {
+    S.box(0.78, 0.95, 0.72, 0, 0.475, 0, '#f2f4f6');
+    S.box(0.7, 0.12, 0.05, 0, 0.86, 0.35, '#cfd5db');
+    S.cyl(0.24, 0.24, 0.04, 0, 0.47, 0.36, '#9aa2ad', 24, Math.PI / 2);
+    S.cyl(0.19, 0.19, 0.05, 0, 0.47, 0.37, '#7fb0d0', 24, Math.PI / 2);
+    S.sph(0.03, 0.25, 0.86, 0.38, '#3a3f4c');
+  },
+  barberChair(S, f, p) {
+    S.cyl(0.22, 0.28, 0.1, 0, 0.05, 0, '#2b2f38', 16);
+    S.cyl(0.05, 0.05, 0.42, 0, 0.3, 0, '#b9bdc3', 10);
+    S.box(0.62, 0.14, 0.6, 0, 0.56, 0, p.color);
+    S.box(0.62, 0.7, 0.12, 0, 0.95, -0.26, p.color);
+    S.box(0.3, 0.14, 0.1, 0, 1.36, -0.27, '#1d1f24');
+    for (const x of [-0.33, 0.33]) S.box(0.08, 0.06, 0.5, x, 0.76, 0.02, '#b9bdc3');
+    S.box(0.4, 0.04, 0.2, 0, 0.18, 0.42, '#b9bdc3');
+  },
+  arcade(S, f, p) {
+    S.box(0.8, 1.75, 0.75, 0, 0.875, -0.02, p.color);
+    S.box(0.76, 0.12, 0.42, 0, 0.98, 0.32, '#1d1f24');
+    S.cyl(0.03, 0.03, 0.1, -0.15, 1.08, 0.33, '#d81e1e', 8);
+    for (const [x, c] of [[0.05, '#ffd24a'], [0.15, '#4fd18b'], [0.25, '#4f9dff']]) S.cyl(0.03, 0.03, 0.03, x, 1.05, 0.34, c, 10);
+    S.glow(new THREE.PlaneGeometry(0.6, 0.48).rotateX(-0.25).translate(0, 1.32, 0.31), ['#4fe0ff', '#ff4fd8', '#9cff4f'][Math.floor(Math.random() * 3)], 1.1);
+    S.glow(new THREE.BoxGeometry(0.78, 0.2, 0.06).translate(0, 1.68, 0.34), '#ffb347', 1.2);
+  },
+  djBooth(S, f) {
+    const { w } = f;
+    S.box(w, 1.05, 0.8, 0, 0.525, 0, '#121318');
+    S.box(w + 0.04, 0.05, 0.84, 0, 1.07, 0, '#2b2f38');
+    for (const x of [-0.7, 0.7]) S.cyl(0.18, 0.18, 0.03, x, 1.1, -0.05, '#1d1f24', 20);
+    S.box(0.5, 0.05, 0.3, 0, 1.11, -0.05, '#3a3f4c');
+    S.glow(new THREE.BoxGeometry(w - 0.1, 0.08, 0.02).translate(0, 0.75, 0.41), '#ff4fd8', 1.5);
+    S.glow(new THREE.BoxGeometry(w - 0.1, 0.08, 0.02).translate(0, 0.45, 0.41), '#4fe0ff', 1.5);
+    for (const x of [-w / 2 - 0.35, w / 2 + 0.35]) {
+      S.box(0.55, 1.5, 0.5, x, 0.75, 0, '#16171b');
+      S.cyl(0.18, 0.18, 0.04, x, 1.05, 0.26, '#2b2f38', 16, Math.PI / 2);
+      S.cyl(0.11, 0.11, 0.04, x, 0.5, 0.26, '#2b2f38', 16, Math.PI / 2);
+    }
+  },
+  danceFloor(S, f) {
+    const cols = ['#ff4fd8', '#4fe0ff', '#ffd24a', '#8a5bff', '#4fd18b'];
+    let k = 0;
+    for (let x = -f.w / 2 + 0.5; x < f.w / 2; x += 1) {
+      for (let z = -f.d / 2 + 0.5; z < f.d / 2; z += 1) {
+        S.glow(new THREE.PlaneGeometry(0.94, 0.94).rotateX(-Math.PI / 2).translate(x, 0.012, z), cols[(k++ * 7) % cols.length], 0.55);
+      }
+    }
+  },
+  dartboard(S) {
+    S.cyl(0.24, 0.24, 0.04, 0, 1.7, -0.2, '#1d1f24', 24, Math.PI / 2);
+    S.cyl(0.19, 0.19, 0.045, 0, 1.7, -0.2, '#d8cfb4', 24, Math.PI / 2);
+    S.cyl(0.12, 0.12, 0.05, 0, 1.7, -0.2, '#2f8f4a', 24, Math.PI / 2);
+    S.cyl(0.05, 0.05, 0.055, 0, 1.7, -0.2, '#c53a3a', 16, Math.PI / 2);
+  },
+  displayCase(S, f, p) {
+    const { w } = f;
+    S.box(w, 0.85, 0.7, 0, 0.425, -0.1, p.color);
+    S.box(w, 0.05, 0.75, 0, 0.88, -0.1, '#5a4632');
+    S.box(w - 0.1, 0.32, 0.02, 0, 1.06, 0.24, '#dfeaf2');
+    const cols = ['#d9a35a', '#7a4a2a', '#f2d7a0', '#e06a9a', '#c9853a'];
+    for (let i = 0; i < 8; i++) S.sph(0.07, -w / 2 + 0.25 + i * ((w - 0.5) / 7), 0.96, -0.05, cols[i % cols.length], 1.2, 0.6, 1);
+  },
+  cinemaSeats(S, f, p) {
+    const n = Math.round(f.w / 0.62);
+    for (let i = 0; i < n; i++) {
+      const x = -f.w / 2 + 0.31 + i * 0.62;
+      S.box(0.56, 0.14, 0.55, x, 0.42, 0.05, p.color);
+      S.box(0.56, 0.6, 0.12, x, 0.75, -0.24, p.color);
+      S.box(0.06, 0.25, 0.5, x + 0.3, 0.55, 0.05, '#1d1f24');
+    }
+    S.box(f.w, 0.35, 0.6, 0, 0.17, 0.02, '#1d1f24');
+  },
   camera(S) {
     for (let i = 0; i < 3; i++) {
       const a = (i / 3) * Math.PI * 2;

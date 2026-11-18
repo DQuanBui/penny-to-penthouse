@@ -41,6 +41,7 @@ import { BuildMode } from '../build/BuildMode.js';
 import { PetFollower, ShelterDogs } from '../world/Pet.js';
 import { openPet } from '../ui/Pets.js';
 import { PhotoMode } from '../ui/PhotoMode.js';
+import { shopOpen, opensAt } from '../data/shops.js';
 import { Weather } from '../world/Weather.js';
 import { openStation } from '../world/Transit.js';
 import { CitySelect } from '../ui/CitySelect.js';
@@ -779,6 +780,7 @@ export class Game {
       }
     }
     if (!best) return null;
+    if (best.minor && !shopOpen(best.type, hourOf(this.state.time.total))) return { label: `${best.icon} ${best.name} — closed · opens ${opensAt(best.type)}`, action: null };
     const mine = best.type === 'home' && best.id === 'home_' + this.state.home.districtId;
     if (best.type === 'home' && !mine) return { label: `${best.name} — you do not live here`, action: null };
     const label = best.station ? `Take the ${best.label}` : mine ? `Enter your home (${HOME_BY_ID[this.state.home.type].name})` : `Enter ${best.name}`;

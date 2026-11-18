@@ -90,6 +90,8 @@ export function buildStorefronts(ctx) {
     const H = lot.h || 12;
     const brand = look.brand;
     const trim = look.trim || '#efeae0';
+    // small businesses get lighter sign textures (there are dozens of them)
+    const logo = (text, color, o = {}) => logoTexture(text, color, p.minor ? { w: 512, h: 80, ...o } : o);
 
     // helpers in local coordinates ---------------------------------------
     const box = (key, w, h, d, x, y, z, color, solid = 0) => {
@@ -128,7 +130,7 @@ export function buildStorefronts(ctx) {
       box('glass', 1.7, 2.5, 0.08, 0, 1.3, 0.11, '#ffffff'); // glass door
       box('solid', 0.05, 0.6, 0.05, 0.55, 1.2, 0.18, '#d6d9de'); // handle
       box('solid', W, 0.9, 0.26, 0, fh + 0.45, 0.13, brand); // fascia
-      sign(logoTexture(p.name, brand, { fg: trim }), Math.min(W - 1.4, 9), 0.72, 0, fh + 0.45, 0.27);
+      sign(logo(p.name, brand, { fg: trim }), Math.min(W - 1.4, 9), 0.72, 0, fh + 0.45, 0.27);
       if (look.awning === 'slant') {
         const g = new THREE.BoxGeometry(W - 0.6, 0.06, 1.5).translate(0, 0, 0.75).rotateX(0.32).translate(0, fh - 0.05, 0.05);
         bag.add('fabric', g, brand, M);
@@ -155,7 +157,7 @@ export function buildStorefronts(ctx) {
       bag.add('solid', ped, shade(trim, 0.97), M);
       box('solid', 2.4, 3.2, 0.14, 0, 1.96, 0.08, shade(brand, 0.6)); // tall door
       box('glass', 2.0, 2.9, 0.08, 0, 1.85, 0.13, '#ffffff');
-      sign(logoTexture(p.name, brand, { fg: '#f2e2b0' }), Math.min(pw, 8), 0.62, 0, 6.4, 2.52);
+      sign(logo(p.name, brand, { fg: '#f2e2b0' }), Math.min(pw, 8), 0.62, 0, 6.4, 2.52);
     } else if (look.front === 'lobby') {
       // double-height glass lobby with a steel canopy on slim columns
       const lw = Math.min(W - 1, 12);
@@ -168,7 +170,7 @@ export function buildStorefronts(ctx) {
         collide(x, 2.9, 0.25, 0.25, 4);
       }
       box('solid', 3.0, 0.32, 0.4, 0, 4.4, 3.2, brand);
-      sign(logoTexture(p.name, brand, { fg: trim }), 2.8, 0.28, 0, 4.4, 3.42);
+      sign(logo(p.name, brand, { fg: trim }), 2.8, 0.28, 0, 4.4, 3.42);
       box('glass', 2.6, 2.8, 0.1, 0, 1.4, 0.16, '#ffffff'); // revolving-door drum
       cyl('solid', 1.35, 1.35, 0.12, 0, 2.9, 0.75, '#2b3038', 20);
       bag.add('glass', new THREE.CylinderGeometry(1.3, 1.3, 2.8, 20, 1, true, -Math.PI / 2, Math.PI).translate(0, 1.4, 0.15), '#ffffff', M);
@@ -177,7 +179,7 @@ export function buildStorefronts(ctx) {
       box('glass', W - 0.8, sh, 0.08, 0, sh / 2, 0.05, '#ffffff');
       for (let x = -W / 2 + 0.4; x <= W / 2 - 0.39; x += (W - 0.8) / 5) box('solid', 0.14, sh, 0.18, x, sh / 2, 0.1, '#e9edf1');
       box('solid', W, 0.7, 0.4, 0, sh + 0.35, 0.2, brand);
-      sign(logoTexture(p.name, brand, { fg: trim }), Math.min(W - 2, 12), 0.56, 0, sh + 0.35, 0.42);
+      sign(logo(p.name, brand, { fg: trim }), Math.min(W - 2, 12), 0.56, 0, sh + 0.35, 0.42);
       box('solid', 3.2, 0.2, 2.2, 0, 3.4, 1.1, '#e9edf1'); // entrance canopy
       box('glass', 2.4, 2.8, 0.08, 0, 1.4, 0.12, '#ffffff');
     } else {
@@ -281,7 +283,7 @@ export function buildStorefronts(ctx) {
         // glowing outline + script-like name
         const w = Math.min(W - 2, 5);
         for (const [x, y, ww, hh] of [[0, 5.0, w, 0.07], [0, 6.3, w, 0.07], [-w / 2, 5.65, 0.07, 1.3], [w / 2, 5.65, 0.07, 1.3]]) box('neon', ww, hh, 0.07, x, y, 0.2, look.trim);
-        sign(logoTexture(p.name, look.trim, { fg: '#ffe9ff', transparent: true }), w - 0.4, 0.9, 0, 5.65, 0.24);
+        sign(logo(p.name, look.trim, { fg: '#ffe9ff', transparent: true }), w - 0.4, 0.9, 0, 5.65, 0.24);
       } else if (ex === 'velvetRope') {
         for (const x of [-1.6, -2.6]) {
           cyl('solid', 0.04, 0.05, 0.9, x, 0.45, 1.3, '#d8b25a', 8);
@@ -307,9 +309,10 @@ export function buildStorefronts(ctx) {
       } else if (ex === 'banner') {
         box('fabric', 1.0, Math.min(H - 5, 7), 0.05, W / 2 - 0.9, 4.5 + Math.min(H - 5, 7) / 2, 0.4, look.trim || brand);
       } else if (ex === 'redCross') {
-        box('neon', 1.6, 0.45, 0.06, W / 2 - 1.6, 5.2, 0.12, '#e3122e');
-        box('neon', 0.45, 1.6, 0.06, W / 2 - 1.6, 5.2, 0.12, '#e3122e');
-        sign(logoTexture('Emergency', '#c4142b'), 3.2, 0.5, W / 2 - 1.6, 4.1, 3.43);
+        const crossC = p.type === 'pharmacy' ? '#1fae5a' : '#e3122e';
+        box('neon', 1.6, 0.45, 0.06, W / 2 - 1.6, 5.2, 0.12, crossC);
+        box('neon', 0.45, 1.6, 0.06, W / 2 - 1.6, 5.2, 0.12, crossC);
+        if (p.type === 'hospital') sign(logoTexture('Emergency', '#c4142b'), 3.2, 0.5, W / 2 - 1.6, 4.1, 3.43);
       } else if (ex === 'bikeRack') {
         for (let k = 0; k < 4; k++) bag.add('solid', new THREE.TorusGeometry(0.35, 0.025, 4, 12, Math.PI).translate(-W / 2 + 1.0 + k * 0.5, 0.0, 1.4).rotateY(0), '#9aa2ad', M);
       } else if (ex === 'pennants') {
@@ -333,7 +336,7 @@ export function buildStorefronts(ctx) {
     // company name near the roof, lit at night
     if (look.sky && H >= 14) {
       const w = Math.min(W * 0.75, 14);
-      sign(logoTexture(p.name, brand, { fg: '#ffffff', transparent: true }), w, w / 6.4, 0, H - w / 6.4 - 0.8, 0.12);
+      sign(logo(p.name, brand, { fg: '#ffffff', transparent: true }), w, w / 6.4, 0, H - w / 6.4 - 0.8, 0.12);
     }
   }
 

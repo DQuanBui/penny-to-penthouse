@@ -1,11 +1,12 @@
 // 2D city map: a pre-rendered image of the city used by the HUD minimap and
 // the full-screen map (M) with district names, place icons, a waypoint and a
 // GPS line that follows the streets.
+import { SHOP_TYPES, SHOP_CATS, shopOpen } from '../data/shops.js';
 import { h } from './dom.js';
 import { PLACE_TYPES } from '../data/placeTypes.js';
 import { taxiQuote, takeTaxi } from '../world/Transit.js';
 import { fmtMoney } from '../core/utils.js';
-import { fmtHour } from '../core/Clock.js';
+import { fmtHour, hourOf } from '../core/Clock.js';
 
 const PX = 2; // pixels per metre in the static image
 
@@ -62,6 +63,12 @@ export class CityMap {
   }
 
   /** Draw the circular minimap centred on the player (north-up). */
+  /** Map filter: key places, or one kind of neighbourhood business. */
+  shows(p) {
+    const f = this.filter || 'key';
+    return f === 'key' ? !p.minor : !!p.minor && SHOP_TYPES[p.type]?.cat === f;
+  }
+
   drawMini(ctx, size, px, pz, heading, scale = 0.62) {
     if (!this.image) return;
     const r = size / 2;
@@ -82,6 +89,7 @@ export class CityMap {
       const dx = (p.x - px) * scale;
       const dz = (p.z - pz) * scale;
       if (dx * dx + dz * dz > (r - 10) * (r - 10)) continue;
+      ctx.font = p.minor ? '10px "Segoe UI Emoji", sans-serif' : '13px "Segoe UI Emoji", sans-serif';
       ctx.fillText(p.icon, r + dx, r + dz);
     }
     // waypoint (clamped to the rim)
@@ -220,6 +228,14 @@ export class CityMap {
       for (const p of city.places) {
         const mine = game.state && p.id === 'home_' + game.state.home.districtId;
         if (p.type === 'home' && !mine) continue;
+        if (p.minor && !this.shows(p)) {
+          // other businesses: small dots so the streets still read as busy
+          g.fillStyle = 'rgba(255,255,255,0.4)';
+          g.beginPath();
+          g.arc(sx(p.x), sx(p.z), 2.2, 0, Math.PI * 2);
+          g.fill();
+          continue;
+        }
         g.fillText(p.icon, sx(p.x), sx(p.z));
       }
       const pp = game.playerMapPos();
@@ -245,12 +261,13 @@ export class CityMap {
         ...this.eventRows(game, draw, list),
         h('div.map-side-title', 'Places'),
         h('div.muted.small', 'Click a place to set a GPS waypoint, or take a taxi straight there. Transit stations are cheaper.'),
+        h('div.chips.map-filter', SHOP_CATS.map(([id, text]) => h('button.chip' + ((this.filter || 'key') === id ? '.active' : ''), { onclick: () => ((this.filter = id), draw(), list()) }, text))),
         ...city.districts.map((d) =>
           h(
             'div.map-group',
             h('div.map-district', d.name),
             city.places
-              .filter((p) => p.district === d && (p.type !== 'home' || (game.state && p.id === 'home_' + game.state.home.districtId)))
+              .filter((p) => p.district === d && this.shows(p) && (p.type !== 'home' || (game.state && p.id === 'home_' + game.state.home.districtId)))
               .map((p) =>
                 h(
                   'div.map-place' + (this.waypoint?.id === p.id ? '.active' : ''),
@@ -262,7 +279,7 @@ export class CityMap {
                     },
                   },
                   h('span', p.icon),
-                  h('span.grow', p.type === 'home' ? 'My Home' : p.name),
+                  h('span.grow', p.type === 'home' ? 'My Home' : p.name, p.minor && game.state ? h('span.muted.small', shopOpen(p.type, hourOf(game.state.time.total)) ? '  · open' : '  · closed') : null),
                   game.state
                     ? h(
                         'button.btn.small.taxi',
@@ -288,6 +305,7 @@ export class CityMap {
       const z = (e.clientY - r.top) / scale - this.extent;
       let best = null;
       for (const p of city.places) {
+        if (!this.shows(p)) continue;
         const d = Math.hypot(p.x - x, p.z - z);
         if (d < 22 && (!best || d < best.d)) best = { p, d };
       }

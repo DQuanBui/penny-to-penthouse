@@ -9,6 +9,8 @@
 //            (otherwise the shop sits on the ground floor of a normal building)
 //   sky      true = lit company name near the roof
 
+import { SHOP_TYPES } from './shops.js';
+
 export const PLACE_TYPES = {
   home: { icon: '🏠', label: 'Residences', color: '#7dd3a8', interior: 'home', look: { front: 'residential', brand: '#2e4a3f', awning: 'flat', extras: ['planters'] } },
   cafe: { icon: '☕', label: 'Café', color: '#c98b4f', interior: 'cafe', service: 'cafe', look: { front: 'shopfront', brand: '#1e5b3a', trim: '#f1ece2', awning: 'slant', extras: ['bladeLogo', 'patio', 'chalkboard'] } },
@@ -31,4 +33,6 @@ export const PLACE_TYPES = {
   mall: { icon: '🛍️', label: 'Mall', color: '#f2a93b', interior: 'mall', service: 'mall', look: { front: 'showroom', brand: '#2d3a8c', trim: '#f2f4f6', extras: ['banner', 'planters', 'flags'], sky: true, building: { color: '#d7dde4', facade: 'glass', minH: 14, maxH: 20 } } },
   shelter: { icon: '🐾', label: 'Pet Rescue', color: '#e8a05c', interior: 'shelter', service: 'shelter', look: { front: 'shopfront', brand: '#2f7d8f', trim: '#f6e7c8', awning: 'slant', extras: ['bladeLogo', 'planters', 'chalkboard'] } },
   station: { icon: '🚇', label: 'Transit', color: '#ffd24a', interior: null, service: 'transit' },
+  // neighbourhood businesses (data/shops.js): minor = generated on ordinary lots
+  ...Object.fromEntries(Object.entries(SHOP_TYPES).map(([id, t]) => [id, { icon: t.icon, label: t.label, color: t.color, interior: t.interior, service: 'minor', look: t.look, minor: true }])),
 };

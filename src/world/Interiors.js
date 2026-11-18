@@ -165,6 +165,127 @@ export function commercialLayout(place) {
         { id: 'armchair', x: 11.2, z: 6.8, r: 3 },
         { id: 'plant_floor', x: 0.6, z: 8.4, r: 0 },
       ]);
+    case 'pub':
+      return L(12, 9, 'wood', '#5a3a2a', [
+        { id: 'bar_counter', x: 6, z: 1.6, r: 0 },
+        { id: 'tv_big', x: 10.5, z: 0.3, r: 0, use: '' },
+        { id: 'dartboard', x: 1.5, z: 0.25, r: 0 },
+        ...[2, 4, 8, 10].flatMap((x) => [{ id: 'table_small', x, z: 5.6, r: 0 }, { id: 'bar_stool', x: x - 0.7, z: 5.6, r: 1 }, { id: 'bar_stool', x: x + 0.7, z: 5.6, r: 3 }]),
+        { id: 'plant_floor', x: 11.4, z: 8.4, r: 0 },
+      ]);
+    case 'club': {
+      const l = L(14, 11, 'concrete', '#16121f', [
+        { id: 'dj_booth', x: 7, z: 0.8, r: 0 },
+        { id: 'dance_floor', x: 7, z: 4.4, r: 0 },
+        { id: 'bar_counter', x: 12, z: 6.5, r: 3 },
+        { id: 'sofa', x: 1.2, z: 6, r: 1 },
+        { id: 'sofa', x: 1.2, z: 8.6, r: 1 },
+        { id: 'speaker', x: 0.6, z: 0.6, r: 0, use: '' },
+        { id: 'speaker', x: 13.4, z: 0.6, r: 0, use: '' },
+      ]);
+      l.dark = true;
+      return l;
+    }
+    case 'pizza':
+      return L(10, 8, 'tile', '#f1e6d2', [
+        { id: 'shop_counter', x: 3.2, z: 1.6, r: 0 },
+        { id: 'kitchen_line', x: 7.4, z: 0.6, r: 0, use: '' },
+        { id: 'painting_l', x: 3.2, z: 0.3, r: 0 },
+        ...cafeTables(2, 4.6, 3, 1, 2.8),
+      ]);
+    case 'deli':
+      return L(10, 8, 'tile', '#eef0f2', [
+        { id: 'shop_counter', x: 8, z: 6.4, r: 3 },
+        { id: 'fridge_steel', x: 0.5, z: 1, r: 1, use: '' },
+        { id: 'fridge_steel', x: 0.5, z: 2.2, r: 1, use: '' },
+        { id: 'fridge_steel', x: 0.5, z: 3.4, r: 1, use: '' },
+        { id: 'shop_shelf', x: 3.5, z: 0.3, r: 0 },
+        { id: 'shop_shelf', x: 6, z: 0.3, r: 0 },
+        { id: 'shop_shelf', x: 3.5, z: 3.2, r: 0 },
+        { id: 'shop_shelf', x: 6, z: 3.2, r: 0 },
+        { id: 'shop_shelf', x: 3.5, z: 4.6, r: 2 },
+        { id: 'shop_shelf', x: 6, z: 4.6, r: 2 },
+      ]);
+    case 'pharmacy':
+      return L(11, 8, 'tile', '#f6f8fa', [
+        { id: 'reception', x: 8.8, z: 1.4, r: 0 },
+        ...[1.4, 3.8, 6.2].map((x) => ({ id: 'shop_shelf', x, z: 0.3, r: 0 })),
+        ...[2.4, 5.2].flatMap((x) => [{ id: 'shop_shelf', x, z: 3.4, r: 0 }, { id: 'shop_shelf', x, z: 4.9, r: 2 }]),
+        { id: 'plant_floor', x: 10.5, z: 7.4, r: 0 },
+      ]);
+    case 'barber':
+      return L(10, 7, 'tile', '#e9e4da', [
+        { id: 'reception', x: 8.2, z: 5.6, r: 3 },
+        ...[1.4, 3.6, 5.8].flatMap((x) => [{ id: 'mirror_station', x, z: 0.25, r: 0 }, { id: 'barber_chair', x, z: 1.4, r: 2 }]),
+        { id: 'sofa', x: 0.6, z: 5, r: 1 },
+        { id: 'plant_floor', x: 9.5, z: 0.5, r: 0 },
+      ]);
+    case 'salon':
+      return L(10, 7, 'wood', '#f6e6ee', [
+        { id: 'reception', x: 8.2, z: 5.6, r: 3 },
+        ...[1.5, 4, 6.5].flatMap((x) => [{ id: 'table_small', x, z: 1.2, r: 0 }, { id: 'armchair', x, z: 2.3, r: 2 }]),
+        { id: 'plant_tree', x: 9.4, z: 0.6, r: 0 },
+        { id: 'plant_floor', x: 0.6, z: 6.4, r: 0 },
+      ]);
+    case 'bookstore':
+      return L(12, 9, 'wood', '#efe4d2', [
+        { id: 'shop_counter', x: 9.6, z: 7.2, r: 2 },
+        ...[1.2, 3.6, 6, 8.4, 10.8].map((x) => ({ id: 'bookshelf', x, z: 0.3, r: 0 })),
+        ...[2.5, 5.5].flatMap((x) => [{ id: 'bookshelf', x, z: 3.4, r: 0 }, { id: 'bookshelf', x, z: 4.2, r: 2 }]),
+        { id: 'armchair', x: 9.4, z: 3.6, r: 3 },
+        { id: 'armchair', x: 9.4, z: 5, r: 3 },
+        { id: 'lamp_floor', x: 10.6, z: 4.3, r: 0 },
+        { id: 'rug_small', x: 9.4, z: 4.3, r: 0 },
+      ]);
+    case 'laundromat':
+      return L(11, 8, 'tile', '#e8f4f8', [
+        { id: 'shop_counter', x: 9, z: 6.6, r: 3 },
+        ...[0.7, 1.6, 2.5, 3.4, 4.3, 5.2, 6.1, 7.0, 7.9].map((x) => ({ id: 'washer', x, z: 0.55, r: 0 })),
+        ...[1.2, 2.2, 3.2].map((z) => ({ id: 'washer', x: 0.55, z: z + 1.4, r: 1 })),
+        { id: 'sofa', x: 5, z: 4.4, r: 0 },
+        { id: 'table_small', x: 5, z: 3.2, r: 0 },
+      ]);
+    case 'florist':
+      return L(9, 7, 'wood', '#eef2e6', [
+        { id: 'shop_counter', x: 6.8, z: 5.6, r: 3 },
+        ...[0.8, 2.2, 3.6, 5.0, 6.4, 7.8].map((x, k) => ({ id: k % 2 ? 'plant_floor' : 'planter', x, z: 0.4, r: 0 })),
+        ...[1.6, 3.6].flatMap((x) => [{ id: 'planter', x, z: 3, r: 0 }, { id: 'plant_floor', x, z: 4, r: 0 }]),
+        { id: 'plant_tree', x: 8.4, z: 0.6, r: 0 },
+      ]);
+    case 'cinema': {
+      const l = L(14, 12, 'carpet', '#2a1418', [
+        { id: 'tv_cinema', x: 7, z: 0.4, r: 0, use: '' },
+        ...[3.5, 5.0, 6.5, 8.0].map((z) => ({ id: 'cinema_seats', x: 6, z, r: 0 })),
+        { id: 'display_case', x: 11.6, z: 9.8, r: 3 },
+        { id: 'plant_floor', x: 13.4, z: 11.4, r: 0 },
+      ]);
+      l.dark = true;
+      return l;
+    }
+    case 'diner':
+      return L(12, 9, 'tile', '#f3e6cc', [
+        { id: 'shop_counter', x: 6, z: 1.6, r: 0 },
+        { id: 'kitchen_line', x: 6, z: 0.5, r: 0, use: '' },
+        ...[3.5, 6, 8.5].map((x) => ({ id: 'bar_stool', x, z: 2.6, r: 0 })),
+        ...[1.5, 4.5, 7.5, 10.5].flatMap((x) => [{ id: 'table_small', x, z: 6, r: 0 }, { id: 'loveseat', x, z: 7.6, r: 2 }]),
+      ]);
+    case 'arcade': {
+      const l = L(12, 9, 'carpet', '#1a1240', [
+        { id: 'shop_counter', x: 9.6, z: 7.4, r: 2 },
+        ...[1.2, 2.4, 3.6, 4.8, 6, 7.2, 8.4, 9.6, 10.8].map((x) => ({ id: 'arcade_cab', x, z: 0.6, r: 0 })),
+        ...[3, 4.2, 5.4, 6.6].flatMap((x) => [{ id: 'arcade_cab', x, z: 3.6, r: 2 }, { id: 'arcade_cab', x, z: 4.6, r: 0 }]),
+      ]);
+      l.dark = true;
+      return l;
+    }
+    case 'bakery':
+      return L(10, 8, 'tile', '#f6ecd8', [
+        { id: 'display_case', x: 3.4, z: 1.7, r: 0 },
+        { id: 'shop_shelf', x: 3.4, z: 0.3, r: 0 },
+        { id: 'kitchen_line', x: 7.6, z: 0.5, r: 0, use: '' },
+        ...cafeTables(2, 4.8, 3, 1, 2.6),
+        { id: 'plant_floor', x: 9.5, z: 7.4, r: 0 },
+      ]);
     case 'shop': {
       const rack = place.type === 'clothing' ? 'clothes_rack' : 'shop_shelf';
       const rows = [];
@@ -331,6 +452,7 @@ export class Interior {
     this.dispose();
     this.layout = layout;
     this.opts = opts;
+    this.dark = !!layout.dark;
     const { w, d } = layout;
     const H = ROOM_H;
     const root = this.root;
@@ -387,7 +509,7 @@ export class Interior {
     const ww = pano ? Math.min(3.2, w / nWin - 0.5) : 1.5;
     const wh = pano ? 1.9 : 1.3;
     const wy = pano ? 1.65 : 1.95;
-    for (let i = 0; i < nWin; i++) {
+    for (let i = 0; i < (layout.dark ? 0 : nWin); i++) {
       const x = (w / nWin) * (i + 0.5);
       const frame = new THREE.Mesh(new THREE.PlaneGeometry(ww, wh), trim);
       frame.position.set(x, wy, 0.012);
@@ -648,9 +770,13 @@ export class Interior {
       this.clock.minH.rotation.x = -((m % 60) / 60) * Math.PI * 2;
       this.clock.hourH.rotation.x = -(((m / 60) % 12) / 12) * Math.PI * 2;
     }
-    this.sun.intensity = 1.7 - night * 0.9;
-    this.hemi.intensity = 1.9 - night * 0.5;
-    for (let i = 0; i < this.lamps.length; i++) this.lamps[i].intensity = (this.lampBase?.[i] || 0) * (0.35 + night * 0.65);
+    const dim = this.dark ? 0.28 : 1;
+    this.sun.intensity = (1.7 - night * 0.9) * dim;
+    this.hemi.intensity = (1.9 - night * 0.5) * (this.dark ? 0.35 : 1);
+    for (let i = 0; i < this.lamps.length; i++) {
+      this.lamps[i].intensity = (this.lampBase?.[i] || 0) * (this.dark ? 1.4 : 0.35 + night * 0.65);
+      this.lamps[i].color.set(this.dark ? ['#ff4fd8', '#4fe0ff', '#8a5bff'][i % 3] : '#ffcf90');
+    }
   }
 }
 const _white = new THREE.Color('#ffffff');
