@@ -856,3 +856,177 @@ input.text.amount {
   background: rgba(255, 179, 71, 0.2);
   outline: 1px solid var(--accent);
 }
+
+/* ---------- HUD: need meters, pet chip, compass, toast timer ---------- */
+.need-pips {
+  display: flex;
+  gap: 6px;
+  padding: 0.45em 0.6em;
+}
+.pip {
+  --v: 100;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(255, 255, 255, 0.1) 0);
+  position: relative;
+  transition: transform 0.2s;
+}
+.pip::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--panel-solid);
+}
+.pip span {
+  position: relative;
+  font-size: 0.82em;
+}
+.pip.low {
+  animation: pipPulse 1.1s infinite;
+}
+.pip.low::before {
+  background: #3a1a22;
+}
+@keyframes pipPulse {
+  50% {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.35);
+  }
+}
+.pet-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0.45em 0.85em;
+  min-width: 170px;
+}
+.pet-chip.warn {
+  outline-color: rgba(255, 179, 71, 0.8);
+}
+.pet-icon {
+  font-size: 1.35em;
+}
+.pet-name {
+  font-weight: 700;
+  font-size: 0.92em;
+}
+.pet-sub {
+  font-size: 0.78em;
+  color: var(--muted);
+}
+.hud-tc {
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+}
+.compass {
+  width: 420px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--panel);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+.compass-strip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  will-change: transform;
+}
+.compass-tick {
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  font-size: 0.7em;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-bottom: 5px;
+}
+.compass-tick::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.35);
+}
+.compass-tick.mid {
+  font-weight: 600;
+}
+.compass-tick.major {
+  font-weight: 800;
+  font-size: 0.9em;
+  color: var(--text);
+  padding-bottom: 4px;
+}
+.compass-tick.major::before {
+  height: 10px;
+  background: var(--text);
+}
+.compass-needle {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 9px;
+  margin-left: -1px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+.compass-mark {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  font-size: 0.72em;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(255, 179, 71, 0.95);
+  color: #1b1b22;
+  border-radius: 8px;
+  padding: 1px 6px;
+}
+.compass-mark.home {
+  background: none;
+  font-size: 0.95em;
+  padding: 0;
+  top: 2px;
+}
+.compass-mark.edge {
+  opacity: 0.6;
+}
+.toast {
+  position: relative;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.toast-timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.25);
+  transform-origin: left;
+  animation: toastTimer linear forwards;
+}
+@keyframes toastTimer {
+  to {
+    transform: scaleX(0);
+  }
+}
+@media (max-width: 900px) {
+  .compass {
+    width: 300px;
+  }
+}

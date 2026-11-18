@@ -167,6 +167,39 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** HUD: need meters, compass with waypoint, pet chip, toasts. */
+  async hud({ page, shot, wait }) {
+    await startLife(page, wait);
+    const r = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 15 * 60;
+      g.state.needs.hunger = 12;
+      const cafe = g.city.places.find((p) => p.type === 'cafe');
+      g.map.setWaypoint ? g.map.setWaypoint(cafe) : (g.map.waypoint = { x: cafe.x, z: cafe.z, label: cafe.name, id: cafe.id });
+      // look straight at the café
+      const p = g.player.pos;
+      const h = Math.atan2(cafe.x - p.x, cafe.z - p.z);
+      g.player.teleport(p.x, p.z, h);
+      g.cam.snapBehind(h);
+      g.sim.pets.adopt(g.sim.pets.available()[0], 'Mochi', true);
+      g.events.emit('toast', { icon: '🧪', title: 'Toast test', text: 'Click me to dismiss.', kind: 'info' });
+      return { way: g.map.waypoint && g.map.waypoint.label };
+    });
+    await wait(1200);
+    const m = await page.evaluate(() => {
+      const el = document.querySelector('.compass-mark.way');
+      const c = document.querySelector('.compass');
+      const a = el.getBoundingClientRect();
+      const b = c.getBoundingClientRect();
+      return { text: el.textContent, offsetFromCentre: Math.round(a.left + a.width / 2 - (b.left + b.width / 2)), hidden: el.classList.contains('hidden'), lowPips: document.querySelectorAll('.pip.low').length, pet: document.querySelector('.pet-chip').textContent };
+    });
+    console.log('hud', JSON.stringify(r), JSON.stringify(m));
+    await shot('hud-compass');
+    await page.click('.toast');
+    await wait(600);
+    console.log('toasts left', await page.evaluate(() => document.querySelectorAll('.toast:not(.out)').length));
+  },
   /** Pet rescue: adopt a dog, it follows you, waits outside shops, plays fetch. */
   async pets({ page, shot, wait }) {
     await startLife(page, wait);
