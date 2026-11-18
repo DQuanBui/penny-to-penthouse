@@ -30,6 +30,9 @@ export class LifeEvents {
     const sim = this.sim;
     const day = sim.day;
     let def = id ? LIFE_EVENT_BY_ID[id] : null;
+    // a forced event may skip its timing conditions but never its hard
+    // requirements (no car breakdown without a car)
+    if (def && def.needs && !safe(() => def.needs(sim))) return null;
     if (!def) {
       const pool = LIFE_EVENTS.filter((ev) => (this.e.cooldown[ev.id] ?? -999) <= day && (!ev.when || safe(() => ev.when(sim))));
       if (!pool.length) return null;
