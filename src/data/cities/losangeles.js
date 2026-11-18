@@ -51,5 +51,6 @@ export default {
     { type: 'realestate', name: 'Coastline Realty', district: 'santa_monica' },
     { type: 'dealer', name: 'Apex Motors', district: 'downtown' },
     { type: 'mall', name: 'Sunset Galleria', district: 'santa_monica' },
+    { type: 'shelter', name: 'Silver Lake Pet Rescue', district: 'silver_lake' },
   ],
 };

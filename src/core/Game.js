@@ -38,6 +38,8 @@ import { Crowd } from '../characters/Crowd.js';
 import { NPCManager } from '../characters/NPC.js';
 import { openTalk } from '../ui/Talk.js';
 import { BuildMode } from '../build/BuildMode.js';
+import { PetFollower, ShelterDogs } from '../world/Pet.js';
+import { openPet } from '../ui/Pets.js';
 import { Weather } from '../world/Weather.js';
 import { openStation } from '../world/Transit.js';
 import { CitySelect } from '../ui/CitySelect.js';
@@ -104,6 +106,10 @@ export class Game {
     this.streetLife = new StreetLife(this);
     this.cityEvents = new CityEvents(this);
     this.animals.onScare = () => this.audio.play('flap');
+    this.pet = new PetFollower();
+    this.pet.attach(this.scene);
+    this.shelterDogs = new ShelterDogs();
+    this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
     this.tutorial = new Tutorial(this);
@@ -376,6 +382,17 @@ export class Game {
       this.player.teleport(layout.doorX, layout.d - 1.1, Math.PI);
       this.cam.snapBehind(Math.PI);
       this.cam.pitch = 0.55;
+      if (this.pet.active) {
+        if (home || place.type === 'shelter') {
+          this.pet.attach(this.interior.scene);
+          this.pet.place(layout.doorX + 0.7, layout.d - 1.6, Math.PI);
+          this.pet.mode = 'follow';
+        } else {
+          // dogs wait outside shops, sitting beside the door
+          this.pet.waitAt(place.x + place.nz * 0.9 + place.nx * 0.2, place.z - place.nx * 0.9 + place.nz * 0.2, Math.atan2(-place.nx, -place.nz));
+        }
+      }
+      if (place.type === 'shelter') this.shelterDogs.show(this.interior.scene, this.sim.pets.available(), [1.2, 1.8, 7.4, 5.0]);
       this._outDist = this.cam.dist;
       this.cam.dist = Math.min(this.cam.dist, 5);
       this.cam.maxDist = 9;
@@ -410,6 +427,7 @@ export class Game {
       const L = this.inside.layout;
       this.player.teleport(L.w - 0.8, L.d - 2.0, Math.PI);
       this.cam.snapBehind(Math.PI);
+      if (this.pet.active && this.pet.mesh.parent === this.interior.scene) this.pet.heel(this.player);
     });
   }
 
@@ -427,6 +445,14 @@ export class Game {
       this.inside = null;
       this.npcs.clearIndoor();
       this.placePlayerAt(place);
+      this.shelterDogs.clear();
+      if (this.pet.active) {
+        const waiting = this.pet.mode === 'wait';
+        this.pet.attach(this.scene);
+        // a waiting dog trots over from the door; one that came inside walks out with you
+        if (waiting) this.pet.mode = 'follow';
+        else this.pet.heel(this.player);
+      }
       this.events.emit('left', { place });
     };
     if (silent) out();
@@ -463,6 +489,8 @@ export class Game {
     this.animals.group.visible = false;
     this.streetLife.clear();
     this.cityEvents.clear();
+    this.pet.setPet(null);
+    this.shelterDogs.clear();
     this.player.sitting = false;
     this.state = null;
     this.sim = null;
@@ -580,6 +608,9 @@ export class Game {
     const w = this.cityWorld();
     this.player.setWorld(w);
     this.cam.setWorld(w);
+    this.pet.setPet(state.pet || null);
+    this.pet.attach(this.scene);
+    this.pet.heel(this.player);
     this.hud.cashShown = null;
     this.hud.show(true);
     this.mode = 'play';
@@ -635,6 +666,15 @@ export class Game {
       if (wasHome) this.leaveInterior(true);
       if (wasHome || !this.inside) this.placePlayerAt(this.homePlace());
     });
+  }
+
+  /** Show (or hide) the player's dog beside them, in whichever scene they are in. */
+  syncPet() {
+    const pet = this.state?.pet || null;
+    this.pet.setPet(pet);
+    if (!pet) return;
+    this.pet.attach(this.inside ? this.interior.scene : this.scene);
+    this.pet.heel(this.player);
   }
 
   // ---- benches -------------------------------------------------------------------
@@ -693,6 +733,13 @@ export class Game {
     const p = this.player.pos;
     if (this.player.sitting) return { label: 'Stand up', action: () => this.standUp() };
     if (this.vehicles.driving) return { label: `Get out · ${this.vehicles.mph()} mph`, key: 'F', action: () => this.vehicles.exit() };
+    if (this.pet.near(p) && (!this.inside || this.pet.mesh.parent === this.interior.scene)) {
+      // only when you turn to look at your dog (it is usually at your heel)
+      const dx = this.pet.pos.x - p.x;
+      const dz = this.pet.pos.z - p.z;
+      const d = Math.hypot(dx, dz) || 1;
+      if ((Math.sin(this.player.heading) * dx + Math.cos(this.player.heading) * dz) / d > 0.55) return { label: `Play with ${this.state.pet.name}`, action: () => openPet(this) };
+    }
     if (!this.inside) {
       const happening = this.cityEvents.interactable(p);
       if (happening) return happening;
@@ -838,6 +885,13 @@ export class Game {
     this.streetLife.update(dt, this.player.pos, !!inside);
     this.cityEvents.update(dt, this.player.pos, !!inside);
     this.npcs.update(dt, this.player.pos, !!inside);
+    if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {
+      const w = inside ? this.interior.world : this.city;
+      this.pet.update(dt, { player: this.player, colliders: w.colliders, groundY: w.groundY, hidden: !!driving });
+      // walking the dog: game minutes spent moving outside together
+      if (!inside && !driving && !blocked && this.player.speed > 0.8) this.sim.pets.walk(dt * (1440 / (BALANCE.time.realMinutesPerDay * 60)) * this.settings.get('timeSpeed'));
+    }
+    if (inside?.place.type === 'shelter') this.shelterDogs.update(dt);
     this.traffic.parked = this.vehicles.parkedOBBs();
     this.traffic.update(dt, elapsed, hourOf(st.time.total), this.player.pos.x, this.player.pos.z, this.crowd, !inside, this.weather.info.crowd);
 

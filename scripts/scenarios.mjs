@@ -167,6 +167,111 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Pet rescue: adopt a dog, it follows you, waits outside shops, plays fetch. */
+  async pets({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 11 * 60;
+      g.state.money.checking = 2000;
+      const pl = g.city.places.find((p) => p.type === 'shelter');
+      g.placePlayerAt(pl);
+      g.player.teleport(pl.x + pl.nx * 5, pl.z + pl.nz * 5, Math.atan2(-pl.nx, -pl.nz));
+      g.cam.snapBehind(Math.atan2(-pl.nx, -pl.nz));
+      g.cam.pitch = 0.15;
+    });
+    await wait(1500);
+    await shot('pets-rescue-front');
+    await page.evaluate(() => window.__game.enterPlace(window.__game.city.places.find((p) => p.type === 'shelter'), true));
+    await wait(1200);
+    await page.evaluate(() => {
+      const g = window.__game;
+      const c = g.interior.points.find((p) => p.use === 'service');
+      g.player.teleport(c.x, c.z + 1.2, Math.PI);
+      g.cam.snapBehind(Math.PI + 0.5);
+      g.cam.pitch = 0.45;
+    });
+    await wait(800);
+    await shot('pets-rescue-inside');
+    await page.waitForFunction(() => window.__game.interactable && /counter/.test(window.__game.interactable.label));
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog .slot');
+    await wait(400);
+    await shot('pets-adopt');
+    await page.locator('.dialog .slot input.text').first().fill('Biscuit');
+    await page.locator('.dialog .slot button:has-text("Adopt")').first().click();
+    await wait(400);
+    await shot('pets-adopted');
+    const s1 = await page.evaluate(() => ({ pet: window.__game.state.pet, active: window.__game.pet.active }));
+    console.log('adopted', JSON.stringify(s1));
+    await key(page, 'Escape');
+    await page.evaluate(() => window.__game.leaveInterior(true));
+    await wait(500);
+    // walk with the dog
+    await page.keyboard.down('KeyW');
+    await wait(3500);
+    await page.keyboard.up('KeyW');
+    await wait(1500);
+    const s2 = await page.evaluate(() => {
+      const g = window.__game;
+      const d = Math.hypot(g.pet.pos.x - g.player.pos.x, g.pet.pos.z - g.player.pos.z);
+      g.cam.snapBehind(g.player.heading + 2.4);
+      g.cam.pitch = 0.2;
+      g.cam.dist = 4;
+      return { dist: d.toFixed(2), walked: g.state.pet.walked.toFixed(1), visible: g.pet.mesh.visible };
+    });
+    console.log('after walk', JSON.stringify(s2));
+    await wait(800);
+    await shot('pets-heel');
+    // turn around to face the dog -> prompt
+    await page.evaluate(() => {
+      const g = window.__game;
+      const h = Math.atan2(g.pet.pos.x - g.player.pos.x, g.pet.pos.z - g.player.pos.z);
+      g.player.teleport(g.player.pos.x, g.player.pos.z, h);
+    });
+    await page.waitForFunction(() => window.__game.interactable && /Play with/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog:has-text("Play fetch")');
+    await wait(300);
+    await shot('pets-dialog');
+    await page.click('text=Play fetch');
+    await wait(700);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading + 0.9);
+      g.cam.dist = 7;
+    });
+    await wait(500);
+    await shot('pets-fetch');
+    await page.waitForFunction(() => !window.__game.pet.fetch, null, { timeout: 20000 });
+    const s3 = await page.evaluate(() => ({ happy: window.__game.state.pet.happy, mode: window.__game.pet.mode }));
+    console.log('after fetch', JSON.stringify(s3));
+    // shops: the dog waits by the door
+    await page.evaluate(() => {
+      const g = window.__game;
+      const cafe = g.city.places.find((p) => p.type === 'cafe');
+      g.placePlayerAt(cafe);
+      g.enterPlace(cafe, true);
+    });
+    await wait(500);
+    const s4 = await page.evaluate(() => ({ mode: window.__game.pet.mode, inScene: window.__game.pet.mesh.parent === window.__game.scene }));
+    await page.evaluate(() => window.__game.leaveInterior(true));
+    await wait(1500);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading + Math.PI);
+      g.cam.pitch = 0.2;
+    });
+    await wait(600);
+    await shot('pets-waited');
+    // home: the dog comes inside
+    await page.evaluate(() => window.__game.enterPlace(window.__game.homePlace(), true));
+    await wait(2000);
+    const s5 = await page.evaluate(() => ({ inHome: window.__game.pet.mesh.parent === window.__game.interior.scene, mode: window.__game.pet.mode }));
+    await shot('pets-home');
+    console.log('shop', JSON.stringify(s4), 'home', JSON.stringify(s5));
+  },
   async animals({ page, shot, wait }) {
     await startLife(page, wait);
     await page.evaluate(() => {

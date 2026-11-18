@@ -167,6 +167,16 @@ export class AudioEngine {
       case 'flap':
         for (let i = 0; i < 7; i++) this.burst(d, { type: 'bandpass', f: 900 + Math.random() * 600, q: 1.5, t: i * 0.055, dur: 0.05, gain: 0.07 });
         break;
+      case 'bark':
+        // two short woofs
+        for (const t of [0, 0.2]) {
+          this.tone(d, { type: 'sawtooth', f: 340, f2: 190, t, dur: 0.11, gain: 0.12 });
+          this.burst(d, { type: 'bandpass', f: 700, q: 2, t, dur: 0.09, gain: 0.12 });
+        }
+        break;
+      case 'throw':
+        this.burst(d, { type: 'bandpass', f: 1400, f2: 500, q: 1, dur: 0.22, gain: 0.08 });
+        break;
       case 'bump':
         this.tone(d, { f: 90, f2: 40, dur: 0.25, gain: 0.35 });
         this.burst(d, { f: 900, dur: 0.18, gain: 0.18 });

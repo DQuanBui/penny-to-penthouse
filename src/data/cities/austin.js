@@ -50,5 +50,6 @@ export default {
     { type: 'realestate', name: 'Keystone Realty', district: 'south_congress' },
     { type: 'dealer', name: 'Apex Motors', district: 'the_domain' },
     { type: 'mall', name: 'Domain Galleria', district: 'the_domain' },
+    { type: 'shelter', name: 'East Side Paws Rescue', district: 'east_austin' },
   ],
 };

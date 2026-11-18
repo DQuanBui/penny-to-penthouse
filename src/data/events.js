@@ -11,6 +11,7 @@ import { addNeed } from '../sim/Needs.js';
 import { adjustScore } from '../sim/Credit.js';
 import { relLevel } from '../sim/Relationships.js';
 import { FURNITURE_BY_ID } from './furniture.js';
+import { BREED_BY_ID, DOG_NAMES } from './pets.js';
 
 const furnitureName = (id) => FURNITURE_BY_ID[id]?.name.toLowerCase() || id;
 const furniturePriceOf = (id) => FURNITURE_BY_ID[id]?.price || 200;
@@ -313,6 +314,28 @@ export const LIFE_EVENTS = [
     choices: [
       { label: 'Go and mingle', run: (sim) => { sim.finance.charge(round(25 * (sim.city.priceIndex || 1)), 'fun', 'Office party'); sim.advance(150, { noCollapse: true }); addNeed(sim, 'social', 30); addNeed(sim, 'fun', 20); sim.state.job.perf += 6; return 'You finally talked to the VP. She remembered your name on Monday.'; } },
       { label: 'Head home early', run: (sim) => { addNeed(sim, 'energy', 10); return 'An early night. Your bed thanks you.'; } },
+    ],
+  },
+  {
+    id: 'stray_dog', title: 'A shadow with a waggy tail', icon: '🐕', weight: 1, cooldown: 45,
+    needs: (sim) => !sim.state.pet,
+    when: (sim) => !sim.state.pet && sim.day > 5,
+    setup: (sim) => ({ name: DOG_NAMES[Math.floor(sim.rng() * DOG_NAMES.length)] }),
+    text: (sim, c) => `A scruffy, friendly mutt has followed you for three blocks. No collar, no chip, just hopeful eyes. The kid at the corner store calls them "${c.name}".`,
+    choices: [
+      { label: 'Take them home', run: (sim, c) => { sim.finance.charge(round(40 * (sim.city.priceIndex || 1)), 'shopping', 'Dog bed and bowls'); sim.pets.adopt({ breed: BREED_BY_ID.mixed, name: c.name, age: 2 }, c.name, true); return `${c.name} sniffs every corner of your place, then falls asleep on your feet. You have a dog now.`; } },
+      { label: 'Walk them to the pet rescue', run: (sim, c) => { addNeed(sim, 'fun', 4); sim.advance(40, { noCollapse: true }); return `The rescue staff know ${c.name} already. "They always find their way to good people." You can visit any time.`; } },
+    ],
+  },
+  {
+    id: 'dog_mischief', title: 'Somebody ate a sock', icon: '🧦', weight: 1.4, cooldown: 30,
+    needs: (sim) => !!sim.state.pet,
+    when: (sim) => !!sim.state.pet,
+    setup: (sim) => ({ bill: round(lerp(160, 420, sim.rng()), 10) }),
+    text: (sim, c) => `${sim.state.pet.name} ate one of your socks and now looks very sorry for themselves. The emergency vet quotes ${fmtMoney(c.bill * (sim.city.priceIndex || 1))}.`,
+    choices: [
+      { label: 'Rush to the vet', run: (sim, c) => { sim.finance.charge(round(c.bill * (sim.city.priceIndex || 1)), 'health', 'Emergency vet'); sim.state.pet.happy = Math.min(100, sim.state.pet.happy + 10); return 'Sock retrieved. The vet has seen worse. Much worse.'; } },
+      { label: 'Wait and see', run: (sim, c) => { if (sim.rng() < 0.6) return 'By the morning the sock has… passed. Crisis over, laundry ruined.'; sim.finance.charge(round(c.bill * 1.6 * (sim.city.priceIndex || 1)), 'health', 'Emergency vet (overnight)'); sim.state.pet.happy = Math.max(0, sim.state.pet.happy - 25); return 'It got worse overnight. An emergency surgery later, everyone is fine, but your wallet is not.'; } },
     ],
   },
 ];

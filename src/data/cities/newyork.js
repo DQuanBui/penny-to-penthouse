@@ -50,5 +50,6 @@ export default {
     { type: 'realestate', name: 'Keystone Realty', district: 'midtown' },
     { type: 'dealer', name: 'Apex Motors', district: 'queens' },
     { type: 'mall', name: 'Liberty Galleria', district: 'midtown' },
+    { type: 'shelter', name: 'Brooklyn Paws Rescue', district: 'brooklyn' },
   ],
 };

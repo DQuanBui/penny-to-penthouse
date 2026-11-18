@@ -38,6 +38,7 @@ export function newState(profile, city) {
     inventory: { items: {}, outfits: [], meals: 2, gifts: 0, books: {} },
     vehicles: [],
     activeVehicle: null,
+    pet: null, // your dog (sim/Pets.js)
     relationships: {},
     social: { followers: arch.followers || 0, popularity: 0, posts: [], lastPostDay: -9, parties: 0 },
     portfolio: { holdings: {}, realized: 0, dividends: 0 },

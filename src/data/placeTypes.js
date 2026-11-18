@@ -29,5 +29,6 @@ export const PLACE_TYPES = {
   trades: { icon: '🔧', label: 'Trades Depot', color: '#e0903c', interior: 'workshop', service: 'work', career: 'trades', look: { front: 'showroom', brand: '#d4691f', trim: '#2b2f38', extras: ['crates'], building: { color: '#8a7c6a', facade: 'warehouse', minH: 9, maxH: 13 } } },
   studio: { icon: '🎬', label: 'Creative Studio', color: '#e85ca0', interior: 'studio', service: 'work', career: 'creative', look: { front: 'lobby', brand: '#c2185b', trim: '#1b1b20', extras: ['neonStrip', 'banner'], sky: true, building: { color: '#3c3f4a', facade: 'warehouse', minH: 14, maxH: 24 } } },
   mall: { icon: '🛍️', label: 'Mall', color: '#f2a93b', interior: 'mall', service: 'mall', look: { front: 'showroom', brand: '#2d3a8c', trim: '#f2f4f6', extras: ['banner', 'planters', 'flags'], sky: true, building: { color: '#d7dde4', facade: 'glass', minH: 14, maxH: 20 } } },
+  shelter: { icon: '🐾', label: 'Pet Rescue', color: '#e8a05c', interior: 'shelter', service: 'shelter', look: { front: 'shopfront', brand: '#2f7d8f', trim: '#f6e7c8', awning: 'slant', extras: ['bladeLogo', 'planters', 'chalkboard'] } },
   station: { icon: '🚇', label: 'Transit', color: '#ffd24a', interior: null, service: 'transit' },
 };

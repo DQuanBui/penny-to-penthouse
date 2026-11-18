@@ -37,7 +37,7 @@ class Shape {
   }
 }
 
-function dogGeometry() {
+export function dogGeometry() {
   const S = new Shape();
   const coat = '#ffffff'; // tinted per instance
   S.add(new THREE.CapsuleGeometry(0.12, 0.36, 4, 10).rotateX(Math.PI / 2).translate(0, 0.42, 0), coat);
@@ -74,7 +74,7 @@ function duckGeometry() {
   return S.build();
 }
 
-function animatedMaterial() {
+export function animatedMaterial() {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = worldUniforms.uTime;

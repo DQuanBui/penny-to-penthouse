@@ -151,6 +151,20 @@ export function commercialLayout(place) {
         { id: 'plant_floor', x: 19.5, z: 13.4, r: 0 },
         ...cafeTables(8.3, 5.4, 3, 2, 1.7, 2.3),
       ]);
+    case 'shelter':
+      // a bright rescue: reception, pet-food shelves and a play area for the dogs
+      return L(12, 9, 'wood', '#f3e6d3', [
+        { id: 'reception', x: 9.4, z: 1.6, r: 0 },
+        { id: 'shop_shelf', x: 1.2, z: 0.3, r: 0 },
+        { id: 'shop_shelf', x: 3.6, z: 0.3, r: 0 },
+        { id: 'painting_l', x: 6.2, z: 0.3, r: 0 },
+        { id: 'rug_large', x: 2.8, z: 3.4, r: 0 },
+        { id: 'rug_large', x: 5.8, z: 3.4, r: 0 },
+        { id: 'plant_tree', x: 11.3, z: 0.7, r: 0 },
+        { id: 'armchair', x: 11.2, z: 5.6, r: 3 },
+        { id: 'armchair', x: 11.2, z: 6.8, r: 3 },
+        { id: 'plant_floor', x: 0.6, z: 8.4, r: 0 },
+      ]);
     case 'shop': {
       const rack = place.type === 'clothing' ? 'clothes_rack' : 'shop_shelf';
       const rows = [];
