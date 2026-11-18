@@ -40,6 +40,7 @@ import { openTalk } from '../ui/Talk.js';
 import { BuildMode } from '../build/BuildMode.js';
 import { PetFollower, ShelterDogs } from '../world/Pet.js';
 import { openPet } from '../ui/Pets.js';
+import { PhotoMode } from '../ui/PhotoMode.js';
 import { Weather } from '../world/Weather.js';
 import { openStation } from '../world/Transit.js';
 import { CitySelect } from '../ui/CitySelect.js';
@@ -137,6 +138,7 @@ export class Game {
     this.ui.append(this.fpsEl);
     this.map = new CityMap(this);
     this.hud = new HUD(this);
+    this.photoMode = new PhotoMode(this);
     this.phone = new Phone(this);
     registerApps(this.phone, this);
 
@@ -491,6 +493,7 @@ export class Game {
     this.cityEvents.clear();
     this.pet.setPet(null);
     this.shelterDogs.clear();
+    this.photoMode.toggle(false);
     this.player.sitting = false;
     this.state = null;
     this.sim = null;
@@ -830,6 +833,7 @@ export class Game {
         this.build.mode = 'idle';
         this.build.renderUi();
       } else if (this.overlays.length) this.closeTop();
+      else if (this.photoMode.active) this.photoMode.toggle(false);
       else openPause(this);
     } else if (!this.fading) {
       if (input.pressed('Tab') || input.pressed('KeyP')) {
@@ -838,7 +842,8 @@ export class Game {
       }
       if (input.pressed('KeyM') && (this.map.isOpen() || !this.overlays.length)) this.map.toggle();
       if (!blocked) {
-        if (input.pressed('KeyT')) this.openWait();
+        if (input.pressed('KeyH')) this.photoMode.toggle();
+        if (input.pressed('KeyT') && !this.photoMode.active) this.openWait();
         if (this.player.sitting && ['KeyW', 'KeyA', 'KeyS', 'KeyD'].some((k) => input.pressed(k))) this.standUp();
         if (input.pressed('KeyB')) {
           if (this.inside?.home) this.build.enter();
@@ -859,7 +864,7 @@ export class Game {
     }
 
     // --- simulation clock ---
-    if (!blocked) {
+    if (!blocked && !this.photoMode.active) {
       const minPerSec = (1440 / (BALANCE.time.realMinutesPerDay * 60)) * this.settings.get('timeSpeed');
       // sitting on a bench is a gentle rest; otherwise needs just tick
       this.sim.advance(dt * minPerSec, this.player.sitting ? SIT_REST : undefined);
@@ -868,7 +873,7 @@ export class Game {
     // --- world ---
     const driving = this.vehicles.update(dt, blocked ? null : input);
     this.player.frozen = blocked || driving;
-    if (!driving) this.player.update(dt, blocked ? null : input, this.cam.yaw);
+    if (!driving) this.player.update(dt, blocked || this.photoMode.active ? null : input, this.cam.yaw);
     this.cam.update(dt, blocked ? null : input, this.player.pos);
     worldUniforms.uTime.value = elapsed;
     const inside = this.inside;
@@ -908,6 +913,7 @@ export class Game {
     this._objT = (this._objT || 0) - dt;
     if (this._objT <= 0) {
       this._objT = 0.5;
+      if (this.photoMode.active) this.photoMode.refresh();
       const o = computeObjective(this);
       this.hud.setObjective(o[0], o[1]);
       this.checkSeason();

@@ -35,7 +35,7 @@ export class HUD {
       (this.compassEl = h('div.hud-tc.compass.hidden', (this.stripEl = h('div.compass-strip')), (this.wayMark = h('div.compass-mark.way.hidden')), (this.homeMark = h('div.compass-mark.home.hidden', '🏠')), h('div.compass-needle'))),
       h('div.hud-br', (this.miniCv = h('canvas.minimap', { width: MINI, height: MINI, onclick: () => game.map?.toggle() })), (this.wayEl = h('div.way-label.hidden'))),
       h('div.hud-bc', (this.hintEl = h('div.hint.hidden')), (this.promptEl = h('div.prompt.hidden'))),
-      h('div.hud-bl', h('span', h('kbd', 'E'), ' Use'), h('span', h('kbd', 'Tab'), ' Phone'), h('span', h('kbd', 'M'), ' Map'), h('span', h('kbd', 'T'), ' Wait'), h('span', h('kbd', 'Esc'), ' Menu')),
+      h('div.hud-bl', h('span', h('kbd', 'E'), ' Use'), h('span', h('kbd', 'Tab'), ' Phone'), h('span', h('kbd', 'M'), ' Map'), h('span', h('kbd', 'T'), ' Wait'), h('span', h('kbd', 'H'), ' Photo'), h('span', h('kbd', 'Esc'), ' Menu')),
     );
     this.ringFg = this.el.querySelector('.ring-fg');
     // compass: three turns of ticks so it can scroll either way without a seam

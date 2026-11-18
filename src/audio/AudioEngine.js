@@ -174,6 +174,10 @@ export class AudioEngine {
           this.burst(d, { type: 'bandpass', f: 700, q: 2, t, dur: 0.09, gain: 0.12 });
         }
         break;
+      case 'shutter':
+        this.burst(d, { type: 'highpass', f: 2500, dur: 0.03, gain: 0.25 });
+        this.burst(d, { type: 'bandpass', f: 1200, t: 0.07, dur: 0.05, gain: 0.18 });
+        break;
       case 'throw':
         this.burst(d, { type: 'bandpass', f: 1400, f2: 500, q: 1, dur: 0.22, gain: 0.08 });
         break;

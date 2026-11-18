@@ -167,6 +167,34 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Photo mode: hide the HUD, frame a landmark at golden hour with your dog, post and save. */
+  async photo({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 19 * 60;
+      g.sim.pets.adopt(g.sim.pets.available()[1], 'Scout', true);
+      const lm = g.city.landmarks[0];
+      g.player.teleport(lm.x + 30, lm.z + 30, -2.35);
+      g.syncPet();
+      g.cam.snapBehind(-2.35);
+      g.cam.pitch = 0.05;
+    });
+    await wait(1500);
+    await key(page, 'KeyH', 800);
+    const s = await page.evaluate(() => ({ active: window.__game.photoMode.active, hudHidden: getComputedStyle(document.querySelector('.hud')).display === 'none', tags: document.querySelector('.photo-tags').textContent, followers: window.__game.state.social.followers }));
+    console.log('photo mode', JSON.stringify(s));
+    await shot('photo-mode');
+    await page.click('.photo-bar button:has-text("Post")');
+    await wait(500);
+    const post = await page.evaluate(() => ({ followers: window.__game.state.social.followers, last: window.__game.state.social.posts[0] }));
+    console.log('posted', JSON.stringify(post));
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.click('.photo-bar button:has-text("Save photo")')]);
+    console.log('download', dl.suggestedFilename());
+    await key(page, 'Escape', 500);
+    console.log('after exit', await page.evaluate(() => ({ active: window.__game.photoMode.active, paused: !!document.querySelector('.overlay') })));
+  },
   /** Interiors: skyline windows by day and night, curtains, wall clock, door frame. */
   async rooms({ page, shot, wait }) {
     await startLife(page, wait);

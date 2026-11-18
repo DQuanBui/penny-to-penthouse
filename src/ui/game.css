@@ -1030,3 +1030,55 @@ input.text.amount {
     width: 300px;
   }
 }
+
+/* ---------- photo mode ---------- */
+.hud.photo-hide {
+  display: none;
+}
+.photo-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  outline: 1px solid var(--line);
+  padding: 0.6em 1em;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  max-width: calc(100vw - 32px);
+}
+.photo-bar.hidden {
+  display: none;
+}
+.photo-tags {
+  color: var(--accent);
+  font-size: 0.9em;
+}
+.photo-btns {
+  display: flex;
+  gap: 8px;
+}
+.photo-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none !important;
+}
+.photo-flash.on {
+  animation: photoFlash 0.45s ease-out;
+}
+@keyframes photoFlash {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}

@@ -16,6 +16,7 @@ export const POST_KINDS = {
   outfit: ['New outfit', '👗', 1.5, 'New fit, who is this?'],
   home: ['Home tour', '🏠', 1.6, 'Welcome to my place.'],
   work: ['Career update', '🚀', 1.6, 'Hard work pays off.'],
+  photo: ['Photo', '📷', 1.0, 'Snapped around the city.'],
 };
 export const SPONSOR_MIN_FOLLOWERS = 5000;
 export const VIP_POPULARITY = 35;
@@ -71,6 +72,7 @@ export class Social {
       else if (k === 'home' && !st.flags.newHome && (st.home.styleScore || 0) < (st.flags.homePostStyle || 0) + 5) why = 'Improve your home first.';
       else if (k === 'work' && !st.flags.careerNews) why = 'Wait for a promotion or new job.';
       else if (k === 'food' && !ctx.inFoodPlace) why = 'Post this from a café or restaurant.';
+      else if (k === 'photo' && !ctx.photo) why = 'Take one in photo mode (press H).';
       out[k] = why;
     }
     return out;
@@ -82,13 +84,14 @@ export class Social {
     const s = st.social;
     const [, , mult, caption] = POST_KINDS[kind];
     const device = 1 + (st.inventory.items.phone_pro ? 0.2 : 0) + (st.inventory.items.camera ? 0.3 : 0);
-    let gain = lerp(S.followersPerPost[0], S.followersPerPost[1], sim.rng()) * mult;
+    // photo-mode shots carry their own multiplier (landmark, event, dog, golden hour...)
+    let gain = lerp(S.followersPerPost[0], S.followersPerPost[1], sim.rng()) * mult * (ctx.mult || 1);
     gain *= (1 + Math.sqrt(s.followers) / 18) * (1 + s.popularity / 50) * mod(st, 'followerGain') * device * (0.8 + (st.profile.outfitStyle ?? 2) * 0.05);
     const viral = sim.rng() < S.viralChance + skillLevel(st, 'creativity') * 0.004;
     if (viral) gain = gain * S.viralMul + 2000;
     gain = Math.round(gain);
     s.followers += gain;
-    s.posts.unshift({ kind, day: sim.day, gain, likes: Math.round(gain * (3 + sim.rng() * 5) + s.followers * 0.02), text: caption, viral, where: ctx.landmark || null });
+    s.posts.unshift({ kind, day: sim.day, gain, likes: Math.round(gain * (3 + sim.rng() * 5) + s.followers * 0.02), text: ctx.caption || caption, viral, where: ctx.landmark || null });
     if (s.posts.length > 24) s.posts.length = 24;
     if (kind === 'landmark') (st.flags.landmarkPosts ||= {})[ctx.landmark] = sim.day;
     if (kind === 'outfit') st.flags.newOutfit = false;
