@@ -14,6 +14,11 @@ Penny to Penthouse is a 3D third-person life simulation that runs in your browse
 ## Features
 
 - **Five open cities** — New York, Los Angeles, Chicago, Miami and Austin, each generated procedurally with its own districts, skyline, landmarks, economy, weather and residents. Day/night cycle, seasons, rain, snow and heat haze.
+- **A living street** — busy sidewalks of animated pedestrians who wait for the walk signal, dog walkers, pigeons that scatter, gulls and ducks; traffic and city buses that stop at shelters; parked cars, hydrants, bus shelters, food carts and buskers; parks with playgrounds and picnic tables; benches you can sit on.
+- **Real-looking places (fictional brands)** — every café, bank, gym, dealer, mall and pet rescue has its own storefront: awnings, logo signs, glass lobbies, patios, mannequins and showroom cars. Interiors have city views that light up at night, curtains, wall clocks that keep game time and set tables.
+- **Weekly city events** — farmers' markets, night markets, park concerts, art fairs, fun runs and street festivals on the Map and Calendar.
+- **Adopt a dog** — choose a dog at the pet rescue; it heels beside you, waits outside shops, rides in your car, comes home with you and plays fetch. Walk it every day.
+- **Photo mode** — hide the HUD, frame a shot and save it or post it: landmarks, events, your dog and golden hour earn more followers.
 - **Character creator** — 10 backgrounds (Small-Town Dreamer to Rich Heir), 12 traits, body, face, 14 hairstyles, outfits and accessories with a live studio preview, plus a Random button.
 - **Needs and mood** — Energy, Hunger, Hygiene, Fun, Social and Health shape how well you work and earn.
 - **Careers** — 7 ladders (Tech, Finance, Healthcare, Creative, Trades, Hospitality, Real Estate) with interviews, shifts, promotions, raises and 7 mini-games. Side hustles any time.
@@ -24,7 +29,7 @@ Penny to Penthouse is a 3D third-person life simulation that runs in your browse
 - **Popularity** — post from landmarks, go viral, land brand deals, throw house parties, unlock VIP tables.
 - **Getting around** — walk, run, transit, taxis, or buy a car and drive it through traffic.
 - **Goals, rankings and achievements** — life goals, 26 achievements, and city and national leaderboards against 100 AI rivals whose fortunes grow over time.
-- **Life events** — job offers, market crashes, inheritances, rent hikes and more, each with choices that matter.
+- **Life events** — 30 of them: job offers, market crashes, inheritances, jury duty, weddings, scams, heat waves, a stray dog and more, each with choices that matter.
 - **The phone** — Bank, Invest, Homes, Jobs, Learn, Gigs, Ventures, Contacts, Pulse, News, Goals, Rankings, Calendar, Map and Settings.
 - **Saves** — 3 slots, autosave, export/import as a JSON file, and a Hall of Fame across lives.
 - **Everything is procedural** — no downloaded art or audio: the city, characters, furniture, textures, sound effects and music are generated at runtime.
@@ -43,6 +48,7 @@ Penny to Penthouse is a 3D third-person life simulation that runs in your browse
 | M | Map (set a GPS waypoint, call a taxi) |
 | B | Build mode (inside your home) |
 | T | Wait / skip time |
+| H | Photo mode |
 | F | Get in / out of your car |
 | W / S, A / D (in a car) | Throttle / brake, steer |
 | Esc | Pause, or close the current screen |

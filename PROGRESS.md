@@ -1,6 +1,20 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: All 13 phases are complete and deployed. Next ideas: more per-city flavour (district-specific events), richer car and character meshes, an online leaderboard provider (sim/Rankings.js interface), mobile/touch controls.
+RESUME HERE: All 13 phases are complete and deployed. Post-launch polish round done (see "Post-launch" below). Next ideas: passengers boarding buses / riding the bus, more per-city flavour (district-specific events), pet tricks and more pet kinds, an online leaderboard provider (sim/Rankings.js interface), mobile/touch controls.
+
+## Post-launch (polish round)
+- [x] Car collisions (OBB/SAT for parked + traffic + player car) — no walking or driving through cars
+- [x] Denser crowd (signal-aware crossings, joggers, chats) and smoother procedural characters
+- [x] Storefronts per place type (data/placeTypes.js `look`, world/Storefronts.js), malls in every city
+- [x] Wildlife (world/Animals.js), streetscape + rooftops (world/Streetscape.js), realistic car model (world/CarModel.js)
+- [x] Parks + street life (world/Parks.js, world/StreetLife.js), benches you can sit on
+- [x] Weekly city events (data/cityEvents.js, world/CityEvents.js)
+- [x] 30 life events; forced/debug triggers respect each event's `needs`
+- [x] Pets: data/pets.js, sim/Pets.js (state.pet), world/Pet.js (follower + rescue dogs), ui/Pets.js; Pet Rescue place type in every city
+- [x] HUD: compass + waypoint distance, need ring meters, pet chip, dismissable toasts
+- [x] Interiors: skyline windows (day/night), curtains, wall clock, molding, set tables
+- [x] Photo mode (ui/PhotoMode.js, H): save PNG or post (POST_KINDS.photo with a subject multiplier)
+- [x] City buses (Traffic bus slots, CarModel busGeometry, city.busStops, per-city `busColor`)
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
@@ -49,6 +63,10 @@ RESUME HERE: All 13 phases are complete and deployed. Next ideas: more per-city 
 
 - **Build mode**: build/BuildMode.js (B inside your home, own overlay + top-down camera; Game.updatePlay hands the frame to it while active). Furniture snaps to 0.5 m (build/Grid.js canPlace), inner walls are 1 m unit segments (build/Walls.js; a doorway = a missing segment). Two-storey homes: layout.upper {walls, items}, a lift pad switches floors (stairs-free). Renters may furnish only. Undo/redo = JSON snapshots of layout + storage + cash. Style score = Grid.styleScore(layout), stored on state.home.styleScore (and the property).
 - **Smoke tests**: software GL is slow, so scenarios switch to the Low preset and key() waits for game.fading to clear.
+- **Life events**: `when` = eligibility for random rolls (timing, flavour); `needs` = hard data requirements. trigger(id) (debug/forced) checks only `needs`, so it can never crash on a missing car/job/business/pet.
+- **Pets**: one dog max (state.pet). Happiness −16/day without a 30-minute walk (−4 with), food charged each morning; 4 days at 0 → rehomed. The follower lives in the city scene and waits by shop doors; it moves into the interior scene only for the home and the rescue. Interaction needs the player to face the dog (it usually walks at heel).
+- **Buses**: the last `nb` traffic slots are buses (hl 5.75 / hw 1.27, own InstancedMesh). They always stay alive, prefer street segments in `traffic.stopSegs` (stop on their right-hand kerb) and dwell 5–9 s with the front door at the stop.
+- **Interior trims** must be one-sided planes facing into the room; boxes show through the cut-away walls nearest the camera.
 
 - **Cities**: 5 data files in data/cities (+32-36 residents each in data/npcs). New Life flow = creator -> ui/CitySelect.js (live skyline preview) -> beginLife. The city is regenerated when the season changes (Game.checkSeason): fall colours, bare trees and white lawns in snowy-winter cities.
 - **Weather**: world/Weather.js weatherAt(city,total) is deterministic per 6-hour block (clear/cloudy/rain/snow/haze); drives sky overcast + fog, particles and crowd density.
@@ -63,6 +81,7 @@ RESUME HERE: All 13 phases are complete and deployed. Next ideas: more per-city 
 
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
+- New scenarios: collide, crowd, faces, fronts, animals, park, events, pets, hud, rooms, photo, buses.
 - Scenarios: polish (post FX, audio, debug panel), drive (dealer, driving, parking, traffic), life (tutorial, events, Goals/Rankings/Calendar), cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
@@ -71,6 +90,5 @@ RESUME HERE: All 13 phases are complete and deployed. Next ideas: more per-city 
 - .github/workflows/deploy.yml builds and deploys to GitHub Pages on every push to main, so only push commits whose smoke scenarios pass.
 
 ## Known issues
-- Procedural characters show a slightly jagged hem where shirt meets hips on some outfits (cosmetic).
 - Under headless software GL the heavy `cities` scenario can time out on a screenshot; rerun it.
-- Player cars are simple box meshes unless GLB files are supplied (see ASSETS.md).
+- Under headless software GL the sim runs at roughly a quarter speed; scenarios that wait for traffic place vehicles directly.
