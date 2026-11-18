@@ -166,13 +166,23 @@ export function buildStreetscape(ctx) {
   for (const b of blocks) {
     if (b.kind !== 'build' || b.style.lots === 'houses') continue;
     for (const lot of b.lots) {
-      if (lot.place || !lot.sides.length || lot.empty || rng() > 0.45) continue;
+      if (lot.place || !lot.sides.length || lot.empty) continue;
       const side = lot.sides[0];
       const nx = side === 'e' ? 1 : side === 'w' ? -1 : 0;
       const nz = side === 's' ? 1 : side === 'n' ? -1 : 0;
       const fx = nx ? (nx > 0 ? lot.x1 : lot.x0) : (lot.x0 + lot.x1) / 2;
       const fz = nz ? (nz > 0 ? lot.z1 : lot.z0) : (lot.z0 + lot.z1) / 2;
       const W = (nz ? lot.x1 - lot.x0 : lot.z1 - lot.z0) - 2.4;
+      // now and then someone with nowhere else to go sits against a quiet wall
+      if (rng() < 0.07 && W > 6) {
+        const tx = -nz;
+        const tz = nx;
+        const sx = fx + nx * 0.65 + tx * (W / 2 - 1.2);
+        const sz = fz + nz * 0.65 + tz * (W / 2 - 1.2);
+        (ctx.sitters ||= []).push({ id: `sit_${b.i}_${b.j}_${Math.round(sx)}`, x: sx, z: sz, ry: Math.atan2(nx, nz), cart: rng() < 0.3 });
+        colliders.add(sx - 0.55, sz - 0.55, sx + 0.55, sz + 0.55, 0.6);
+      }
+      if (rng() > 0.45) continue;
       if (W < 3) continue;
       const ry = Math.atan2(nx, nz);
       const color = pick(rng, AWNING);

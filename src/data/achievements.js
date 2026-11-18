@@ -29,6 +29,7 @@ export const ACHIEVEMENTS = [
   { id: 'host', name: 'Host With the Most', icon: '🎉', desc: 'Throw five house parties.', check: (sim) => sim.state.social.parties >= 5 },
   { id: 'style_icon', name: 'Style Icon', icon: '✨', desc: 'Give your home a style score of 60.', check: (sim) => (sim.state.home.styleScore || 0) >= 60 },
   { id: 'best_friend', name: 'Best Friend', icon: '🐕', desc: 'Adopt a dog from a pet rescue.', check: (sim) => (sim.state.stats.petsAdopted || 0) >= 1 },
+  { id: 'kind_heart', name: 'Kind Heart', icon: '💛', desc: 'Help people on the street ten times.', check: (sim) => (sim.state.stats.kindness || 0) >= 10 },
   { id: 'patron', name: 'Patron of the Arts', icon: '🎸', desc: 'Tip street musicians five times.', check: (sim) => (sim.state.stats.buskerTips || 0) >= 5 },
   { id: 'workhorse', name: 'Workhorse', icon: '⏱️', desc: 'Work 100 shifts.', check: (sim) => sim.state.stats.shifts >= 100 },
   { id: 'master', name: 'Mastery', icon: '🧠', desc: 'Bring any skill to level 10.', check: (sim) => Object.values(sim.state.skills).some((v) => v >= 9.999) },

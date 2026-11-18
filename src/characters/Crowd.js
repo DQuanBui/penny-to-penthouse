@@ -12,12 +12,13 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createRig } from './CharacterFactory.js';
 import { glbNpcModels } from './GLBCharacters.js';
-import { randomAppearance, SKIN_TONES, HAIR_COLORS } from './Customization.js';
+import { randomAppearance, SKIN_TONES, HAIR_COLORS, roleAppearance, randomRole, ROLE_IDS } from './Customization.js';
 import { animateRig } from './Animation.js';
 import { worldUniforms } from '../world/Buildings.js';
 import { mulberry32 } from '../core/utils.js';
 
 const COUNTS = { low: [80, 8], medium: [170, 16], high: [240, 24] }; // [agents, rigs]
+const RIG_ROLES = ['business', 'student', 'police', 'construction', 'nurse', 'tourist', 'shopper', 'delivery', 'jogger', 'business', 'student', 'teacher', 'chef', 'doctor', 'mail', 'shopper', 'nurse', 'construction', 'tourist', 'police'];
 const INSET = 2.6; // walking line: distance from the kerb
 const NEAR = 40; // full rigs inside this radius
 const FAR = 105; // agents further away respawn closer to the player
@@ -148,7 +149,7 @@ export function createImpostors(n, rng) {
   geo.setAttribute('aGait', gait);
   const mesh = new THREE.InstancedMesh(geo, impostorMaterial(), n);
   mesh.frustumCulled = false;
-  return { mesh, gait };
+  return { mesh, gait, top, bottom, skin, hair };
 }
 
 export class Crowd {
@@ -206,14 +207,21 @@ export class Crowd {
     this.alive = new Uint8Array(n);
     this.rigOf = new Int8Array(n).fill(-1);
 
+    this.role = new Uint8Array(n); // index into ROLE_IDS (police, nurse, tourist...)
     const imp = createImpostors(n, this.rng);
     this.inst = imp.mesh;
     this.gait = imp.gait;
+    this.imp = imp;
     this.group.add(this.inst);
     const models = glbNpcModels();
+    // near rigs: a few civilians plus one of each common job, so whoever walks up
+    // close can be shown in the right clothes
+    const civ = Math.max(2, Math.floor(r * 0.3));
     for (let k = 0; k < r; k++) {
-      const look = randomAppearance(this.rng);
+      const role = k < civ ? 'civilian' : RIG_ROLES[(k - civ) % RIG_ROLES.length];
+      const look = roleAppearance(role, this.rng);
       const rig = createRig(models.length ? { ...look, model: models[k % models.length] } : look);
+      rig.role = ROLE_IDS.indexOf(role);
       rig.group.visible = false;
       rig.agent = -1;
       this.group.add(rig.group);
@@ -314,8 +322,12 @@ export class Crowd {
       const d2 = (this.x[i] - px) ** 2 + (this.z[i] - pz) ** 2;
       if (anywhere || d2 > 32 * 32) break;
     }
-    const jogger = this.rng() < 0.06;
-    this.speed[i] = jogger ? 2.6 + this.rng() * 0.6 : 1.05 + this.rng() * 0.55;
+    // who is this? (shapes their clothes and pace)
+    const role = randomRole(this.rng);
+    this.role[i] = ROLE_IDS.indexOf(role);
+    this.dress(i, roleAppearance(role, this.rng));
+    const jogger = role === 'jogger';
+    this.speed[i] = jogger ? 2.6 + this.rng() * 0.6 : role === 'business' ? 1.35 + this.rng() * 0.35 : role === 'tourist' ? 0.85 + this.rng() * 0.3 : 1.05 + this.rng() * 0.55;
     this.pause[i] = 0;
     this.off[i] = 0;
     this.tOff[i] = 0;
@@ -358,6 +370,20 @@ export class Crowd {
     // boxed in: wait a moment
     this.pause[i] = 0.8;
     this.chat[i] = 0;
+  }
+
+  /** Set an agent's far-away colours from an appearance. */
+  dress(i, look) {
+    const c = this._c;
+    const put = (attr, hex) => {
+      c.set(hex).convertSRGBToLinear();
+      attr.setXYZ(i, c.r, c.g, c.b);
+      attr.needsUpdate = true;
+    };
+    put(this.imp.top, look.topColor);
+    put(this.imp.bottom, look.top === 'dress' ? look.topColor : look.bottomColor);
+    put(this.imp.skin, look.skin);
+    put(this.imp.hair, look.hat && look.hat !== 'none' ? look.hatColor || '#f8f8f6' : look.hairColor);
   }
 
   /** May agent i start crossing right now? (walk signal) */
@@ -452,15 +478,33 @@ export class Crowd {
           rig.group.visible = false;
         }
       }
-      let free = 0;
+      const civ = ROLE_IDS.indexOf('civilian');
       for (let i = 0; i < n; i++) {
         if (!this.alive[i] || this.rigOf[i] >= 0) continue;
         if ((this.x[i] - px) ** 2 + (this.z[i] - pz) ** 2 > NEAR * NEAR) continue;
-        while (free < this.rigs.length && this.rigs[free].agent >= 0) free++;
-        if (free >= this.rigs.length) break;
-        this.rigs[free].agent = i;
-        this.rigs[free].group.visible = true;
-        this.rigOf[i] = free;
+        // prefer a rig dressed for the same job, then a plain civilian, then anyone
+        let pickK = -1;
+        let score = -1;
+        for (let k = 0; k < this.rigs.length; k++) {
+          const rig = this.rigs[k];
+          if (rig.agent >= 0) continue;
+          const sc = rig.role === this.role[i] ? 3 : rig.role === civ ? 2 : 1;
+          if (sc > score) {
+            score = sc;
+            pickK = k;
+            if (sc === 3) break;
+          }
+        }
+        if (pickK < 0) break;
+        const rig = this.rigs[pickK];
+        rig.agent = i;
+        rig.group.visible = true;
+        this.rigOf[i] = pickK;
+        // from now on this agent looks like the rig, near or far
+        if (rig.role !== this.role[i]) {
+          this.role[i] = rig.role;
+          if (rig.appearance) this.dress(i, rig.appearance);
+        }
       }
     }
 

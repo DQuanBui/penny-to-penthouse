@@ -6,7 +6,7 @@ import { damp, lerp, smoothstep } from '../core/utils.js';
 /**
  * @param rig   from CharacterFactory.buildCharacter
  * @param dt    seconds
- * @param p     { speed (m/s), grounded, sitting, talking, waving }
+ * @param p     { speed (m/s), grounded, sitting, floor (sitting on the ground), talking, waving, shaking }
  */
 export function animateRig(rig, dt, p) {
   if (rig.type === 'glb') {
@@ -22,6 +22,7 @@ export function animateRig(rig, dt, p) {
   a.amp = damp(a.amp, moving ? Math.min(1, speed / 1.6) : 0, 9, dt);
   a.air = damp(a.air, p.grounded === false ? 1 : 0, 10, dt);
   a.sit = damp(a.sit, p.sitting ? 1 : 0, 7, dt);
+  a.floor = damp(a.floor || 0, p.floor ? 1 : 0, 7, dt);
   a.talk = damp(a.talk, p.talking ? 1 : 0, 6, dt);
   a.wave = damp(a.wave, p.waving ? 1 : 0, 8, dt);
   // one full cycle = two steps
@@ -51,6 +52,11 @@ export function animateRig(rig, dt, p) {
   thR = lerp(thR, -1.48, a.sit);
   shL = lerp(shL, 1.5, a.sit);
   shR = lerp(shR, 1.5, a.sit);
+  // on the ground: legs out in front, one knee up
+  thL = lerp(thL, -1.5, a.floor);
+  thR = lerp(thR, -1.95, a.floor);
+  shL = lerp(shL, 0.12, a.floor);
+  shR = lerp(shR, 1.9, a.floor);
   b.thighL.rotation.x = thL;
   b.thighR.rotation.x = thR;
   b.shinL.rotation.x = shL;
@@ -60,12 +66,12 @@ export function animateRig(rig, dt, p) {
 
   // hips: bob + sway, lowered when seated
   const bob = Math.cos(ph * 2) * 0.018 * (1 + run * 1.2) * amp;
-  b.hips.position.y = rig.hipsY + bob - a.sit * 0.44 + Math.sin(t * 1.7) * 0.003;
+  b.hips.position.y = rig.hipsY + bob - a.sit * 0.44 - a.floor * 0.84 + Math.sin(t * 1.7) * 0.003;
   b.hips.rotation.y = s * 0.09 * amp;
   b.hips.rotation.z = c * 0.03 * amp;
 
   // torso
-  b.spine.rotation.x = lerp(0.02, 0.2, run) * amp + a.air * 0.1 - a.sit * 0.05;
+  b.spine.rotation.x = lerp(0.02, 0.2, run) * amp + a.air * 0.1 - a.sit * 0.05 - a.floor * 0.12;
   b.chest.rotation.y = -s * 0.14 * amp;
   b.chest.rotation.x = breathe * 0.012 + a.talk * Math.sin(t * 2.3) * 0.02;
   b.neck.rotation.x = -lerp(0.0, 0.12, run) * amp;
@@ -86,6 +92,10 @@ export function animateRig(rig, dt, p) {
   aRx = lerp(aRx, -0.45, a.sit);
   fLx = lerp(fLx, -0.75, a.sit);
   fRx = lerp(fRx, -0.75, a.sit);
+  aLx = lerp(aLx, -0.55, a.floor);
+  aRx = lerp(aRx, -0.9, a.floor);
+  fLx = lerp(fLx, -0.45, a.floor);
+  fRx = lerp(fRx, -0.6, a.floor);
   // talking: gentle hand gestures
   if (a.talk > 0.01) {
     const g = a.talk;

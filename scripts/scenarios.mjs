@@ -167,6 +167,70 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** People with jobs and styles; someone sitting on the pavement. */
+  async people({ page, shot, wait }) {
+    await startLife(page, wait);
+    // a lineup of every role, built with the same factory the crowd uses
+    await page.evaluate(async () => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60;
+      const { roleAppearance, ROLE_IDS } = await import('/src/characters/Customization.js');
+      const { createRig } = await import('/src/characters/CharacterFactory.js');
+      const { animateRig } = await import('/src/characters/Animation.js');
+      const p = g.player.pos;
+      const h = g.player.heading;
+      const fx = Math.sin(h);
+      const fz = Math.cos(h);
+      const ids = ROLE_IDS.filter((r) => r !== 'civilian');
+      window.__lineup = ids.map((role, k) => {
+        const rig = createRig(roleAppearance(role, Math.random));
+        const off = (k - (ids.length - 1) / 2) * 0.75;
+        rig.group.position.set(p.x + fx * 4 + fz * off, p.y, p.z + fz * 4 - fx * off);
+        rig.group.rotation.y = h + Math.PI;
+        g.scene.add(rig.group);
+        animateRig(rig, 0.016, { speed: 0, grounded: true, floor: role === 'homeless' });
+        return rig;
+      });
+      g.cam.snapBehind(h);
+      g.cam.pitch = 0.12;
+      g.cam.dist = 4.5;
+    });
+    await wait(1500);
+    await shot('people-lineup');
+    await page.evaluate(() => window.__lineup.forEach((r) => r.group.removeFromParent()));
+    await wait(6000);
+    const roles = await page.evaluate(() => {
+      const g = window.__game;
+      const c = g.crowd;
+      const counts = {};
+      import('/src/characters/Customization.js').then(() => 0);
+      for (let i = 0; i < c.n; i++) if (c.alive[i]) counts[c.role[i]] = (counts[c.role[i]] || 0) + 1;
+      return { counts, rigs: c.rigs.map((r) => r.role) };
+    });
+    console.log('crowd roles', JSON.stringify(roles));
+    await shot('people-street');
+    const sit = await page.evaluate(() => {
+      const g = window.__game;
+      const s = g.city.sitters[0];
+      if (!s) return null;
+      g.player.teleport(s.x + Math.sin(s.ry) * 2.2, s.z + Math.cos(s.ry) * 2.2, s.ry + Math.PI);
+      g.cam.snapBehind(s.ry + Math.PI + 0.6);
+      g.cam.pitch = 0.3;
+      g.cam.dist = 3.5;
+      return { n: g.city.sitters.length, s };
+    });
+    console.log('sitters', JSON.stringify(sit));
+    await wait(1500);
+    await shot('people-sitter');
+    await page.waitForFunction(() => window.__game.interactable && /say hello/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog:has-text("Someone in need")');
+    await shot('people-sitter-dialog');
+    await page.click('text=Buy them a hot meal');
+    await wait(400);
+    console.log('kindness', await page.evaluate(() => window.__game.state.stats.kindness));
+  },
   /** Traffic turns: curved paths, indicators, body lean; player car steering. */
   async turns({ page, shot, wait }) {
     await startLife(page, wait);

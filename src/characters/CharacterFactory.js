@@ -32,7 +32,7 @@ const BODY = {
 };
 const FACE = { oval: [0.94, 1.1, 1.0], round: [1.03, 1.03, 1.03], square: [1.0, 1.06, 0.98], heart: [0.98, 1.08, 1.0] };
 const EYE = { round: [1, 1], almond: [1.25, 0.78], wide: [1.15, 1.12], narrow: [1.2, 0.6] };
-const LONG_SLEEVE = { shirt: 1, hoodie: 1, sweater: 1, blazer: 1, jacket: 1 };
+const LONG_SLEEVE = { shirt: 1, hoodie: 1, sweater: 1, blazer: 1, jacket: 1, uniform: 1, labcoat: 1, chefcoat: 1, coat: 1 };
 
 const HEAD_SCALE = 1.17;
 const HEAD_PIVOT = 1.515;
@@ -144,7 +144,8 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
   const bareLegs = dress || skirt;
   const topC = a.topColor;
   const botC = dress ? a.topColor : a.bottomColor;
-  const sleeveUpper = a.top === 'tank' ? skin : topC;
+  // a hi-vis vest is worn over a tee: the sleeves are the tee's colour
+  const sleeveUpper = a.top === 'tank' ? skin : a.top === 'vest' ? a.shirtColor || '#e9e6df' : topC;
   const sleeveLower = LONG_SLEEVE[a.top] ? topC : skin;
 
   // ---- torso: one smooth turned shape from the hem to the collar ----
@@ -241,6 +242,7 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
   } else if (a.top === 'sweater') {
     P.add(new THREE.TorusGeometry(0.052, 0.017, 6, 14).rotateX(Math.PI / 2).translate(0, 1.455, 0), 'chest', shade(topC, 0.88));
   }
+  addWorkwear(P, a, { B, J, zf, zr, topC, hipW, bel });
 
   // ---- head + face ----
   const R = 0.112;
@@ -287,6 +289,8 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
   addHair(P, a, { hx, hy, hz, HY, faceZ });
   addFacialHair(P, a, { hx, hy, hz, HY, faceZ });
   addAccessory(P, a, { hx, hy, hz, HY, faceZ, B, J });
+  addHat(P, a, { hx, hy, hz, HY });
+  addCarry(P, a, { B, J });
 
   // ---- merge + skin ----
   const geo = mergeGeometries(P.list, false);
@@ -348,7 +352,7 @@ function addHair(P, a, H) {
   const style = a.hair;
   if (style === 'bald') return;
   const c = a.hairColor;
-  const hat = a.accessory === 'cap' || a.accessory === 'beanie';
+  const hat = a.accessory === 'cap' || a.accessory === 'beanie' || !!(a.hat && a.hat !== 'none');
   /** Tilted spherical cap hugging the skull. */
   const cap = (s, theta, tilt, dy = 0) => new THREE.SphereGeometry(1, 18, 9, 0, Math.PI * 2, 0, theta).scale(hx * s, hy * s, hz * s).rotateX(tilt).translate(0, HY + dy, 0);
   const top = (g) => {
@@ -446,6 +450,117 @@ function addFacialHair(P, a, H) {
   if (f === 'goatee') {
     stache();
     P.add(sph(0.03, 1, 1.1, 0.7, 8).translate(0, HY - 0.09, faceZ(0, -0.09) * 0.86), 'head', hairC);
+  }
+}
+
+/** Uniforms and work clothes layered over the torso (see Customization ROLES). */
+function addWorkwear(P, a, H) {
+  const { B, J, zf, zr, topC, hipW, bel } = H;
+  const t = a.top;
+  const coatSkirt = (len, flare, color) => P.add(new THREE.CylinderGeometry(hipW * 1.06, hipW * flare, len, 18, 1, true).scale(1, 1, zr * 1.05).translate(0, 0.95 - len / 2, 0), 'hips', color);
+  const lapels = (color) => {
+    for (const m of [-1, 1]) P.add(bx(0.034, 0.24, 0.01).rotateZ(-m * 0.22).translate(m * 0.052, 1.32, zf * 0.985 + 0.003), 'chest', color);
+  };
+  if (t === 'uniform') {
+    // badge, name tag, pocket flaps, shoulder patches, duty belt and radio
+    P.add(bx(0.03, 0.036, 0.008).translate(0.07, 1.335, zf + 0.004), 'chest', a.badgeColor || '#d8b44a');
+    P.add(bx(0.05, 0.012, 0.006).translate(-0.07, 1.335, zf + 0.004), 'chest', '#d8dde6');
+    for (const m of [-1, 1]) {
+      P.add(bx(0.065, 0.014, 0.008).translate(m * 0.07, 1.375, zf + 0.002), 'chest', shade(topC, 0.75));
+      P.add(bx(0.01, 0.055, 0.045).translate(m * (B.sh + 0.052), 1.31, 0), m > 0 ? 'armL' : 'armR', a.patchColor || '#c9a227');
+      P.add(bx(0.06, 0.03, 0.02).rotateZ(m * 0.5).translate(m * 0.035, 1.455, 0.045), 'chest', shade(topC, 1.15));
+    }
+    P.add(lathe([[hipW * 1.07, 0.915], [hipW * 1.07, 0.955]], zr), 'hips', '#141518');
+    P.add(bx(0.04, 0.03, 0.01).translate(0, 0.935, zf * 1.02 + 0.012), 'hips', '#b9bdc3');
+    P.add(bx(0.032, 0.07, 0.03).translate(-0.085, 1.39, zf * 0.8 + 0.01), 'chest', '#1a1b1f');
+    P.add(bx(0.05, 0.08, 0.05).translate(-hipW * 1.05, 0.9, 0.02), 'hips', '#1a1b1f');
+  } else if (t === 'vest') {
+    // reflective bands around a hi-vis vest, and over the shoulders
+    const r1 = B.tr * 0.95 + bel;
+    P.add(new THREE.TorusGeometry(r1 * 1.04, 0.012, 4, 28).rotateX(Math.PI / 2).scale(1, 1, zr).translate(0, 1.12, 0), 'spine', '#dfe3e8');
+    P.add(new THREE.TorusGeometry(B.tr * 1.06, 0.012, 4, 28).rotateX(Math.PI / 2).scale(1, 1, zr).translate(0, 1.25, 0), 'chest', '#dfe3e8');
+    for (const m of [-1, 1]) P.add(bx(0.03, 0.012, B.td * 2.2).translate(m * 0.1, 1.405, 0), 'chest', '#dfe3e8');
+  } else if (t === 'scrubs') {
+    P.add(bx(0.07, 0.06, 0.006).translate(0.07, 1.3, zf + 0.002), 'chest', shade(topC, 0.85));
+    P.add(new THREE.CylinderGeometry(0.004, 0.004, 0.06, 6).translate(0.085, 1.33, zf + 0.006), 'chest', '#2b2f38');
+    P.add(bx(0.05, 0.05, 0.006).rotateZ(Math.PI / 4).translate(0, 1.43, zf * 0.8), 'chest', a.skin);
+  } else if (t === 'labcoat') {
+    coatSkirt(0.42, 1.28, topC);
+    lapels(shade(topC, 0.92));
+    P.add(bx(0.07, 0.24, 0.006).translate(0, 1.3, zf * 0.98), 'chest', a.shirtColor || '#a9c7e8');
+    for (const m of [-1, 1]) P.add(bx(0.09, 0.08, 0.008).translate(m * 0.1, 0.84, hipW * zr * 1.12), 'hips', shade(topC, 0.9));
+    P.add(new THREE.TorusGeometry(0.05, 0.006, 5, 16, Math.PI).rotateX(-0.4).translate(0, 1.39, zf * 0.9 + 0.01), 'chest', '#2b2f38');
+  } else if (t === 'chefcoat') {
+    for (const x of [-0.045, 0.045]) for (const y of [1.17, 1.25, 1.33]) P.add(sph(0.009).translate(x, y, zf + 0.004), 'chest', '#d8d8d8');
+    P.add(new THREE.CylinderGeometry(0.06, 0.062, 0.035, 14).translate(0, 1.455, 0), 'neck', shade(topC, 0.95));
+    P.add(lathe([[hipW * 1.06, 0.86], [hipW * 1.08, 0.97]], zr), 'hips', a.apronColor || '#f4f1ea');
+  } else if (t === 'coat') {
+    coatSkirt(0.36, 1.24, topC);
+    lapels(shade(topC, 0.8));
+    for (const y of [1.12, 1.22, 1.32]) P.add(sph(0.01).translate(0.03, y, zf + 0.004), 'chest', shade(topC, 0.6));
+    P.add(new THREE.TorusGeometry(0.066, 0.022, 6, 16).rotateX(Math.PI / 2).translate(0, 1.45, 0), 'chest', a.scarfColor || shade(topC, 0.85));
+  }
+}
+
+/** Work and fashion hats: police cap, hard hat, chef's toque, sun hat. */
+function addHat(P, a, H) {
+  const { hx, hy, hz, HY } = H;
+  const c = a.hatColor || '#1f2a44';
+  const zs = hz / hx;
+  if (a.hat === 'policecap') {
+    P.add(new THREE.CylinderGeometry(hx * 1.2, hx * 1.06, 0.075, 20).scale(1, 1, zs * 1.04).translate(0, HY + hy * 0.82, -0.008), 'head', c);
+    P.add(new THREE.CylinderGeometry(hx * 1.07, hx * 1.07, 0.03, 20).scale(1, 1, zs * 1.04).translate(0, HY + hy * 0.6, 0), 'head', '#121316');
+    P.add(new THREE.CylinderGeometry(0.075, 0.075, 0.008, 16, 1, false, -Math.PI / 2, Math.PI).scale(1, 1, 0.75).rotateX(0.18).translate(0, HY + hy * 0.52, hz * 0.88), 'head', '#121316');
+    P.add(bx(0.03, 0.032, 0.008).translate(0, HY + hy * 0.8, hz * 1.12), 'head', '#d8b44a');
+  } else if (a.hat === 'hardhat') {
+    P.add(new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, 0.5 * Math.PI).scale(hx * 1.22, hy * 1.08, hz * 1.22).translate(0, HY + 0.018, 0), 'head', c);
+    P.add(new THREE.CylinderGeometry(hx * 1.4, hx * 1.4, 0.012, 20).scale(1, 1, zs * 1.12).translate(0.0, HY + 0.02, 0.012), 'head', c);
+    P.add(bx(0.022, 0.03, hz * 2.2).translate(0, HY + hy * 1.08, 0), 'head', shade(c, 0.9));
+  } else if (a.hat === 'chefhat') {
+    P.add(new THREE.CylinderGeometry(hx * 1.06, hx * 1.06, 0.06, 18).scale(1, 1, zs).translate(0, HY + hy * 0.62, 0), 'head', '#f8f8f6');
+    P.add(new THREE.CylinderGeometry(hx * 1.2, hx * 1.04, 0.12, 18).scale(1, 1, zs).translate(0, HY + hy * 0.62 + 0.09, 0), 'head', '#f8f8f6');
+    P.add(sph(1, hx * 1.28, 0.055, hz * 1.28, 16).translate(0, HY + hy * 0.62 + 0.155, 0), 'head', '#f8f8f6');
+  } else if (a.hat === 'sunhat') {
+    P.add(new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, 0.5 * Math.PI).scale(hx * 1.12, hy * 1.0, hz * 1.12).translate(0, HY + 0.02, 0), 'head', c);
+    P.add(new THREE.CylinderGeometry(0.2, 0.21, 0.01, 22).translate(0, HY + 0.03, 0), 'head', c);
+    P.add(new THREE.TorusGeometry(hx * 1.12, 0.008, 4, 22).rotateX(Math.PI / 2).scale(1, 1, zs).translate(0, HY + 0.05, 0), 'head', shade(c, 0.6));
+  }
+}
+
+/** Things people carry: briefcase, coffee, shopping bag, tote, camera, delivery bag, mail bag. */
+function addCarry(P, a, H) {
+  const { B, J } = H;
+  const w = J.handR;
+  const c = a.carryColor || '#3a2a1e';
+  switch (a.carry) {
+    case 'briefcase':
+      P.add(bx(0.075, 0.27, 0.37).translate(w[0] - 0.01, w[1] - 0.25, w[2]), 'handR', c);
+      P.add(bx(0.02, 0.03, 0.1).translate(w[0] - 0.01, w[1] - 0.1, w[2]), 'handR', shade(c, 0.7));
+      break;
+    case 'coffee':
+      P.add(new THREE.CylinderGeometry(0.034, 0.027, 0.1, 12).translate(w[0], w[1] - 0.08, w[2] + 0.045), 'handR', '#f4f1ea');
+      P.add(new THREE.CylinderGeometry(0.034, 0.033, 0.035, 12).translate(w[0], w[1] - 0.075, w[2] + 0.045), 'handR', c);
+      P.add(new THREE.CylinderGeometry(0.036, 0.036, 0.012, 12).translate(w[0], w[1] - 0.025, w[2] + 0.045), 'handR', '#2b2b2e');
+      break;
+    case 'shoppingbag':
+    case 'tote':
+      P.add(bx(0.11, 0.3, 0.26).translate(w[0] - 0.02, w[1] - 0.27, w[2]), 'handR', c);
+      P.add(new THREE.TorusGeometry(0.05, 0.006, 4, 10, Math.PI).rotateY(Math.PI / 2).translate(w[0] - 0.02, w[1] - 0.12, w[2]), 'handR', shade(c, 0.7));
+      break;
+    case 'camera':
+      P.add(bx(0.11, 0.07, 0.05).translate(0, 1.22, B.td + 0.04), 'chest', '#1a1b1f');
+      P.add(new THREE.CylinderGeometry(0.026, 0.026, 0.05, 12).rotateX(Math.PI / 2).translate(0, 1.22, B.td + 0.085), 'chest', '#2b2d33');
+      P.add(new THREE.TorusGeometry(0.11, 0.005, 4, 18).rotateX(Math.PI / 2 - 0.5).translate(0, 1.36, 0.02), 'chest', '#1a1b1f');
+      break;
+    case 'deliverybag':
+      P.add(bx(0.36, 0.36, 0.26).translate(0, 1.24, -B.td - 0.16), 'chest', c);
+      P.add(bx(0.37, 0.04, 0.27).translate(0, 1.36, -B.td - 0.16), 'chest', shade(c, 0.75));
+      for (const m of [-1, 1]) P.add(bx(0.03, 0.3, 0.012).translate(m * 0.09, 1.28, B.td * 0.9), 'chest', '#1a1b1f');
+      break;
+    case 'mailbag':
+      P.add(bx(0.09, 0.24, 0.32).translate(B.tr + 0.09, 0.98, 0.02), 'hips', c);
+      P.add(bx(0.03, 0.62, 0.012).rotateZ(-0.62).translate(0, 1.22, B.td + 0.012), 'chest', shade(c, 0.7));
+      break;
   }
 }
 
