@@ -13,8 +13,8 @@ const BOX = 34; // particles live in a box this wide around the camera
 export const WEATHER_INFO = {
   clear: { icon: '☀️', label: 'Clear', overcast: 0, fog: 0, crowd: 1 },
   cloudy: { icon: '⛅', label: 'Cloudy', overcast: 0.45, fog: 0.05, crowd: 1 },
-  rain: { icon: '🌧️', label: 'Rain', overcast: 0.85, fog: 0.4, crowd: 0.55 },
-  snow: { icon: '🌨️', label: 'Snow', overcast: 0.7, fog: 0.55, crowd: 0.5 },
+  rain: { icon: '🌧️', label: 'Rain', overcast: 0.85, fog: 0.4, crowd: 0.72 },
+  snow: { icon: '🌨️', label: 'Snow', overcast: 0.7, fog: 0.55, crowd: 0.66 },
   haze: { icon: '🥵', label: 'Heat haze', overcast: 0.1, fog: 0.35, crowd: 0.85 },
 };
 
@@ -83,7 +83,7 @@ export class Weather {
    * @param outside false while indoors: particles hidden, sky still updated
    */
   update(dt, cityCfg, total, cam, outside) {
-    this.kind = weatherAt(cityCfg, total);
+    this.kind = this.force || weatherAt(cityCfg, total); // force: debug override
     const info = WEATHER_INFO[this.kind];
     this.t += dt;
     const sky = this.sky;

@@ -12,8 +12,8 @@ import { hourOf } from '../core/Clock.js';
 import { mulberry32, hashStr, dampAngle } from '../core/utils.js';
 import { glbNpcModels } from './GLBCharacters.js';
 
-const SHOW_DIST = 75;
-const MAX_OUT = 10;
+const SHOW_DIST = 85;
+const MAX_OUT = 16;
 
 function nameTag(text) {
   const c = document.createElement('canvas');

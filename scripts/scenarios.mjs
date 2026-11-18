@@ -40,6 +40,47 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Busy streets: crowd density, signal waiting, pauses (Medium preset). */
+  async crowd({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.state.time.total = 12.5 * 60;
+      g.weather.force = 'clear';
+      // stand at a sidewalk corner of an inner block, looking down the street
+      const c = g.city;
+      const x = c.blockMin(3) + 2.6;
+      const z = c.blockMin(3) + 2.6;
+      g.player.teleport(x + 1, z + 6, Math.PI);
+      g.cam.snapBehind(Math.PI + 0.35);
+      g.cam.pitch = 0.18;
+      g.cam.dist = 8;
+    });
+    await wait(9000);
+    await shot('crowd-noon');
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      const cr = g.crowd;
+      let alive = 0;
+      let waiting = 0;
+      let paused = 0;
+      let near = 0;
+      for (let i = 0; i < cr.n; i++) {
+        if (!cr.alive[i]) continue;
+        alive++;
+        if (cr.cur[i] === 0 && cr.waitSig[i]) waiting++;
+        if (cr.pause[i] > 0) paused++;
+        if (Math.hypot(cr.x[i] - g.player.pos.x, cr.z[i] - g.player.pos.z) < 60) near++;
+      }
+      return { n: cr.n, alive, near60m: near, waitingAtSignal: waiting, paused, rigs: cr.rigs.filter((r) => r.agent >= 0).length, calls: g.renderer.info.render.calls };
+    });
+    console.log('crowd', JSON.stringify(info));
+    await page.evaluate(() => (window.__game.state.time.total = 21.5 * 60));
+    await wait(4000);
+    await shot('crowd-night');
+  },
   /** Cars are solid: walking into a parked car, into traffic, and driving into a car. */
   async collide({ page, shot, wait }) {
     await startLife(page, wait);

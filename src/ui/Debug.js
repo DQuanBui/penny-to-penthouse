@@ -32,6 +32,7 @@ export function installDebug(game) {
         const st = game.city.places.find((p) => p.station && p.district === d);
         game.placePlayerAt(st);
       }, 'small'))),
+      row(['clear', 'cloudy', 'rain', 'snow', 'haze', null].map((w) => btn(w ? 'Weather: ' + w : 'Weather: auto', () => (game.weather.force = w), 'small'))),
       row(events, btn('Trigger event', () => need() && game.sim.events.trigger(events.value), 'small')),
       row(btn('All friends +30', () => need() && game.sim.rel.all.forEach((n) => game.sim.rel.add(n.id, 30)), 'small'), btn('Finish class', () => {
         const en = game.state?.education.enrolled;

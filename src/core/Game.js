@@ -778,7 +778,7 @@ export class Game {
     }
     this.weather.update(dt, this.city.cfg, st.time.total, this.camera.position, !inside);
     this.crowd.densityMul = this.weather.info.crowd;
-    this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside);
+    this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside, elapsed);
     this.npcs.update(dt, this.player.pos, !!inside);
     this.traffic.parked = this.vehicles.parkedOBBs();
     this.traffic.update(dt, elapsed, hourOf(st.time.total), this.player.pos.x, this.player.pos.z, this.crowd, !inside, this.weather.info.crowd);
