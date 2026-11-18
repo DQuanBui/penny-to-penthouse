@@ -17,6 +17,7 @@ export default {
   weather: { summary: 'Long hot summers, mild winters', rain: 0.12, snowInWinter: 0, haze: 0.2, sunny: 0.7 },
   treeType: 'leafy',
   busColor: '#b5461a', // city bus livery
+  zoo: 'Hill Country Zoo',
   waterfront: ['south'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

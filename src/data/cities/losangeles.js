@@ -18,6 +18,7 @@ export default {
   weather: { summary: 'Sunny almost every day', rain: 0.05, snowInWinter: 0, haze: 0.18, sunny: 0.8 },
   treeType: 'palm',
   busColor: '#d9822b', // city bus livery
+  zoo: 'Sunset Canyon Zoo',
   waterfront: ['west'],
   waterName: 'the Pacific',
   promenade: 'beach',

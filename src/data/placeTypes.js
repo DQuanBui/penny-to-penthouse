@@ -33,6 +33,7 @@ export const PLACE_TYPES = {
   mall: { icon: '🛍️', label: 'Mall', color: '#f2a93b', interior: 'mall', service: 'mall', look: { front: 'showroom', brand: '#2d3a8c', trim: '#f2f4f6', extras: ['banner', 'planters', 'flags'], sky: true, building: { color: '#d7dde4', facade: 'glass', minH: 14, maxH: 20 } } },
   shelter: { icon: '🐾', label: 'Pet Rescue', color: '#e8a05c', interior: 'shelter', service: 'shelter', look: { front: 'shopfront', brand: '#2f7d8f', trim: '#f6e7c8', awning: 'slant', extras: ['bladeLogo', 'planters', 'chalkboard'] } },
   station: { icon: '🚇', label: 'Transit', color: '#ffd24a', interior: null, service: 'transit' },
+  zoo: { icon: '🦁', label: 'Zoo', color: '#4f8a3a', interior: null, service: 'zoo', outdoor: true },
   // neighbourhood businesses (data/shops.js): minor = generated on ordinary lots
   ...Object.fromEntries(Object.entries(SHOP_TYPES).map(([id, t]) => [id, { icon: t.icon, label: t.label, color: t.color, interior: t.interior, service: 'minor', look: t.look, minor: true }])),
 };

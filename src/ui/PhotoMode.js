@@ -68,6 +68,11 @@ export class PhotoMode {
         }
       }
     }
+    if (!g.inside && g.zooLife?.inside(p)) {
+      mult += 0.4;
+      tags.push('🦒 Zoo');
+      bits.push('at the zoo');
+    }
     if (st.pet && g.pet.active && g.pet.mesh.visible && (g.pet.pos.x - p.x) ** 2 + (g.pet.pos.z - p.z) ** 2 < 8 * 8) {
       mult += 0.35;
       tags.push('🐕 ' + st.pet.name);

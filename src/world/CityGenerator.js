@@ -14,6 +14,7 @@ import { buildLandmarks } from './Landmarks.js';
 import { buildStorefronts } from './Storefronts.js';
 import { buildStreetscape, addRooftops } from './Streetscape.js';
 import { decorateParks } from './Parks.js';
+import { buildZoo } from './Zoo.js';
 import { labelTexture, iconTexture } from './Textures.js';
 
 export const K = { BLOCK: 58, SIDEWALK: 5, ROAD: 14, PITCH: 72, CURB: 0.15, PROM: 26 };
@@ -82,6 +83,11 @@ export function generateCity(cfg, opts = {}) {
       b.landmark = lm;
     }
   }
+  // the city zoo takes a whole block in a leafy, lower-rise district
+  const zooDistrict = [...districts].sort((a, c) => (a.style === 'skyscraper') - (c.style === 'skyscraper') || a.rentMul - c.rentMul)[0];
+  const zooCands = blocks.filter((b) => b.district === zooDistrict && b.kind === 'build');
+  const zooBlock = zooCands.length ? zooCands[Math.floor(rng() * zooCands.length)] : null;
+  if (zooBlock) zooBlock.kind = 'zoo';
   for (const b of blocks) if (b.kind === 'build') makeLots(b, rng);
 
   // --- 2. Assign places to street-facing lots -------------------------------
@@ -301,6 +307,7 @@ export function generateCity(cfg, opts = {}) {
 
   buildProps(ctx);
   decorateParks(ctx);
+  if (zooBlock) buildZoo(ctx, zooBlock);
   buildStreetscape(ctx);
   decoratePlaces(ctx);
   const fronts = buildStorefronts(ctx);
@@ -320,7 +327,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], sitters: ctx.sitters || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, sitters: ctx.sitters || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */

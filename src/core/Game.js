@@ -39,6 +39,7 @@ import { NPCManager } from '../characters/NPC.js';
 import { openTalk } from '../ui/Talk.js';
 import { BuildMode } from '../build/BuildMode.js';
 import { PetFollower, ShelterDogs } from '../world/Pet.js';
+import { ZooLife } from '../world/Zoo.js';
 import { openPet } from '../ui/Pets.js';
 import { PhotoMode } from '../ui/PhotoMode.js';
 import { shopOpen, opensAt } from '../data/shops.js';
@@ -115,6 +116,7 @@ export class Game {
     this.pet = new PetFollower();
     this.pet.attach(this.scene);
     this.shelterDogs = new ShelterDogs();
+    this.zooLife = new ZooLife(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -258,6 +260,7 @@ export class Game {
     this.traffic.setCity(this.city, this.quality);
     this.animals.setCity(this.city, this.quality);
     this.streetLife.setCity(this.city);
+    this.zooLife.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -319,6 +322,7 @@ export class Game {
       pos.z += (dz / d) * (rr - d);
       hit = true;
     }
+    if (this.zooLife.blockPlayer(pos)) hit = true;
     return hit;
   }
 
@@ -371,6 +375,7 @@ export class Game {
   /** Walk through a door: fade into the place's interior scene. */
   enterPlace(place, instant) {
     if (place.station) return this.useStation(place);
+    if (place.outdoor) return this.zooLife.openBooth(place);
     const go = () => {
       const st = this.state;
       const home = place.type === 'home';
@@ -753,6 +758,8 @@ export class Game {
       if (happening) return happening;
       const street = this.streetLife.interactable(p);
       if (street) return street;
+      const zoo = this.zooLife.interactable(p);
+      if (zoo) return zoo;
       const bench = this.nearestBench(p);
       if (bench) return { label: 'Sit on the bench', action: () => this.sitOn(bench) };
     }
@@ -783,7 +790,7 @@ export class Game {
     if (best.minor && !shopOpen(best.type, hourOf(this.state.time.total))) return { label: `${best.icon} ${best.name} — closed · opens ${opensAt(best.type)}`, action: null };
     const mine = best.type === 'home' && best.id === 'home_' + this.state.home.districtId;
     if (best.type === 'home' && !mine) return { label: `${best.name} — you do not live here`, action: null };
-    const label = best.station ? `Take the ${best.label}` : mine ? `Enter your home (${HOME_BY_ID[this.state.home.type].name})` : `Enter ${best.name}`;
+    const label = best.outdoor ? `🎟️ ${best.name} — tickets` : best.station ? `Take the ${best.label}` : mine ? `Enter your home (${HOME_BY_ID[this.state.home.type].name})` : `Enter ${best.name}`;
     return { label, action: () => this.enterPlace(best) };
   }
 
@@ -895,6 +902,7 @@ export class Game {
     this.animals.update(dt, this.crowd, this.player.pos.x, this.player.pos.z, this.sky.night, !inside);
     this.streetLife.update(dt, this.player.pos, !!inside);
     this.cityEvents.update(dt, this.player.pos, !!inside);
+    this.zooLife.update(dt, this.player.pos, !inside);
     this.npcs.update(dt, this.player.pos, !!inside);
     if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {
       const w = inside ? this.interior.world : this.city;
