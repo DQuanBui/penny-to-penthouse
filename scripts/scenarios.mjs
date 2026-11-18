@@ -40,6 +40,78 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Parks and street life: playground, food cart, busker, sitting on a bench. */
+  async park({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 13 * 60;
+      const b = g.city.blocks.find((x) => x.kind === 'park');
+      g.player.teleport(b.cx + 5, b.cz + 6, 0.7);
+      g.cam.snapBehind(0.75);
+      g.cam.pitch = 0.32;
+      g.cam.dist = 13;
+      g.cam._init = false;
+    });
+    await wait(2500);
+    await shot('park-playground');
+    const s = await page.evaluate(() => {
+      const g = window.__game;
+      const v = g.city.vendors[0];
+      g.player.teleport(v.x + 0.2, v.z + 1.8, Math.PI);
+      g.cam.snapBehind(Math.PI + 0.4);
+      g.cam.pitch = 0.2;
+      g.cam.dist = 6;
+      g.cam._init = false;
+      return { vendors: g.city.vendors.length, buskers: g.city.buskers.length };
+    });
+    console.log('spots', JSON.stringify(s));
+    await wait(1500);
+    await shot('park-cart');
+    await key(page, 'KeyE');
+    await page.click('text=Hot dog');
+    await wait(500);
+    const hunger = await page.evaluate(() => Math.round(window.__game.state.needs.hunger));
+    console.log('hunger after hot dog', hunger);
+    await page.evaluate(() => {
+      const g = window.__game;
+      const b = g.city.buskers[0];
+      g.player.teleport(b.x + Math.sin(b.ry) * 1.8, b.z + Math.cos(b.ry) * 1.8, b.ry + Math.PI);
+      g.cam.snapBehind(b.ry + Math.PI + 0.4);
+      g.cam._init = false;
+    });
+    await wait(1500);
+    await shot('park-busker');
+    await key(page, 'KeyE');
+    await page.click('text=Drop a tip');
+    await wait(1200);
+    // sit on a bench
+    await page.evaluate(() => {
+      const g = window.__game;
+      console.log('overlays before bench: ' + g.overlays.map((o) => o.el.className).join(','));
+      g.closeAllOverlays();
+      const b = g.city.benchSpots[0];
+      g.player.teleport(b.x + Math.sin(b.ry) * 0.9, b.z + Math.cos(b.ry) * 0.9, b.ry + Math.PI);
+      g.cam.snapBehind(b.ry + 2.5);
+      g.cam._init = false;
+    });
+    await page.waitForFunction(() => window.__game.interactable && window.__game.interactable.label === 'Sit on the bench', null, { timeout: 15000 });
+    const label = await page.evaluate(() => {
+      const g = window.__game;
+      const p = g.player.pos;
+      return JSON.stringify({ cur: g.interactable && g.interactable.label, found: g.findInteractable()?.label, sitting: g.player.sitting, mode: g.mode, ov: g.overlays.length, fading: g.fading, inside: !!g.inside, drive: !!g.vehicles.driving });
+    });
+    await key(page, 'KeyE');
+    await wait(1200);
+    await shot('park-bench');
+    const sit = await page.evaluate(() => ({ sitting: window.__game.player.sitting, tips: window.__game.state.stats.buskerTips }));
+    console.log('bench', label, JSON.stringify(sit));
+    await key(page, 'KeyW');
+    console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
+  },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
   async animals({ page, shot, wait }) {
     await startLife(page, wait);

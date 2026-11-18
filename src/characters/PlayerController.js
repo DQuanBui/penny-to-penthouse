@@ -91,9 +91,12 @@ export class PlayerController {
     this.pos.z += this.vel.z * dt;
     this.pos.y += this.vel.y * dt;
     if (w) {
-      w.colliders.resolve(this.pos, RADIUS, this.pos.y + 0.25, 1.4);
-      // cars, pedestrians and other moving things
-      if (w.obstacles && w.obstacles(this.pos, RADIUS, this.pos.y)) w.colliders.resolve(this.pos, RADIUS, this.pos.y + 0.25, 1.4);
+      // (seated on a bench the player stays put inside the bench's collider)
+      if (!this.sitting) {
+        w.colliders.resolve(this.pos, RADIUS, this.pos.y + 0.25, 1.4);
+        // cars, pedestrians and other moving things
+        if (w.obstacles && w.obstacles(this.pos, RADIUS, this.pos.y)) w.colliders.resolve(this.pos, RADIUS, this.pos.y + 0.25, 1.4);
+      }
       const gy = w.groundY(this.pos.x, this.pos.z);
       if (this.pos.y <= gy) {
         this.pos.y = this.grounded ? damp(this.pos.y, gy, 30, dt) : gy;

@@ -59,3 +59,12 @@ export function wearOutfit(state, id) {
   p.outfitStyle = o.style;
   return true;
 }
+
+// Street carts (parks, transit entrances). needs = instant need changes.
+export const STREET_FOOD = [
+  { id: 'hotdog', name: 'Hot dog', icon: '🌭', price: 4, needs: { hunger: 32, fun: 3 }, line: 'Mustard, onions, perfect.' },
+  { id: 'pretzel', name: 'Soft pretzel', icon: '🥨', price: 3.5, needs: { hunger: 22 }, line: 'Warm, salty, gone in a minute.' },
+  { id: 'icecream', name: 'Ice cream cone', icon: '🍦', price: 4.5, needs: { hunger: 10, fun: 14 }, line: 'It melts faster than you can eat it.' },
+  { id: 'lemonade', name: 'Fresh lemonade', icon: '🍋', price: 3, needs: { fun: 6, energy: 5 }, line: 'Cold and tart. Exactly right.' },
+  { id: 'taco', name: 'Street tacos', icon: '🌮', price: 6, needs: { hunger: 40, fun: 5 }, line: 'Three tacos and a lime wedge.' },
+];

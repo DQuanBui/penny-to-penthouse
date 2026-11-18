@@ -119,6 +119,13 @@ export class AudioEngine {
     src.stop(t0 + dur + 0.02);
   }
 
+  /** A plucked string (busker guitar). */
+  pluck(f, gain = 0.1) {
+    if (!this.ctx || this.ctx.state !== 'running') return;
+    this.tone(this.sfx, { type: 'triangle', f, dur: 0.9, gain, attack: 0.003 });
+    this.tone(this.sfx, { type: 'sine', f: f * 2, dur: 0.5, gain: gain * 0.35, attack: 0.003 });
+  }
+
   /** Play a named sound effect. Unknown names are ignored. */
   play(name) {
     if (!this.ctx || this.ctx.state !== 'running') return;

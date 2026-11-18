@@ -47,6 +47,7 @@ import { recordHallOfFame } from '../sim/Rankings.js';
 import { VehicleManager, loadVehicleModels } from '../world/Vehicles.js';
 import { Traffic } from '../world/Traffic.js';
 import { Animals } from '../world/Animals.js';
+import { StreetLife } from '../world/StreetLife.js';
 import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { PostFX } from './PostFX.js';
 import { pushOutOBB } from '../world/Collision.js';
@@ -54,6 +55,7 @@ import { AudioEngine } from '../audio/AudioEngine.js';
 import { fmtMoney } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
+const SIT_REST = { rates: { fun: 6, energy: 3.5, social: 1.5 } };
 
 export class Game {
   constructor() {
@@ -98,6 +100,7 @@ export class Game {
     this.vehicles = new VehicleManager(this);
     this.traffic = new Traffic(this.scene);
     this.animals = new Animals(this.scene);
+    this.streetLife = new StreetLife(this);
     this.animals.onScare = () => this.audio.play('flap');
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -239,6 +242,7 @@ export class Game {
     this.npcs.setCity(this.city);
     this.traffic.setCity(this.city, this.quality);
     this.animals.setCity(this.city, this.quality);
+    this.streetLife.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
     return this.city;
@@ -319,6 +323,7 @@ export class Game {
 
   /** Stand the player outside a place's door, facing the street. */
   placePlayerAt(place) {
+    this.player.sitting = false;
     const ry = Math.atan2(place.nx, place.nz);
     this.player.teleport(place.x, place.z, ry);
     this.cam.snapBehind(ry + 1.1);
@@ -453,6 +458,8 @@ export class Game {
     this.vehicles.clear();
     this.crowd.group.visible = false;
     this.animals.group.visible = false;
+    this.streetLife.clear();
+    this.player.sitting = false;
     this.state = null;
     this.sim = null;
     this.title?.close();
@@ -626,6 +633,33 @@ export class Game {
     });
   }
 
+  // ---- benches -------------------------------------------------------------------
+  nearestBench(p) {
+    let best = null;
+    let bd = 1.25 * 1.25;
+    for (const b of this.city.benchSpots) {
+      const d = (b.x - p.x) ** 2 + (b.z - p.z) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = b;
+      }
+    }
+    return best;
+  }
+
+  /** Sit down to rest and people-watch (fun and energy slowly recover). */
+  sitOn(b) {
+    this.player.sitting = true;
+    this.player.teleport(b.x + Math.sin(b.ry) * 0.06, b.z + Math.cos(b.ry) * 0.06, b.ry);
+    this.hud.hint('bench', 'Resting on a bench slowly restores Fun and Energy. Move (W A S D) or press E to stand up.', 8);
+  }
+
+  standUp() {
+    const p = this.player;
+    p.sitting = false;
+    p.teleport(p.pos.x + Math.sin(p.heading) * 0.75, p.pos.z + Math.cos(p.heading) * 0.75, p.heading);
+  }
+
   /** T: wait / skip time. */
   openWait() {
     const opts = [
@@ -653,7 +687,14 @@ export class Game {
   /** Nearest thing the player can use right now: { label, action } or null. */
   findInteractable() {
     const p = this.player.pos;
+    if (this.player.sitting) return { label: 'Stand up', action: () => this.standUp() };
     if (this.vehicles.driving) return { label: `Get out · ${this.vehicles.mph()} mph`, key: 'F', action: () => this.vehicles.exit() };
+    if (!this.inside) {
+      const street = this.streetLife.interactable(p);
+      if (street) return street;
+      const bench = this.nearestBench(p);
+      if (bench) return { label: 'Sit on the bench', action: () => this.sitOn(bench) };
+    }
     if (!this.inside) {
       const car = this.vehicles.nearest(p);
       if (car) return { label: `Drive your ${VEHICLE_BY_ID[car.v.model].name}`, key: 'F', action: () => this.vehicles.enter(car) };
@@ -745,6 +786,7 @@ export class Game {
       if (input.pressed('KeyM') && (this.map.isOpen() || !this.overlays.length)) this.map.toggle();
       if (!blocked) {
         if (input.pressed('KeyT')) this.openWait();
+        if (this.player.sitting && ['KeyW', 'KeyA', 'KeyS', 'KeyD'].some((k) => input.pressed(k))) this.standUp();
         if (input.pressed('KeyB')) {
           if (this.inside?.home) this.build.enter();
           else this.events.emit('toast', { icon: '🔨', title: 'Build mode', text: 'Go inside your home first, then press B.', kind: 'info' });
@@ -766,7 +808,8 @@ export class Game {
     // --- simulation clock ---
     if (!blocked) {
       const minPerSec = (1440 / (BALANCE.time.realMinutesPerDay * 60)) * this.settings.get('timeSpeed');
-      this.sim.advance(dt * minPerSec);
+      // sitting on a bench is a gentle rest; otherwise needs just tick
+      this.sim.advance(dt * minPerSec, this.player.sitting ? SIT_REST : undefined);
     }
 
     // --- world ---
@@ -786,6 +829,7 @@ export class Game {
     this.crowd.densityMul = this.weather.info.crowd;
     this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside, elapsed);
     this.animals.update(dt, this.crowd, this.player.pos.x, this.player.pos.z, this.sky.night, !inside);
+    this.streetLife.update(dt, this.player.pos, !!inside);
     this.npcs.update(dt, this.player.pos, !!inside);
     this.traffic.parked = this.vehicles.parkedOBBs();
     this.traffic.update(dt, elapsed, hourOf(st.time.total), this.player.pos.x, this.player.pos.z, this.crowd, !inside, this.weather.info.crowd);

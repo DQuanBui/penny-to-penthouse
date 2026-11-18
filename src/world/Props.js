@@ -168,10 +168,12 @@ export function buildProps(ctx) {
       fountains.add(b.cx, Y, b.cz);
       waterDisc.add(b.cx, Y, b.cz);
       colliders.add(b.cx - 3.2, b.cz - 3.2, b.cx + 3.2, b.cz + 3.2, 0.9);
-      for (let i = 0; i < 16; i++) {
+      for (let i = 0; i < 22; i++) {
         const x = b.cx + (rng() - 0.5) * (inner - 6);
         const z = b.cz + (rng() - 0.5) * (inner - 6);
         if (Math.abs(x - b.cx) < 3 || Math.abs(z - b.cz) < 3) continue;
+        // the south half holds the playground and picnic area (world/Parks.js)
+        if (z - b.cz > 4 && Math.abs(x - b.cx) > 4 && Math.abs(x - b.cx) < 22) continue;
         addTree(x, z, 1.15);
       }
       for (const [dx, dz, ry] of [
