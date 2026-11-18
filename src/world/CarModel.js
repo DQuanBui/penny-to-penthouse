@@ -5,6 +5,7 @@
 // Vertex attributes:
 //   color  base colour            aTint  1 = car paint (takes the instance colour)
 //   aLight 1 = head/tail light that glows after dark
+//          2 / 3 = left / right indicator (blinks with the instance aSignal -1 / +1)
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { worldUniforms } from './Buildings.js';
@@ -88,6 +89,10 @@ export function carGeometry() {
   for (const x of [-0.62, 0.62]) {
     add(new THREE.BoxGeometry(0.36, 0.11, 0.06).translate(x, 0.7, 2.13), '#fff6dc', 0, 1); // headlights
     add(new THREE.BoxGeometry(0.34, 0.1, 0.05).translate(x, 0.78, -2.12), '#d81e1e', 0, 1); // taillights
+    // indicators at the corners (left = +x when the car faces +z)
+    const side = x > 0 ? 2 : 3;
+    add(new THREE.BoxGeometry(0.12, 0.08, 0.06).translate(x * 1.32, 0.7, 2.1), '#ff9a1a', 0, side);
+    add(new THREE.BoxGeometry(0.1, 0.08, 0.05).translate(x * 1.3, 0.78, -2.11), '#ff9a1a', 0, side);
   }
   // ---- wheels ----
   for (const x of [-0.82, 0.82]) {
@@ -160,23 +165,29 @@ export function busGeometry() {
  * glow at night. Works for InstancedMesh (use setColorAt for the paint).
  */
 export function carMaterial(opts = {}) {
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0.4, ...opts });
+  const { signals, ...rest } = opts;
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0.4, ...rest });
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uNight = worldUniforms.uNight;
+    shader.uniforms.uTime = worldUniforms.uTime;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aTint;\nattribute float aLight;\nvarying float vLight;')
+      .replace('#include <common>', '#include <common>\nattribute float aTint;\nattribute float aLight;\nvarying float vLight;\nuniform float uTime;' + (signals ? '\nattribute float aSignal;' : ''))
       .replace(
         '#include <color_vertex>',
         `#include <color_vertex>
         #if defined( USE_INSTANCING_COLOR ) && defined( USE_COLOR )
           vColor.rgb = color.rgb * mix(vec3(1.0), instanceColor.rgb, aTint);
         #endif
-        vLight = aLight;`,
+        vLight = aLight;
+        ` +
+          (signals
+            ? 'if (aLight > 1.5) { float side = aLight < 2.5 ? -1.0 : 1.0; vLight = (abs(aSignal - side) < 0.1 && fract(uTime * 1.5) < 0.5) ? 3.0 : 0.0; }'
+            : 'if (aLight > 1.5) vLight = 0.0;'),
       );
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float uNight;\nvarying float vLight;')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vColor.rgb * vLight * (0.25 + uNight * 2.4);');
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vColor.rgb * (vLight > 2.5 ? 1.8 : vLight * (0.25 + uNight * 2.4));');
   };
-  mat.customProgramCacheKey = () => 'car';
+  mat.customProgramCacheKey = () => (signals ? 'car-sig' : 'car');
   return mat;
 }

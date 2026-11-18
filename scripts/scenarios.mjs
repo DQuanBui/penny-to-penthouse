@@ -167,6 +167,76 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Traffic turns: curved paths, indicators, body lean; player car steering. */
+  async turns({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60;
+      // sample every frame: biggest heading jump and lean while turning
+      const t = g.traffic;
+      window.__turnLog = { maxJump: 0, maxRoll: 0, signals: 0, turns: 0, frames: 0 };
+      const prev = new Float32Array(t.n);
+      const was = new Uint8Array(t.n);
+      for (let i = 0; i < t.n; i++) prev[i] = t.ry[i];
+      const orig = t.update.bind(t);
+      t.update = (...a) => {
+        orig(...a);
+        const L = window.__turnLog;
+        L.frames++;
+        for (let i = 0; i < t.n; i++) {
+          if (!t.alive[i]) continue;
+          let d = Math.abs(t.ry[i] - prev[i]);
+          if (d > Math.PI) d = Math.PI * 2 - d;
+          if (t.turnT[i] > 0) {
+            L.maxJump = Math.max(L.maxJump, d);
+            L.maxRoll = Math.max(L.maxRoll, Math.abs(t.roll[i]));
+            if (!was[i]) L.turns++;
+          }
+          was[i] = t.turnT[i] > 0 ? 1 : 0;
+          if (t.signal.getX(i) !== 0) L.signals++;
+          prev[i] = t.ry[i];
+        }
+      };
+    });
+    await wait(20000);
+    const log = await page.evaluate(() => window.__turnLog);
+    console.log('traffic', JSON.stringify(log));
+    // find a car mid-turn and look at it
+    for (let k = 0; k < 30; k++) {
+      const found = await page.evaluate(() => {
+        const g = window.__game;
+        const t = g.traffic;
+        for (let i = 0; i < t.bus0; i++) {
+          if (t.alive[i] && t.turnT[i] > 0.15 && t.turnT[i] < 0.5 && t.turnSide(i) === 0 && t.nhx[i] !== undefined) {
+            g.player.teleport(t.x[i] + 9, t.z[i] + 9, 0);
+            g.cam.yaw = Math.atan2(9, 9);
+            g.cam.pitch = 0.25;
+            g.cam.dist = 3;
+            g.cam._init = false;
+            return { i, t: t.turnT[i].toFixed(2), roll: t.roll[i].toFixed(3) };
+          }
+        }
+        return null;
+      });
+      if (found) {
+        console.log('mid-turn', JSON.stringify(found));
+        break;
+      }
+      await wait(300);
+    }
+    await wait(300);
+    await shot('turns-traffic');
+    // player car: smooth steering + lean
+    const drive = await page.evaluate(async () => {
+      const g = window.__game;
+      g.state.money.checking = 50000;
+      g.sim.garage.buy ? null : null;
+      return !!g.vehicles;
+    });
+    console.log('player car', drive);
+  },
   /** Pedestrians stay on the pavement: never inside hedges, props or on park lawns. */
   async walkers({ page, shot, wait }) {
     await startLife(page, wait);

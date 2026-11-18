@@ -6,7 +6,7 @@ import { LANE_IN } from './Vehicles.js';
 import { carGeometry, busGeometry, carMaterial } from './CarModel.js';
 import { crowdDensity } from '../characters/Crowd.js';
 import { CLOTH_COLORS } from '../characters/Customization.js';
-import { mulberry32, damp } from '../core/utils.js';
+import { mulberry32, damp, clamp } from '../core/utils.js';
 import { obbOverlap, pushOutOBB } from './Collision.js';
 
 const COUNTS = { low: 8, medium: 16, high: 26 };
@@ -26,6 +26,7 @@ export class Traffic {
     this._s = new THREE.Vector3(1, 1, 1);
     this._up = new THREE.Vector3(0, 1, 0);
     this._c = new THREE.Color();
+    this._e = new THREE.Euler();
   }
 
   dispose() {
@@ -67,7 +68,23 @@ export class Traffic {
     this.fromX = new Float32Array(n);
     this.fromZ = new Float32Array(n);
     this.alive = new Uint8Array(n);
-    this.inst = new THREE.InstancedMesh(carGeometry(), carMaterial(), n);
+    // the next manoeuvre is planned a block ahead so cars can slow down and signal
+    this.nhx = new Int8Array(n);
+    this.nhz = new Int8Array(n);
+    this.ctrlX = new Float32Array(n); // bezier control point through the intersection
+    this.ctrlZ = new Float32Array(n);
+    this.toX = new Float32Array(n);
+    this.toZ = new Float32Array(n);
+    this.tLen = new Float32Array(n);
+    this.turnSp = new Float32Array(n);
+    this.roll = new Float32Array(n);
+    this.pitch = new Float32Array(n);
+    this.prevRy = new Float32Array(n);
+    this.prevSp = new Float32Array(n);
+    const geo = carGeometry();
+    this.signal = new THREE.InstancedBufferAttribute(new Float32Array(n), 1);
+    geo.setAttribute('aSignal', this.signal);
+    this.inst = new THREE.InstancedMesh(geo, carMaterial({ signals: true }), n);
     this.inst.castShadow = true;
     this.inst.frustumCulled = false;
     for (let i = 0; i < n; i++) this.inst.setColorAt(i, this._c.set(CAR_COLORS[Math.floor(this.rng() * CAR_COLORS.length)]));
@@ -136,6 +153,10 @@ export class Traffic {
       this.max[i] = i >= this.bus0 ? 7 + this.rng() : 8.5 + this.rng() * 4;
       this.dwell[i] = 0;
       this.lastStop[i] = -1;
+      this.prevRy[i] = this.ry[i];
+      this.prevSp[i] = this.speed[i];
+      this.roll[i] = this.pitch[i] = 0;
+      this.planTurn(i);
       this.speed[i] = this.max[i] * 0.6;
       this.turnT[i] = 0;
       this.alive[i] = 1;
@@ -186,8 +207,8 @@ export class Traffic {
     return hit;
   }
 
-  /** Pick the next intersection after arriving at (ti,tj). */
-  chooseTurn(i) {
+  /** Decide the manoeuvre at the intersection ahead (ti,tj): straight, right or left. */
+  planTurn(i) {
     const c = this.city;
     const hx = this.hx[i];
     const hz = this.hz[i];
@@ -212,12 +233,48 @@ export class Traffic {
       }
     }
     if (!best) best = [-hx, -hz];
+    this.nhx[i] = best[0];
+    this.nhz[i] = best[1];
+  }
+
+  /** +1 right, -1 left, 0 straight for the planned manoeuvre. */
+  turnSide(i) {
+    const hx = this.hx[i];
+    const hz = this.hz[i];
+    if (this.nhx[i] === hx && this.nhz[i] === hz) return 0;
+    return this.nhx[i] === -hz && this.nhz[i] === hx ? 1 : -1;
+  }
+
+  /** Arrived at the stop line: start a curved path through the intersection. */
+  chooseTurn(i) {
+    const ohx = this.hx[i];
+    const ohz = this.hz[i];
+    const side = this.turnSide(i);
+    const bus = i >= this.bus0;
     this.fromX[i] = this.x[i];
     this.fromZ[i] = this.z[i];
-    this.hx[i] = best[0];
-    this.hz[i] = best[1];
-    this.ti[i] += best[0];
-    this.tj[i] += best[1];
+    this.hx[i] = this.nhx[i];
+    this.hz[i] = this.nhz[i];
+    this.ti[i] += this.hx[i];
+    this.tj[i] += this.hz[i];
+    const to = this.lanePoint(i, this.city.K.PITCH - (this.city.K.ROAD / 2 + 2.2), this._p);
+    this.toX[i] = to.x;
+    this.toZ[i] = to.z;
+    if (side === 0) {
+      this.ctrlX[i] = (this.fromX[i] + to.x) / 2;
+      this.ctrlZ[i] = (this.fromZ[i] + to.z) / 2;
+    } else if (this.hx[i] === -ohx && this.hz[i] === -ohz) {
+      // dead end: a wide U-turn
+      this.ctrlX[i] = (this.fromX[i] + to.x) / 2 + ohx * 9;
+      this.ctrlZ[i] = (this.fromZ[i] + to.z) / 2 + ohz * 9;
+    } else {
+      // the corner where the old and new lane lines cross
+      this.ctrlX[i] = ohx ? to.x : this.fromX[i];
+      this.ctrlZ[i] = ohx ? this.fromZ[i] : to.z;
+    }
+    const d = (ax, az, bx, bz) => Math.hypot(bx - ax, bz - az);
+    this.tLen[i] = (d(this.fromX[i], this.fromZ[i], to.x, to.z) + d(this.fromX[i], this.fromZ[i], this.ctrlX[i], this.ctrlZ[i]) + d(this.ctrlX[i], this.ctrlZ[i], to.x, to.z)) / 2 || 1;
+    this.turnSp[i] = side === 0 ? this.max[i] * 0.9 : side > 0 ? (bus ? 3 : 3.8) : bus ? 3.8 : 5;
     this.turnT[i] = 1e-4;
   }
 
@@ -256,15 +313,28 @@ export class Traffic {
       const hz = this.hz[i];
 
       if (this.turnT[i] > 0) {
-        // glide through the intersection onto the next lane
-        const to = this.lanePoint(i, K.PITCH - stopBack, p);
-        const len = Math.hypot(to.x - this.fromX[i], to.z - this.fromZ[i]) || 1;
-        this.turnT[i] += (Math.max(4, this.speed[i]) * dt) / len;
+        // follow a quadratic curve through the intersection, facing along it
+        this.speed[i] = damp(this.speed[i], this.turnSp[i], 2.5, dt);
+        this.turnT[i] += (Math.max(1.5, this.speed[i]) * dt) / this.tLen[i];
         const t = Math.min(1, this.turnT[i]);
-        this.x[i] = this.fromX[i] + (to.x - this.fromX[i]) * t;
-        this.z[i] = this.fromZ[i] + (to.z - this.fromZ[i]) * t;
-        if (t >= 1) this.turnT[i] = 0;
-        this.speed[i] = damp(this.speed[i], this.max[i] * 0.7, 2, dt);
+        const u = 1 - t;
+        const ax = this.fromX[i];
+        const az = this.fromZ[i];
+        const bx = this.ctrlX[i];
+        const bz = this.ctrlZ[i];
+        const cx2 = this.toX[i];
+        const cz2 = this.toZ[i];
+        this.x[i] = u * u * ax + 2 * u * t * bx + t * t * cx2;
+        this.z[i] = u * u * az + 2 * u * t * bz + t * t * cz2;
+        const tx = u * (bx - ax) + t * (cx2 - bx);
+        const tz = u * (bz - az) + t * (cz2 - bz);
+        if (tx * tx + tz * tz > 1e-6) this.ry[i] = Math.atan2(tx, tz);
+        this.signal.setX(i, t < 0.65 ? this.signal.getX(i) : 0);
+        if (t >= 1) {
+          this.turnT[i] = 0;
+          this.ry[i] = Math.atan2(this.hx[i], this.hz[i]);
+          this.planTurn(i);
+        }
       } else {
         // distance left to the stop line of the next intersection
         const cx = c.roadCenter(this.ti[i]);
@@ -275,6 +345,10 @@ export class Traffic {
         const interior = this.ti[i] > 0 && this.ti[i] < c.N && this.tj[i] > 0 && this.tj[i] < c.N;
         const green = !interior || (hz !== 0 ? phase === 'ns' : phase === 'ew');
         if (!green && toStop < 14 && toStop > -1.5) target = 0;
+        // ease off before turning, and signal for the last 35 m
+        const side = this.turnSide(i);
+        if (side !== 0 && toStop < 30) target = Math.min(target, (i >= this.bus0 ? 3.2 : 4.2) + Math.max(0, toStop) * 0.42);
+        this.signal.setX(i, side !== 0 && toStop < 35 ? side : 0);
         // obstacles ahead in my lane: other cars, the player, pedestrians
         const look = 5 + this.speed[i] * 0.9;
         const nose = this.hl[i] - CAR_HL; // extra length of a bus in front of its centre
@@ -336,20 +410,36 @@ export class Traffic {
         this.z[i] += hz * this.speed[i] * dt;
         if (toStop <= 0.2 && (green || toStop < -1.5)) this.chooseTurn(i);
       }
-      // face the direction of travel (smoothly through turns)
-      const want2 = Math.atan2(this.hx[i], this.hz[i]);
-      let d = want2 - this.ry[i];
-      while (d > Math.PI) d -= Math.PI * 2;
-      while (d < -Math.PI) d += Math.PI * 2;
-      this.ry[i] += d * Math.min(1, dt * 4);
+      if (!(this.turnT[i] > 0)) {
+        // straight lanes: face the direction of travel
+        const want2 = Math.atan2(this.hx[i], this.hz[i]);
+        let d = want2 - this.ry[i];
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        this.ry[i] += d * Math.min(1, dt * 4);
+      }
+      // body motion: lean out of turns, dip the nose under braking
+      if (dt > 1e-4) {
+        let dy = this.ry[i] - this.prevRy[i];
+        while (dy > Math.PI) dy -= Math.PI * 2;
+        while (dy < -Math.PI) dy += Math.PI * 2;
+        const yawRate = dy / dt;
+        const acc = (this.speed[i] - this.prevSp[i]) / dt;
+        const soft = i >= this.bus0 ? 0.6 : 1;
+        this.roll[i] = damp(this.roll[i], clamp(this.speed[i] * yawRate * 0.011 * soft, -0.06, 0.06), 6, dt);
+        this.pitch[i] = damp(this.pitch[i], clamp(-acc * 0.012 * soft, -0.035, 0.035), 6, dt);
+      }
+      this.prevRy[i] = this.ry[i];
+      this.prevSp[i] = this.speed[i];
     }
+    this.signal.needsUpdate = true;
     this._first = false;
 
     const m = this._m;
     for (let i = 0; i < n; i++) {
       if (!this.alive[i]) m.makeScale(0, 0, 0);
       else {
-        this._q.setFromAxisAngle(this._up, this.ry[i]);
+        this._q.setFromEuler(this._e.set(this.pitch[i], this.ry[i], this.roll[i], 'YXZ'));
         m.compose(p.set(this.x[i], 0, this.z[i]), this._q, this._s);
       }
       if (i >= this.bus0) {

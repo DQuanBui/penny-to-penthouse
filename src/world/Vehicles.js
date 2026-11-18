@@ -306,7 +306,10 @@ export class VehicleManager {
       }
     }
 
-    const turn = steer * def.grip * 1.9 * clamp(car.speed / 7, -1, 1) * (1 - 0.45 * clamp(Math.abs(car.speed) / top, 0, 1));
+    // the wheel turns gradually and self-centres; less lock at speed (bicycle model)
+    car.steer = damp(car.steer || 0, steer, steer ? 5 : 7, dt);
+    const lock = (0.62 / (1 + Math.abs(car.speed) / 9)) * def.grip;
+    const turn = (car.speed * Math.tan(car.steer * lock)) / 2.2;
     const ry = g.rotation.y + turn * dt;
     const nx = g.position.x + Math.sin(ry) * car.speed * dt;
     const nz = g.position.z + Math.cos(ry) * car.speed * dt;
@@ -319,6 +322,15 @@ export class VehicleManager {
       if (Math.abs(car.speed) > 3) game.audio?.play('bump');
       car.speed *= -0.2;
       if (this.poseFree(car, g.position.x, g.position.z, ry)) g.rotation.y = ry;
+    }
+    // body motion: lean out of corners, squat under power, dip under braking
+    const body = g.children[0];
+    if (body && dt > 1e-4) {
+      const acc = (car.speed - (car.prevSp ?? car.speed)) / dt;
+      car.prevSp = car.speed;
+      car.roll = damp(car.roll || 0, clamp(car.speed * turn * 0.011, -0.07, 0.07), 6, dt);
+      car.pitch = damp(car.pitch || 0, clamp(-acc * 0.01, -0.045, 0.045), 6, dt);
+      body.rotation.set(car.pitch, 0, car.roll, 'YXZ');
     }
     // the player "is" the car while driving (map, crowd, sky all follow it)
     game.player.pos.set(g.position.x, 0, g.position.z);
