@@ -30,6 +30,49 @@ function noise(g, s, base, spread, count, seed = 1, alpha = 0.5) {
   }
 }
 
+function skyline(g, s, night) {
+  const r = mulberry32(night ? 913 : 913);
+  // sky
+  const grd = g.createLinearGradient(0, 0, 0, s);
+  if (night) {
+    grd.addColorStop(0, '#0b1022');
+    grd.addColorStop(1, '#2a2440');
+  } else {
+    grd.addColorStop(0, '#ffffff');
+    grd.addColorStop(1, '#f3f1ec');
+  }
+  g.fillStyle = grd;
+  g.fillRect(0, 0, s, s);
+  // two layers of towers: far (paler) then near
+  for (const layer of [0, 1]) {
+    let x = -10;
+    while (x < s) {
+      const bw = 26 + r() * (layer ? 70 : 50);
+      const bh = s * (layer ? 0.25 + r() * 0.5 : 0.35 + r() * 0.45);
+      const y = s - bh;
+      const day = layer ? ['#9aa6b4', '#a9a39a', '#8f9cab', '#b3aca2'][Math.floor(r() * 4)] : ['#c4cad3', '#cfcac2', '#bcc4cf'][Math.floor(r() * 3)];
+      g.fillStyle = night ? (layer ? '#0d111b' : '#151a28') : day;
+      g.fillRect(x, y, bw, bh);
+      if (r() < 0.3) g.fillRect(x + bw * 0.3, y - 14, bw * 0.4, 14); // rooftop box
+      // windows
+      for (let wy = y + 8; wy < s - 6; wy += 11) {
+        for (let wx = x + 5; wx < x + bw - 6; wx += 9) {
+          if (night) {
+            if (r() < (layer ? 0.32 : 0.18)) {
+              g.fillStyle = r() < 0.8 ? 'rgba(255,214,140,0.95)' : 'rgba(170,210,255,0.9)';
+              g.fillRect(wx, wy, 5, 6);
+            }
+          } else {
+            g.fillStyle = 'rgba(60,80,105,0.28)';
+            g.fillRect(wx, wy, 5, 6);
+          }
+        }
+      }
+      x += bw + 2 + r() * 10;
+    }
+  }
+}
+
 export const Tex = {
   asphalt: () => make('asphalt', 256, (g, s) => noise(g, s, '#4a4d57', 110, 5000, 3, 0.3)),
   sidewalk: () =>
@@ -106,6 +149,11 @@ export const Tex = {
       },
       { repeat: false },
     ),
+  // subtle plaster for interior walls (tinted by the wall colour)
+  plaster: () => make('plaster', 256, (g, s) => noise(g, s, '#f6f6f6', 16, 1800, 51, 0.1)),
+  // the city seen through a window: day (tinted by the sky colour) and night (lit windows)
+  skylineDay: () => make('skylineDay', 512, (g, s) => skyline(g, s, false)),
+  skylineNight: () => make('skylineNight', 512, (g, s) => skyline(g, s, true)),
   cloud: () =>
     make(
       'cloud',

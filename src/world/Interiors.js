@@ -307,7 +307,9 @@ export class Interior {
     }
     this.root = new THREE.Group();
     this.scene.add(this.root);
-    this.windowMat = new THREE.MeshBasicMaterial({ color: '#9fd0ff' });
+    // windows look out onto the city: a skyline tinted by the sky by day, lit up at night
+    this.windowMat = new THREE.MeshBasicMaterial({ color: '#9fd0ff', map: Tex.skylineDay() });
+    this.clock = null;
     this.world = null;
     this.points = [];
     this.layout = null;
@@ -353,7 +355,10 @@ export class Interior {
     root.add(ceil);
 
     // perimeter walls: inward-facing planes (invisible from outside, dollhouse style)
-    const wallMat = new THREE.MeshStandardMaterial({ color: layout.wall || '#e9e2d4', roughness: 0.95 });
+    const plaster = Tex.plaster().clone();
+    plaster.repeat.set(3, 1.2);
+    plaster.needsUpdate = true;
+    const wallMat = new THREE.MeshStandardMaterial({ color: layout.wall || '#e9e2d4', roughness: 0.95, map: plaster });
     const trim = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.8 });
     const wall = (len, x, z, ry) => {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(len, H), wallMat);
@@ -361,10 +366,15 @@ export class Interior {
       m.rotation.y = ry;
       m.receiveShadow = true;
       root.add(m);
+      // skirting board and crown molding: one-sided like the wall, so the
+      // cut-away walls nearest the camera stay invisible from outside
       const b = new THREE.Mesh(new THREE.PlaneGeometry(len, 0.12), trim);
-      b.position.set(x + Math.sin(ry) * 0.005, 0.06, z + Math.cos(ry) * 0.005);
+      b.position.set(x + Math.sin(ry) * 0.006, 0.06, z + Math.cos(ry) * 0.006);
       b.rotation.y = ry;
-      root.add(b);
+      const c = new THREE.Mesh(new THREE.PlaneGeometry(len, 0.09), trim);
+      c.position.set(x + Math.sin(ry) * 0.006, H - 0.045, z + Math.cos(ry) * 0.006);
+      c.rotation.y = ry;
+      root.add(b, c);
     };
     wall(w, w / 2, 0, 0);
     wall(w, w / 2, d, Math.PI);
@@ -381,8 +391,33 @@ export class Interior {
       const x = (w / nWin) * (i + 0.5);
       const frame = new THREE.Mesh(new THREE.PlaneGeometry(ww, wh), trim);
       frame.position.set(x, wy, 0.012);
-      const glass = new THREE.Mesh(new THREE.PlaneGeometry(ww - 0.14, wh - 0.14), this.windowMat);
+      const gg = new THREE.PlaneGeometry(ww - 0.14, wh - 0.14);
+      // each window shows a different slice of the skyline
+      const uv = gg.attributes.uv;
+      const u0 = (i * 0.29 + (opts.place?.x || 0) * 0.013) % 0.7;
+      const su = Math.min(0.3, (ww / 1.5) * 0.22);
+      for (let k = 0; k < uv.count; k++) uv.setXY(k, u0 + uv.getX(k) * su, 0.4 + uv.getY(k) * (wh / ww) * su);
+      const glass = new THREE.Mesh(gg, this.windowMat);
       glass.position.set(x, wy, 0.02);
+      const sill = new THREE.Mesh(new THREE.BoxGeometry(ww + 0.16, 0.05, 0.14), trim);
+      sill.position.set(x, wy - wh / 2 - 0.02, 0.07);
+      root.add(sill);
+      if (opts.home && !pano) {
+        // curtains on a rod, gathered at both sides
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, ww + 0.7, 8).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#3b3530', roughness: 0.5, metalness: 0.4 }));
+        rod.position.set(x, wy + wh / 2 + 0.16, 0.07);
+        root.add(rod);
+        for (const sgn of [-1, 1]) {
+          const cg = new THREE.PlaneGeometry(0.42, wh + 0.45, 10, 1);
+          const pos = cg.attributes.position;
+          for (let k = 0; k < pos.count; k++) pos.setZ(k, Math.sin(pos.getX(k) * 26) * 0.035);
+          cg.computeVertexNormals();
+          const cur = new THREE.Mesh(cg, this.curtainMat(layout));
+          cur.position.set(x + sgn * (ww / 2 + 0.12), wy + 0.12 - 0.2, 0.08);
+          cur.castShadow = true;
+          root.add(cur);
+        }
+      }
       const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.05, wh - 0.14), trim);
       bar.position.set(x, wy, 0.025);
       root.add(frame, glass, bar);
@@ -404,7 +439,24 @@ export class Interior {
     door.position.set(dx, 1.1, d - 0.02);
     const mat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.02, 0.6), new THREE.MeshStandardMaterial({ color: '#5a4a3a', roughness: 1 }));
     mat.position.set(dx, 0.012, d - 0.5);
-    if (!level) root.add(door, mat);
+    if (!level) {
+      root.add(door, mat);
+      const frameMat = new THREE.MeshStandardMaterial({ color: '#f2efe8', roughness: 0.6 });
+      // frame, handle and light switch all face into the room (never seen from outside)
+      for (const [fw, fh, fx, fy] of [[0.1, 2.3, dx - 0.6, 1.15], [0.1, 2.3, dx + 0.6, 1.15], [1.3, 0.1, dx, 2.3]]) {
+        const f = new THREE.Mesh(new THREE.PlaneGeometry(fw, fh).rotateY(Math.PI), frameMat);
+        f.position.set(fx, fy, d - 0.03);
+        root.add(f);
+      }
+      const knob = new THREE.Mesh(new THREE.CircleGeometry(0.035, 12).rotateY(Math.PI), new THREE.MeshStandardMaterial({ color: '#c9a45c', roughness: 0.3, metalness: 0.8 }));
+      knob.position.set(dx - 0.4, 1.0, d - 0.03);
+      const sw = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.12).rotateY(Math.PI), frameMat);
+      sw.position.set(dx + 0.85, 1.25, d - 0.012);
+      root.add(knob, sw);
+    }
+    // a wall clock that keeps the game's time (homes, offices, cafés...)
+    this.clock = null;
+    if (!level && d >= 5) this.clock = this.makeClock(root, 0.03, 2.3, Math.min(d * 0.32, d - 2.5));
     this.door = level ? null : { x: dx, z: d - 0.9 };
 
     // inner walls
@@ -447,6 +499,51 @@ export class Interior {
       }
     }
 
+    // set the tables in places that serve food: plates, glasses, a candle or a little vase
+    const venue = !opts.home && opts.place && ['restaurant', 'cafe', 'bar', 'mall'].includes(opts.place.type) ? opts.place.type : null;
+    if (venue && !level) {
+      const china = new THREE.MeshStandardMaterial({ color: '#fbfaf7', roughness: 0.35 });
+      const glassM = new THREE.MeshStandardMaterial({ color: '#cfe6f2', roughness: 0.1, transparent: true, opacity: 0.55 });
+      const flame = new THREE.MeshBasicMaterial({ color: '#ffcf70' });
+      const cloth = new THREE.MeshStandardMaterial({ color: venue === 'restaurant' ? '#f4f1ea' : '#b8463c', roughness: 0.95 });
+      const plateG = new THREE.CylinderGeometry(0.11, 0.09, 0.015, 18);
+      const glassG = new THREE.CylinderGeometry(0.035, 0.03, 0.12, 10);
+      for (const it of src.items) {
+        if (it.id !== 'table_small' && it.id !== 'dining_table') continue;
+        const top = FURNITURE_BY_ID[it.id].h + 0.005;
+        const g = new THREE.Group();
+        if (venue === 'restaurant') {
+          // a white tablecloth square
+          const tc = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.01, 0.98), cloth);
+          tc.position.y = top;
+          g.add(tc);
+        }
+        for (const s of [-1, 1]) {
+          const p = new THREE.Mesh(plateG, china);
+          p.position.set(s * 0.26, top + 0.015, 0);
+          const gl = new THREE.Mesh(glassG, glassM);
+          gl.position.set(s * 0.26, top + 0.07, s * 0.2);
+          g.add(p, gl);
+        }
+        if (venue === 'restaurant' || venue === 'bar') {
+          const c = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 8), china);
+          c.position.set(0, top + 0.05, 0);
+          const f = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 5).scale(1, 1.8, 1), flame);
+          f.position.set(0, top + 0.12, 0);
+          g.add(c, f);
+        } else {
+          const v = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.025, 0.1, 10), glassM);
+          v.position.set(0, top + 0.05, 0);
+          const fl = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshStandardMaterial({ color: ['#e35d6a', '#f2c94c', '#9b6be0'][Math.abs(Math.round(it.x * 7 + it.z * 3)) % 3], roughness: 0.8 }));
+          fl.position.set(0, top + 0.14, 0);
+          g.add(v, fl);
+        }
+        g.position.set(it.x, 0, it.z);
+        g.rotation.y = (it.r || 0) * (Math.PI / 2);
+        root.add(g);
+      }
+    }
+
     // lighting rig sized to the room
     this.sun.position.set(w * 0.35, 7, d * 0.75);
     this.sun.target.position.set(w * 0.5, 0, d * 0.4);
@@ -459,6 +556,47 @@ export class Interior {
     sc.updateProjectionMatrix();
     this.sun.target.updateMatrixWorld();
     return this;
+  }
+
+  /** Curtain fabric picked to suit the wall colour. */
+  curtainMat(layout) {
+    const key = layout.wall || 'x';
+    if (this._curtain?.key === key) return this._curtain.mat;
+    const cols = ['#8a3b3b', '#2f4f6f', '#6b7a4a', '#d9cbb0', '#4a3f5c', '#b98a5a'];
+    let hsh = 0;
+    for (const ch of key) hsh = (hsh * 31 + ch.charCodeAt(0)) | 0;
+    const mat = new THREE.MeshStandardMaterial({ color: cols[Math.abs(hsh) % cols.length], roughness: 0.95, side: THREE.DoubleSide });
+    this._curtain = { key, mat };
+    return mat;
+  }
+
+  /** Round wall clock on the west wall; hands follow the game clock. */
+  makeClock(root, x, y, z) {
+    const g = new THREE.Group();
+    const face = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.03, 28).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#fbfaf6', roughness: 0.6 }));
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.018, 8, 28).rotateY(Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#2b2b2e', roughness: 0.4, metalness: 0.3 }));
+    g.add(face, rim);
+    const tickMat = new THREE.MeshBasicMaterial({ color: '#2b2b2e' });
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const t = new THREE.Mesh(new THREE.BoxGeometry(0.005, i % 3 ? 0.018 : 0.035, 0.008), tickMat);
+      t.position.set(0.017, Math.cos(a) * 0.155, Math.sin(a) * 0.155);
+      t.rotation.x = a;
+      g.add(t);
+    }
+    const hand = (len, wid) => {
+      const p = new THREE.Group();
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.006, len, wid).translate(0, len / 2 - 0.02, 0), tickMat);
+      p.add(m);
+      p.position.x = 0.022;
+      g.add(p);
+      return p;
+    };
+    const hourH = hand(0.1, 0.014);
+    const minH = hand(0.15, 0.009);
+    g.position.set(x, y, z);
+    root.add(g);
+    return { hourH, minH };
   }
 
   /** Up to n open floor positions (for NPCs), away from furniture and the door. */
@@ -496,8 +634,20 @@ export class Interior {
   }
 
   /** @param night 0..1  @param skyColor THREE.Color of the horizon/top mix */
-  update(night, skyColor) {
-    this.windowMat.color.copy(skyColor).lerp(_white, (1 - night) * 0.25);
+  update(night, skyColor, minutes) {
+    const dark = night > 0.55;
+    const map = dark ? Tex.skylineNight() : Tex.skylineDay();
+    if (this.windowMat.map !== map) {
+      this.windowMat.map = map;
+      this.windowMat.needsUpdate = true;
+    }
+    if (dark) this.windowMat.color.setScalar(0.75 + (night - 0.55) * 0.5);
+    else this.windowMat.color.copy(skyColor).lerp(_white, 0.35 + (1 - night) * 0.25);
+    if (this.clock && minutes != null) {
+      const m = minutes % 1440;
+      this.clock.minH.rotation.x = -((m % 60) / 60) * Math.PI * 2;
+      this.clock.hourH.rotation.x = -(((m / 60) % 12) / 12) * Math.PI * 2;
+    }
     this.sun.intensity = 1.7 - night * 0.9;
     this.hemi.intensity = 1.9 - night * 0.5;
     for (let i = 0; i < this.lamps.length; i++) this.lamps[i].intensity = (this.lampBase?.[i] || 0) * (0.35 + night * 0.65);

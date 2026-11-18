@@ -167,6 +167,49 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Interiors: skyline windows by day and night, curtains, wall clock, door frame. */
+  async rooms({ page, shot, wait }) {
+    await startLife(page, wait);
+    const look = async (name, hour, yaw, pitch = 0.5) => {
+      await page.evaluate(
+        ([hr, yw, pt]) => {
+          const g = window.__game;
+          g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + hr * 60;
+          const L = g.inside.layout;
+          g.player.teleport(L.w / 2, L.d - 1.6, Math.PI);
+          g.cam.yaw = yw;
+          g.cam.pitch = pt;
+          g.cam.dist = 6;
+          g.cam._init = false;
+        },
+        [hour, yaw, pitch],
+      );
+      await wait(1500);
+      await shot(name);
+    };
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.home.type = 'apartment';
+      g.state.home.layout = null;
+      g.enterPlace(g.homePlace(), true);
+    });
+    await wait(800);
+    await look('rooms-home-day', 13, 0.35);
+    await look('rooms-home-night', 22, -0.6);
+    const clock = await page.evaluate(() => {
+      const c = window.__game.interior.clock;
+      return c ? { hour: c.hourH.rotation.x.toFixed(2), min: c.minH.rotation.x.toFixed(2) } : null;
+    });
+    console.log('clock', JSON.stringify(clock));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.leaveInterior(true);
+      g.enterPlace(g.city.places.find((p) => p.type === 'restaurant'), true);
+    });
+    await wait(800);
+    await look('rooms-restaurant', 19.5, 0.2, 0.45);
+  },
   /** HUD: need meters, compass with waypoint, pet chip, toasts. */
   async hud({ page, shot, wait }) {
     await startLife(page, wait);

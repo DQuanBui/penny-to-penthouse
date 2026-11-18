@@ -853,7 +853,7 @@ export class Game {
     // --- build mode owns the screen while it is open ---
     if (this.build.active) {
       this.build.update(dt, input);
-      this.interior.update(this.sky.night, this._winColor.copy(this.sky.top).lerp(this.sky.horizon, 0.55));
+      this.interior.update(this.sky.night, this._winColor.copy(this.sky.top).lerp(this.sky.horizon, 0.55), st.time.total);
       this.draw(this.interior.scene, this.build.camera);
       return;
     }
@@ -873,7 +873,7 @@ export class Game {
     worldUniforms.uTime.value = elapsed;
     const inside = this.inside;
     this.sky.update(hourOf(st.time.total), dt, inside ? this._focus.set(inside.place.x, 0, inside.place.z) : this.player.pos);
-    if (inside) this.interior.update(this.sky.night, this._winColor.copy(this.sky.top).lerp(this.sky.horizon, 0.55));
+    if (inside) this.interior.update(this.sky.night, this._winColor.copy(this.sky.top).lerp(this.sky.horizon, 0.55), st.time.total);
     else {
       this.city.update(elapsed, this.sky.night);
       this.updateLampLights(dt);
