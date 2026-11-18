@@ -40,6 +40,60 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Weekly city events: concert, farmers market, night market, festival. */
+  async events({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+    });
+    const visit = async (id, day, hour, name, dz = 9) => {
+      const info = await page.evaluate(
+        async ([id2, day2, hour2, dz2]) => {
+          const g = window.__game;
+          g.closeAllOverlays();
+          g.state.time.total = day2 * 1440 + hour2 * 60;
+          await new Promise((r) => setTimeout(r, 2500));
+          const ev = g.cityEvents.live.get(id2);
+          if (!ev) return { live: false, all: [...g.cityEvents.live.keys()] };
+          const s = ev.spot;
+          const v = ev.venue;
+          const dir = Math.sign(s.z - v.z) || 1; // stand on the crowd side looking at the stage / stalls
+          g.player.teleport(s.x + 3, s.z + dir * dz2, dir > 0 ? Math.PI : 0);
+          g.cam.snapBehind(dir > 0 ? Math.PI + 0.2 : 0.2);
+          g.cam.pitch = 0.25;
+          g.cam.dist = 9;
+          g.cam._init = false;
+          return { live: true, venue: v.name, crowd: ev.def.crowd };
+        },
+        [id, day, hour, dz],
+      );
+      console.log(id, JSON.stringify(info));
+      await wait(3500);
+      await shot('event-' + name);
+    };
+    await visit('concert', 4, 20.5, 'concert');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const ev = g.cityEvents.live.get('concert');
+      g.player.teleport(ev.spot.x, ev.spot.z + Math.sign(ev.spot.z - ev.venue.z) * 2, 0);
+    });
+    await page.waitForFunction(() => window.__game.interactable && /Live in the Park/.test(window.__game.interactable.label), null, { timeout: 20000 });
+    await key(page, 'KeyE');
+    await shot('event-concert-menu');
+    const before = await page.evaluate(() => Math.round(window.__game.state.needs.fun));
+    await page.locator('.btn.answer').first().click();
+    await wait(1800);
+    const after = await page.evaluate(() => ({ fun: Math.round(window.__game.state.needs.fun), joined: window.__game.state.stats.cityEvents }));
+    console.log('concert fun', before, '->', JSON.stringify(after));
+    await visit('farmers', 5, 10, 'farmers', 4);
+    await visit('nightmarket', 3, 20, 'nightmarket', 2);
+    await visit('festival', 6, 14, 'festival', 2);
+    const news = await page.evaluate(() => window.__game.state.news.filter((n) => /today at/.test(n.title)).map((n) => n.title));
+    console.log('news', JSON.stringify(news));
+  },
   /** Parks and street life: playground, food cart, busker, sitting on a bench. */
   async park({ page, shot, wait }) {
     await startLife(page, wait);

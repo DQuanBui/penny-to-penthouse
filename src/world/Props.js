@@ -174,6 +174,8 @@ export function buildProps(ctx) {
         if (Math.abs(x - b.cx) < 3 || Math.abs(z - b.cz) < 3) continue;
         // the south half holds the playground and picnic area (world/Parks.js)
         if (z - b.cz > 4 && Math.abs(x - b.cx) > 4 && Math.abs(x - b.cx) < 22) continue;
+        // and the north lawn is kept open for markets and concerts (world/CityEvents.js)
+        if (z - b.cz > -18 && z - b.cz < -4 && Math.abs(x - b.cx) < 21) continue;
         addTree(x, z, 1.15);
       }
       for (const [dx, dz, ry] of [

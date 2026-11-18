@@ -117,6 +117,40 @@ function impostorMaterial() {
   return mat;
 }
 
+/**
+ * An InstancedMesh of n varied low-poly people (skin, hair, clothes) whose
+ * limbs animate in the vertex shader. gait.(x freq, y phase, z 0 idle..1 moving)
+ */
+export function createImpostors(n, rng) {
+  const c = new THREE.Color();
+  const geo = impostorGeometry();
+  const attr = (size) => new THREE.InstancedBufferAttribute(new Float32Array(n * size), size);
+  const top = attr(3);
+  const bottom = attr(3);
+  const skin = attr(3);
+  const hair = attr(3);
+  const gait = attr(3);
+  for (let i = 0; i < n; i++) {
+    const put = (a, hex) => {
+      c.set(hex).convertSRGBToLinear();
+      a.setXYZ(i, c.r, c.g, c.b);
+    };
+    put(top, TOPS[Math.floor(rng() * TOPS.length)]);
+    put(bottom, BOTTOMS[Math.floor(rng() * BOTTOMS.length)]);
+    put(skin, SKIN_TONES[Math.floor(rng() * SKIN_TONES.length)]);
+    put(hair, HAIR_COLORS[Math.floor(rng() * 10)]);
+    gait.setXYZ(i, 6, rng() * 6.28, 0);
+  }
+  geo.setAttribute('aTop', top);
+  geo.setAttribute('aBottom', bottom);
+  geo.setAttribute('aSkin', skin);
+  geo.setAttribute('aHair', hair);
+  geo.setAttribute('aGait', gait);
+  const mesh = new THREE.InstancedMesh(geo, impostorMaterial(), n);
+  mesh.frustumCulled = false;
+  return { mesh, gait };
+}
+
 export class Crowd {
   constructor(scene) {
     this.scene = scene;
@@ -170,31 +204,9 @@ export class Crowd {
     this.alive = new Uint8Array(n);
     this.rigOf = new Int8Array(n).fill(-1);
 
-    const geo = impostorGeometry();
-    const attr = (size) => new THREE.InstancedBufferAttribute(new Float32Array(n * size), size);
-    const top = attr(3);
-    const bottom = attr(3);
-    const skin = attr(3);
-    const hair = attr(3);
-    this.gait = attr(3);
-    for (let i = 0; i < n; i++) {
-      const put = (a, hex) => {
-        this._c.set(hex).convertSRGBToLinear();
-        a.setXYZ(i, this._c.r, this._c.g, this._c.b);
-      };
-      put(top, TOPS[Math.floor(this.rng() * TOPS.length)]);
-      put(bottom, BOTTOMS[Math.floor(this.rng() * BOTTOMS.length)]);
-      put(skin, SKIN_TONES[Math.floor(this.rng() * SKIN_TONES.length)]);
-      put(hair, HAIR_COLORS[Math.floor(this.rng() * 10)]);
-      this.gait.setXYZ(i, 6, this.rng() * 6.28, 0);
-    }
-    geo.setAttribute('aTop', top);
-    geo.setAttribute('aBottom', bottom);
-    geo.setAttribute('aSkin', skin);
-    geo.setAttribute('aHair', hair);
-    geo.setAttribute('aGait', this.gait);
-    this.inst = new THREE.InstancedMesh(geo, impostorMaterial(), n);
-    this.inst.frustumCulled = false;
+    const imp = createImpostors(n, this.rng);
+    this.inst = imp.mesh;
+    this.gait = imp.gait;
     this.group.add(this.inst);
     const models = glbNpcModels();
     for (let k = 0; k < r; k++) {

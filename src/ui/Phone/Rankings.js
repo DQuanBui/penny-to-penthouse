@@ -150,6 +150,7 @@ export const CalendarApp = {
       if (d % DAYS_PER_SEASON === 0 && d > 0) items.push('🗓️ New season · property tax, dividends');
       if (d % 112 === 0 && d > 0) items.push('🎂 Your birthday');
       for (const m of state.messages) if (m.kind === 'party' && m.day === d && !m.used) items.push('🎉 Party invite (Messages)');
+      for (const e of game.cityEvents.onDay(d)) items.push(`${e.def.icon} ${e.def.name} ${fmtHour(e.def.hours[0])}–${fmtHour(e.def.hours[1])}`);
       days.append(row({ icon: d === today ? '👉' : weekday ? '▫️' : '🌴', title: fmtDay(d), sub: items.join(' · ') || (weekday ? 'Nothing scheduled' : 'Weekend') }));
     }
     root.append(section('Next two weeks', days), h('div.tip', '💡 Paychecks arrive every other Friday. Rent is due on the 1st, other bills on the 15th.'));

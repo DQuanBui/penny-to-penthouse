@@ -5,6 +5,7 @@ import { h } from './dom.js';
 import { PLACE_TYPES } from '../data/placeTypes.js';
 import { taxiQuote, takeTaxi } from '../world/Transit.js';
 import { fmtMoney } from '../core/utils.js';
+import { fmtHour } from '../core/Clock.js';
 
 const PX = 2; // pixels per metre in the static image
 
@@ -157,6 +158,25 @@ export class CityMap {
     ctx.restore();
   }
 
+  /** "Happening today" rows for the map side list. */
+  eventRows(game, draw, list) {
+    if (!game.state) return [];
+    const today = game.cityEvents.onDay(Math.floor(game.state.time.total / 1440));
+    if (!today.length) return [];
+    return [
+      h('div.map-side-title', 'Happening today'),
+      ...today.map(({ def, venue }) =>
+        h(
+          'div.map-place' + (this.waypoint?.id === 'event_' + def.id ? '.active' : ''),
+          { onclick: () => (this.setWaypoint(game.cityEvents.waypointFor(def)), draw(), list()) },
+          h('span', def.icon),
+          h('span.grow', def.name),
+          h('span.muted.small', `${venue.name.split(' ')[0]} · ${fmtHour(def.hours[0])}`),
+        ),
+      ),
+    ];
+  }
+
   setWaypoint(place) {
     this.waypoint = place ? { x: place.x, z: place.z, label: place.name, id: place.id } : null;
     this.game.events.emit('waypoint', this.waypoint);
@@ -222,6 +242,7 @@ export class CityMap {
     };
     const list = () => {
       side.replaceChildren(
+        ...this.eventRows(game, draw, list),
         h('div.map-side-title', 'Places'),
         h('div.muted.small', 'Click a place to set a GPS waypoint, or take a taxi straight there. Transit stations are cheaper.'),
         ...city.districts.map((d) =>

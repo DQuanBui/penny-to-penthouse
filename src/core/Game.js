@@ -48,6 +48,7 @@ import { VehicleManager, loadVehicleModels } from '../world/Vehicles.js';
 import { Traffic } from '../world/Traffic.js';
 import { Animals } from '../world/Animals.js';
 import { StreetLife } from '../world/StreetLife.js';
+import { CityEvents } from '../world/CityEvents.js';
 import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { PostFX } from './PostFX.js';
 import { pushOutOBB } from '../world/Collision.js';
@@ -101,6 +102,7 @@ export class Game {
     this.traffic = new Traffic(this.scene);
     this.animals = new Animals(this.scene);
     this.streetLife = new StreetLife(this);
+    this.cityEvents = new CityEvents(this);
     this.animals.onScare = () => this.audio.play('flap');
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -243,6 +245,7 @@ export class Game {
     this.traffic.setCity(this.city, this.quality);
     this.animals.setCity(this.city, this.quality);
     this.streetLife.setCity(this.city);
+    this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
     return this.city;
@@ -459,6 +462,7 @@ export class Game {
     this.crowd.group.visible = false;
     this.animals.group.visible = false;
     this.streetLife.clear();
+    this.cityEvents.clear();
     this.player.sitting = false;
     this.state = null;
     this.sim = null;
@@ -690,6 +694,8 @@ export class Game {
     if (this.player.sitting) return { label: 'Stand up', action: () => this.standUp() };
     if (this.vehicles.driving) return { label: `Get out · ${this.vehicles.mph()} mph`, key: 'F', action: () => this.vehicles.exit() };
     if (!this.inside) {
+      const happening = this.cityEvents.interactable(p);
+      if (happening) return happening;
       const street = this.streetLife.interactable(p);
       if (street) return street;
       const bench = this.nearestBench(p);
@@ -830,6 +836,7 @@ export class Game {
     this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside, elapsed);
     this.animals.update(dt, this.crowd, this.player.pos.x, this.player.pos.z, this.sky.night, !inside);
     this.streetLife.update(dt, this.player.pos, !!inside);
+    this.cityEvents.update(dt, this.player.pos, !!inside);
     this.npcs.update(dt, this.player.pos, !!inside);
     this.traffic.parked = this.vehicles.parkedOBBs();
     this.traffic.update(dt, elapsed, hourOf(st.time.total), this.player.pos.x, this.player.pos.z, this.crowd, !inside, this.weather.info.crowd);
