@@ -16,6 +16,7 @@ export default {
   transit: { name: 'Metromover', fare: 2.25, icon: '🚝' },
   weather: { summary: 'Hot, humid, sudden showers', rain: 0.25, snowInWinter: 0, haze: 0.45, sunny: 0.55 },
   treeType: 'palm',
+  busColor: '#1f9e8f', // city bus livery
   waterfront: ['east', 'south'],
   waterName: 'the Bay',
   promenade: 'beach',

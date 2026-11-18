@@ -101,6 +101,60 @@ export function carGeometry() {
   return cached.clone();
 }
 
+let busCached = null;
+/** City bus (front faces +Z, length 11.4 m, width 2.5 m). Livery = instance colour. */
+export function busGeometry() {
+  if (busCached) return busCached.clone();
+  parts.length = 0;
+  const PAINT = '#ffffff';
+  const L = 5.7;
+  // body with wheel arches and a rounded front roof edge
+  const s = new THREE.Shape();
+  s.moveTo(-L, 0.45);
+  s.lineTo(-3.95, 0.45);
+  s.absarc(-3.4, 0.45, 0.55, Math.PI, 0, true);
+  s.lineTo(3.35, 0.45);
+  s.absarc(3.9, 0.45, 0.55, Math.PI, 0, true);
+  s.lineTo(L, 0.45);
+  s.lineTo(L, 2.75);
+  s.quadraticCurveTo(L, 3.05, L - 0.3, 3.05);
+  s.lineTo(-L + 0.15, 3.05);
+  s.lineTo(-L, 2.9);
+  s.lineTo(-L, 0.45);
+  add(profile(s, 2.5, 0.05), PAINT, 1);
+  // side window bands, a light stripe under them, doors on the right (-x) side
+  for (const x of [-1.262, 1.262]) {
+    add(new THREE.BoxGeometry(0.02, 1.15, 9.6).translate(x, 2.0, -0.35), '#1a2430');
+    add(new THREE.BoxGeometry(0.02, 0.16, 11.0).translate(x, 1.3, 0), '#f2f2ee');
+    for (let z = -4.7; z <= 4.3; z += 1.5) add(new THREE.BoxGeometry(0.03, 1.15, 0.06).translate(x * 1.002, 2.0, z), PAINT, 1); // window pillars
+  }
+  for (const z of [4.75, 0.1]) add(new THREE.BoxGeometry(0.03, 2.2, 1.05).translate(-1.27, 1.6, z), '#25313d');
+  // windscreen, rear window, destination signs (lit), headlights and taillights
+  add(new THREE.BoxGeometry(2.3, 1.55, 0.03).translate(0, 1.95, L + 0.01), '#1a2430');
+  add(new THREE.BoxGeometry(2.0, 0.24, 0.04).translate(0, 2.85, L + 0.01), '#ffb347', 0, 1);
+  add(new THREE.BoxGeometry(0.03, 0.22, 1.6).translate(-1.27, 2.78, 3.6), '#ffb347', 0, 1);
+  add(new THREE.BoxGeometry(1.9, 0.9, 0.03).translate(0, 2.25, -L - 0.01), '#1a2430');
+  add(new THREE.BoxGeometry(2.4, 0.3, 0.14).translate(0, 0.6, L + 0.05), '#2a2c31'); // bumpers
+  add(new THREE.BoxGeometry(2.4, 0.3, 0.14).translate(0, 0.6, -L - 0.05), '#2a2c31');
+  for (const x of [-0.95, 0.95]) {
+    add(new THREE.BoxGeometry(0.34, 0.16, 0.05).translate(x, 0.95, L + 0.03), '#fff6dc', 0, 1);
+    add(new THREE.BoxGeometry(0.2, 0.36, 0.05).translate(x, 1.0, -L - 0.03), '#d81e1e', 0, 1);
+  }
+  add(new THREE.BoxGeometry(1.6, 0.28, 2.6).translate(0, 3.19, -1.5), '#d8dadd'); // roof AC pod
+  // mirrors on stalks
+  for (const x of [-1, 1]) add(new THREE.BoxGeometry(0.08, 0.38, 0.12).translate(x * 1.45, 2.25, L - 0.1), '#1d1f24');
+  // wheels: single at the front, dual at the back
+  for (const x of [-1.06, 1.06]) {
+    for (const z of [3.9, -3.4]) {
+      add(new THREE.CylinderGeometry(0.5, 0.5, 0.32, 16).rotateZ(Math.PI / 2).translate(x, 0.5, z), '#16171a');
+      add(new THREE.CylinderGeometry(0.28, 0.28, 0.33, 10).rotateZ(Math.PI / 2).translate(x * 1.01, 0.5, z), '#a9afb7');
+    }
+  }
+  busCached = mergeGeometries(parts);
+  parts.length = 0;
+  return busCached.clone();
+}
+
 /**
  * Material for car geometry. Only paint takes the per-instance colour; lights
  * glow at night. Works for InstancedMesh (use setColorAt for the paint).

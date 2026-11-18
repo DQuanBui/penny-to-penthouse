@@ -153,6 +153,7 @@ export function buildStreetscape(ctx) {
           const bz = z + nz * 0.7;
           colliders.add(bx - (nz ? 1.8 : 0.1), bz - (nx ? 1.8 : 0.1), bx + (nz ? 1.8 : 0.1), bz + (nx ? 1.8 : 0.1), 2.5);
           ctx.benchSpots?.push({ x: x - nx * 0.2, z: z - nz * 0.2, ry: ry + Math.PI });
+          (ctx.busStops ||= []).push({ x, z });
         }
       }
     });

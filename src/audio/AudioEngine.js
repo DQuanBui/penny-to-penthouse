@@ -174,6 +174,10 @@ export class AudioEngine {
           this.burst(d, { type: 'bandpass', f: 700, q: 2, t, dur: 0.09, gain: 0.12 });
         }
         break;
+      case 'hiss':
+        // bus air brakes / kneeling
+        this.burst(d, { type: 'highpass', f: 3200, f2: 1800, dur: 0.7, gain: 0.09 });
+        break;
       case 'shutter':
         this.burst(d, { type: 'highpass', f: 2500, dur: 0.03, gain: 0.25 });
         this.burst(d, { type: 'bandpass', f: 1200, t: 0.07, dur: 0.05, gain: 0.18 });

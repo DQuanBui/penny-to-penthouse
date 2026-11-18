@@ -16,6 +16,7 @@ export default {
   transit: { name: 'CapMetro Bus', fare: 1.25, icon: '🚌' },
   weather: { summary: 'Long hot summers, mild winters', rain: 0.12, snowInWinter: 0, haze: 0.2, sunny: 0.7 },
   treeType: 'leafy',
+  busColor: '#b5461a', // city bus livery
   waterfront: ['south'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

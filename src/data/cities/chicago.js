@@ -16,6 +16,7 @@ export default {
   transit: { name: 'L Train', fare: 2.5, icon: '🚆' },
   weather: { summary: 'Hot summers, snowy winters', rain: 0.2, snowInWinter: 0.65, haze: 0, sunny: 0.45 },
   treeType: 'leafy',
+  busColor: '#3d6fa3', // city bus livery
   waterfront: ['east'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

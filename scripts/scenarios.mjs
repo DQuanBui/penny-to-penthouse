@@ -167,6 +167,71 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** City buses: running routes and pulling up at shelters. */
+  async buses({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 11 * 60;
+      g.settings.set('autoQuality', false);
+    });
+    await wait(2000);
+    const info = await page.evaluate(() => {
+      const t = window.__game.traffic;
+      const out = [];
+      for (let i = t.bus0; i < t.n; i++) out.push({ alive: t.alive[i], x: Math.round(t.x[i]), z: Math.round(t.z[i]), sp: t.speed[i].toFixed(1) });
+      return { nb: t.nb, stops: window.__game.city.busStops.length, buses: out };
+    });
+    console.log('buses', JSON.stringify(info));
+    // software rendering runs the sim slowly: put a bus 24 m before a stop on its route
+    await page.evaluate(() => {
+      const g = window.__game;
+      const t = g.traffic;
+      const c = g.city;
+      const i = t.bus0;
+      const [fi, fj, ti, tj] = [...t.stopSegs][3].split(',').map(Number);
+      const hx = ti - fi;
+      const hz = tj - fj;
+      const s = c.busStops.find((b) => (hx ? Math.abs(b.z - c.roadCenter(tj)) < 9 && (b.x - c.roadCenter(fi)) * hx > 0 && (b.x - c.roadCenter(ti)) * hx < 0 : Math.abs(b.x - c.roadCenter(ti)) < 9 && (b.z - c.roadCenter(fj)) * hz > 0 && (b.z - c.roadCenter(tj)) * hz < 0));
+      t.hx[i] = hx;
+      t.hz[i] = hz;
+      t.ti[i] = ti;
+      t.tj[i] = tj;
+      t.x[i] = hx ? s.x - hx * 24 : c.roadCenter(ti) - hz * 1.75;
+      t.z[i] = hz ? s.z - hz * 24 : c.roadCenter(tj) + hx * 1.75;
+      t.ry[i] = Math.atan2(hx, hz);
+      t.turnT[i] = 0;
+      t.alive[i] = 1;
+      t.lastStop[i] = -1;
+      g.player.teleport(s.x, s.z, 0);
+    });
+    // follow the first bus until it dwells at a stop
+    let stopped = null;
+    for (let k = 0; k < 60 && !stopped; k++) {
+      stopped = await page.evaluate(() => {
+        const g = window.__game;
+        const t = g.traffic;
+        for (let i = t.bus0; i < t.n; i++) {
+          if (t.alive[i] && t.dwell[i] > 0) {
+            const ry = t.ry[i];
+            // stand on the pavement ahead of the bus, looking back at it
+            const side = -1;
+            g.player.teleport(t.x[i] + Math.sin(ry) * 12 + Math.cos(ry) * side * -4.5, t.z[i] + Math.cos(ry) * 12 - Math.sin(ry) * side * -4.5, ry + Math.PI);
+            g.cam.snapBehind(ry + Math.PI + 0.5);
+            g.cam.pitch = 0.1;
+            g.cam._init = false;
+            return { i, dwell: t.dwell[i].toFixed(1), stop: t.lastStop[i] };
+          }
+        }
+        return null;
+      });
+      if (!stopped) await wait(1000);
+    }
+    console.log('dwelling', JSON.stringify(stopped));
+    await wait(700);
+    await shot('bus-stop');
+  },
   /** Photo mode: hide the HUD, frame a landmark at golden hour with your dog, post and save. */
   async photo({ page, shot, wait }) {
     await startLife(page, wait);

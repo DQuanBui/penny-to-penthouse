@@ -103,6 +103,10 @@ export class Game {
     this.weather = new Weather(this.scene, this.sky);
     this.vehicles = new VehicleManager(this);
     this.traffic = new Traffic(this.scene);
+    this.traffic.onStop = (x, z) => {
+      const p = this.player.pos;
+      if (!this.inside && (x - p.x) ** 2 + (z - p.z) ** 2 < 35 * 35) this.audio?.play('hiss');
+    };
     this.animals = new Animals(this.scene);
     this.streetLife = new StreetLife(this);
     this.cityEvents = new CityEvents(this);

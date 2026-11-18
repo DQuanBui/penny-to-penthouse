@@ -16,6 +16,7 @@ export default {
   transit: { name: 'Subway', fare: 2.9, icon: '🚇' },
   weather: { summary: 'Four seasons, snowy winters', rain: 0.22, snowInWinter: 0.45, haze: 0, sunny: 0.5 },
   treeType: 'leafy',
+  busColor: '#1f5fa8', // city bus livery
   waterfront: ['south', 'west'],
   waterName: 'the Harbor',
   promenade: 'boardwalk',
