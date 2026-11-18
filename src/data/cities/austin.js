@@ -18,6 +18,8 @@ export default {
   treeType: 'leafy',
   busColor: '#b5461a', // city bus livery
   zoo: 'Hill Country Zoo',
+  university: 'Hill Country University',
+  school: 'Bluebonnet Elementary',
   waterfront: ['south'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

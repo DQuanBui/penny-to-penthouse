@@ -68,7 +68,7 @@ export function buildProps(ctx) {
     box(0.08, 0.45, 0.45, 0.75, 0.22, 0),
   ]);
   const benches = new InstanceBatch(benchGeo, new THREE.MeshStandardMaterial({ color: '#7a5a3c', roughness: 0.8 }), { castShadow: true });
-  ctx.benchSpots = [];
+  ctx.benchSpots ||= [];
 
   // snowy-winter cities get white lawns
   const snowy = ctx.season === 'winter' && cfg.weather?.snowInWinter;

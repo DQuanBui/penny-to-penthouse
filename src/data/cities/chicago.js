@@ -18,6 +18,8 @@ export default {
   treeType: 'leafy',
   busColor: '#3d6fa3', // city bus livery
   zoo: 'Lakeshore Zoo',
+  university: 'Lakeshore University',
+  school: 'Prairie Avenue School',
   waterfront: ['east'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

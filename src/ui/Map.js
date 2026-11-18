@@ -46,7 +46,7 @@ export class CityMap {
     // blocks
     const tint = ['#4a5876', '#5a6a58', '#6a5a74', '#74604e'];
     for (const b of city.blocks) {
-      g.fillStyle = b.kind === 'park' ? '#3f7a4a' : b.kind === 'zoo' ? '#5f8a3a' : b.kind === 'landmark' ? '#8a7a5a' : tint[b.district.index % 4];
+      g.fillStyle = b.kind === 'park' ? '#3f7a4a' : b.kind === 'zoo' ? '#5f8a3a' : b.kind === 'campus' ? '#8a8a6a' : b.kind === 'school' ? '#8a6a5a' : b.kind === 'landmark' ? '#8a7a5a' : tint[b.district.index % 4];
       g.beginPath();
       g.roundRect(X(b.x0), X(b.z0), K.BLOCK * PX, K.BLOCK * PX, 6);
       g.fill();

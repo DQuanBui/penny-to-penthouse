@@ -77,7 +77,7 @@ export function buildStorefronts(ctx) {
   const Y = K.CURB;
 
   for (const p of places) {
-    if (p.station || p.outdoor) continue;
+    if (p.station || p.outdoor || p.custom) continue;
     const meta = PLACE_TYPES[p.type];
     const look = meta.look || { front: 'shopfront', brand: p.color, awning: 'slant', extras: [] };
     const rng = mulberry32(hashStr(p.id));

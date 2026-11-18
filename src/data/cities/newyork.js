@@ -18,6 +18,8 @@ export default {
   treeType: 'leafy',
   busColor: '#1f5fa8', // city bus livery
   zoo: 'Liberty Wild Zoo',
+  university: 'Hudson Heights University',
+  school: 'P.S. 47 Riverside School',
   waterfront: ['south', 'west'],
   waterName: 'the Harbor',
   promenade: 'boardwalk',

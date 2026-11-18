@@ -165,6 +165,27 @@ export function commercialLayout(place) {
         { id: 'armchair', x: 11.2, z: 6.8, r: 3 },
         { id: 'plant_floor', x: 0.6, z: 8.4, r: 0 },
       ]);
+    case 'lecture':
+      return L(16, 12, 'wood', '#e6dccb', [
+        { id: 'chalkboard_wall', x: 8, z: 0.25, r: 0 },
+        { id: 'lectern', x: 8, z: 1.8, r: 0 },
+        { id: 'reception', x: 13.6, z: 10.6, r: 3 },
+        { id: 'bookshelf', x: 0.6, z: 3, r: 1 },
+        { id: 'bookshelf', x: 0.6, z: 4.2, r: 1 },
+        ...[4, 5.6, 7.2, 8.8].flatMap((z) => [3, 5.2, 7.4, 9.6, 11.8].map((x) => ({ id: 'school_desk', x, z, r: 0 }))),
+        { id: 'plant_floor', x: 15.4, z: 0.6, r: 0 },
+      ]);
+    case 'classroom':
+      return L(12, 10, 'tile', '#f3ecd8', [
+        { id: 'chalkboard_wall', x: 6, z: 0.25, r: 0 },
+        { id: 'desk_wood', x: 9.5, z: 1.6, r: 2, use: '' },
+        { id: 'reception', x: 10.2, z: 8.6, r: 3 },
+        { id: 'bookshelf', x: 0.6, z: 3, r: 1 },
+        { id: 'painting_l', x: 2.4, z: 0.3, r: 0 },
+        ...[3.6, 5, 6.4].flatMap((z) => [2.5, 4.2, 5.9, 7.6].map((x) => ({ id: 'school_desk', x, z, r: 0 }))),
+        { id: 'rug_large', x: 3, z: 8.2, r: 0 },
+        { id: 'plant_floor', x: 11.4, z: 0.6, r: 0 },
+      ]);
     case 'pub':
       return L(12, 9, 'wood', '#5a3a2a', [
         { id: 'bar_counter', x: 6, z: 1.6, r: 0 },

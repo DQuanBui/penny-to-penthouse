@@ -109,3 +109,47 @@ function chooseHair(game, place, it, price) {
   };
   render();
 }
+
+/** The school office: volunteer, talk at career day, buy at the bake sale. */
+export function schoolService(game, place, body) {
+  const sim = game.sim;
+  const st = game.state;
+  const day = sim.day;
+  const done = (key) => st.flags[key] === day;
+  const act = (key, minutes, needs, line, after) => {
+    game.closeTop();
+    game.fade(() => {
+      sim.advance(minutes, { noCollapse: true });
+      for (const k in needs) addNeed(sim, k, needs[k]);
+      st.flags[key] = day;
+      after?.();
+      game.events.emit('toast', { icon: '🏫', title: place.name, text: line, kind: 'good', long: true });
+    });
+  };
+  body.append(h('div.muted', 'The school office smells of coffee and crayons. A sign-up sheet for volunteers is pinned by the door.'));
+  body.append(
+    btn(done('volunteerDay') ? '📚  Reading buddy (done today)' : '📚  Volunteer as a reading buddy  ·  2 h', () => {
+      if (done('volunteerDay')) return;
+      act('volunteerDay', 120, { social: 14, fun: 8 }, 'A shy second-grader reads you a whole chapter about a dragon. You both grin the entire time.', () => (st.stats.volunteered = (st.stats.volunteered || 0) + 1));
+    }),
+  );
+  if (st.job) {
+    body.append(
+      btn(done('careerDay') ? '🎤  Career day talk (done today)' : '🎤  Give a career day talk  ·  1 h', () => {
+        if (done('careerDay')) return;
+        act('careerDay', 60, { social: 10, fun: 6 }, 'Twenty hands shoot up with questions. One kid says they want to do your job when they grow up.', () => {
+          st.social.followers += 40;
+          st.stats.volunteered = (st.stats.volunteered || 0) + 1;
+        });
+      }),
+    );
+  }
+  body.append(
+    btn(`🍪  Buy cookies at the bake sale  ·  ${fmtMoney(Math.round(4 * (sim.city.priceIndex || 1)))}`, () => {
+      if (!sim.finance.spend(Math.round(4 * (sim.city.priceIndex || 1)), 'food', 'School bake sale')) return;
+      addNeed(sim, 'hunger', 8);
+      addNeed(sim, 'fun', 5);
+      game.events.emit('toast', { icon: '🍪', title: 'Bake sale', text: 'Chocolate chip, slightly burnt, absolutely perfect. The money goes to the school library.', kind: 'good' });
+    }),
+  );
+}

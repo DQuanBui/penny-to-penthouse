@@ -167,6 +167,69 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** University campus and a neighbourhood school. */
+  async campus({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60 + 15; // Monday lunchtime recess
+      const c = g.city.campus;
+      g.player.teleport(c.cx, c.cz + 20, Math.PI);
+      g.cam.snapBehind(Math.PI);
+      g.cam.pitch = -0.05;
+      g.cam.dist = 7;
+      return { campus: c && c.name, school: g.city.school && g.city.school.name };
+    });
+    console.log('names', JSON.stringify(info));
+    await wait(2500);
+    await shot('campus-quad');
+    const people = await page.evaluate(() => window.__game.campusLife.people.length);
+    console.log('students', people);
+    // into the main hall: the admissions desk is the college service
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.enterPlace(g.city.campus.place, true);
+      const c = g.interior.points.find((p) => p.use === 'service');
+      g.player.teleport(c.x, c.z, -Math.PI / 2);
+      g.cam.snapBehind(Math.PI + 0.5);
+      g.cam.pitch = 0.6;
+    });
+    await wait(1200);
+    await shot('campus-lecture');
+    await page.waitForFunction(() => window.__game.interactable && /counter/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog');
+    console.log('college dialog', await page.evaluate(() => document.querySelector('.dialog-title').textContent));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.closeAllOverlays();
+      g.leaveInterior(true);
+      const s = g.city.school;
+      g.player.teleport(s.cx + 6, s.cz + 27, Math.PI);
+      g.cam.snapBehind(Math.PI + 0.3);
+      g.cam.pitch = 0.2;
+      g.cam.dist = 7;
+    });
+    await wait(2500);
+    await shot('school-recess');
+    console.log('kids', await page.evaluate(() => window.__game.campusLife.people.filter((p) => p.speed > 1.5).length));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.enterPlace(g.city.school.place, true);
+      const c = g.interior.points.find((p) => p.use === 'service');
+      g.player.teleport(c.x, c.z, -Math.PI / 2);
+      g.cam.snapBehind(Math.PI + 0.5);
+      g.cam.pitch = 0.6;
+    });
+    await wait(1000);
+    await shot('school-classroom');
+    await page.waitForFunction(() => window.__game.interactable && /counter/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.click('text=reading buddy');
+    await wait(1500);
+    console.log('volunteered', await page.evaluate(() => window.__game.state.stats.volunteered));
+  },
   /** The zoo: gate needs a ticket, animals wander, watch an enclosure. */
   async zoo({ page, shot, wait }) {
     await startLife(page, wait);

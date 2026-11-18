@@ -19,6 +19,8 @@ export default {
   treeType: 'palm',
   busColor: '#d9822b', // city bus livery
   zoo: 'Sunset Canyon Zoo',
+  university: 'Pacific Coast University',
+  school: 'Sunset Hills Elementary',
   waterfront: ['west'],
   waterName: 'the Pacific',
   promenade: 'beach',

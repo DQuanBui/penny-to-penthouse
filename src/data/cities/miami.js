@@ -18,6 +18,8 @@ export default {
   treeType: 'palm',
   busColor: '#1f9e8f', // city bus livery
   zoo: 'Biscayne Wild Zoo',
+  university: 'Bayfront University',
+  school: 'Palm Grove Elementary',
   waterfront: ['east', 'south'],
   waterName: 'the Bay',
   promenade: 'beach',

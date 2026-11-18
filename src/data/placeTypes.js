@@ -34,6 +34,8 @@ export const PLACE_TYPES = {
   shelter: { icon: '🐾', label: 'Pet Rescue', color: '#e8a05c', interior: 'shelter', service: 'shelter', look: { front: 'shopfront', brand: '#2f7d8f', trim: '#f6e7c8', awning: 'slant', extras: ['bladeLogo', 'planters', 'chalkboard'] } },
   station: { icon: '🚇', label: 'Transit', color: '#ffd24a', interior: null, service: 'transit' },
   zoo: { icon: '🦁', label: 'Zoo', color: '#4f8a3a', interior: null, service: 'zoo', outdoor: true },
+  university: { icon: '🎓', label: 'University', color: '#7a7fe0', interior: 'lecture', service: 'college' },
+  school: { icon: '🏫', label: 'School', color: '#e0903c', interior: 'classroom', service: 'school' },
   // neighbourhood businesses (data/shops.js): minor = generated on ordinary lots
   ...Object.fromEntries(Object.entries(SHOP_TYPES).map(([id, t]) => [id, { icon: t.icon, label: t.label, color: t.color, interior: t.interior, service: 'minor', look: t.look, minor: true }])),
 };
