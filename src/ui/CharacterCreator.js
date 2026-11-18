@@ -120,12 +120,13 @@ export class CharacterCreator {
     this.spinVel = damp(this.spinVel, 0, 3, dt);
     this.holder.rotation.y = this.spin;
     this.waveT = Math.max(0, this.waveT - dt);
-    animateRig(this.rig, dt, { speed: 0, grounded: true, waving: this.waveT > 0.2 && this.waveT < 0.9 && this.justPicked });
+    animateRig(this.rig, dt, { speed: 0, grounded: true, waving: this.waveT > 0.2 && this.waveT < 0.9 && this.justPicked && this.zoomTarget < 0.5 });
     this.zoom = damp(this.zoom, this.zoomTarget, 5, dt);
     const z = this.zoom;
     const hgt = this.profile.appearance.height || 1;
-    this.camera.position.set(0, 1.2 + z * 0.55 * hgt, 6.6 - z * 4.3);
-    this.camera.lookAt(0, 1.02 + z * 0.68 * hgt, 0);
+    // zoomed in (Look tab) the camera frames the head and shoulders
+    this.camera.position.set(0, 1.2 + z * 0.44 * hgt, 6.6 - z * 5.0);
+    this.camera.lookAt(0, 1.02 + z * 0.58 * hgt, 0);
   }
 
   // ------------------------------------------------------------------ data

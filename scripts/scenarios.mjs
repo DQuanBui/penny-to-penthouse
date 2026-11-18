@@ -40,6 +40,33 @@ export async function key(page, code, ms = 500) {
 }
 
 export const scenarios = {
+  /** Close-ups of procedural characters (face, body, outfits). */
+  async faces({ page, shot, wait }) {
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForSelector('.title-menu');
+    await page.click('text=New Life');
+    await page.waitForSelector('.creator-panel');
+    await wait(900);
+    await shot('char-body');
+    await page.click('.tab:nth-child(2)');
+    await wait(1400);
+    await shot('char-face');
+    for (let i = 0; i < 3; i++) {
+      await page.click('text=🎲 Random');
+      await wait(900);
+      await shot('char-face-' + i);
+    }
+    await page.click('.tab:nth-child(3)');
+    await wait(1200);
+    await page.evaluate(() => {
+      const c = window.__game.creator;
+      c.spin = Math.PI;
+      c.spinVel = 0;
+    });
+    await wait(300);
+    await shot('char-back');
+  },
   /** Busy streets: crowd density, signal waiting, pauses (Medium preset). */
   async crowd({ page, shot, wait }) {
     await startLife(page, wait);

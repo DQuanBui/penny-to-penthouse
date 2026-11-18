@@ -74,12 +74,37 @@ class Parts {
     this.list.push(geo);
     return geo;
   }
+
+  /**
+   * Smoothly skinned part: vertices below y0 follow boneA, above y1 boneB,
+   * and blend linearly in between (no seam where the spine bends).
+   */
+  addBlend(geo, boneA, boneB, y0, y1, color) {
+    this.add(geo, boneA, color);
+    const pos = geo.attributes.position;
+    const si = geo.attributes.skinIndex;
+    const sw = geo.attributes.skinWeight;
+    const a = BI[boneA];
+    const b = BI[boneB];
+    for (let i = 0; i < pos.count; i++) {
+      const t = Math.min(1, Math.max(0, (pos.getY(i) - y0) / (y1 - y0)));
+      si.setXY(i, a, b);
+      sw.setXY(i, 1 - t, t);
+    }
+    return geo;
+  }
+}
+
+/** Turned (lathe) shape from [radius, y] pairs, squashed front-to-back by zr. */
+function lathe(profile, zr, segments = 22) {
+  const pts = profile.map(([r, y]) => new THREE.Vector2(r, y));
+  return new THREE.LatheGeometry(pts, segments).scale(1, 1, zr);
 }
 
 const sph = (r, sx = 1, sy = 1, sz = 1, seg = 12) => new THREE.SphereGeometry(r, seg, Math.max(6, Math.round(seg * 0.7))).scale(sx, sy, sz);
 const bx = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 /** Tapered open cylinder from point a (radius r0) to point b (radius r1). */
-function seg(a, b, r0, r1, radial = 10) {
+function seg(a, b, r0, r1, radial = 14) {
   _v1.set(a[0], a[1], a[2]);
   _v2.set(b[0], b[1], b[2]);
   const len = _v1.distanceTo(_v2);
@@ -122,14 +147,32 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
   const sleeveUpper = a.top === 'tank' ? skin : topC;
   const sleeveLower = LONG_SLEEVE[a.top] ? topC : skin;
 
-  // ---- torso ----
-  const chest = new THREE.CapsuleGeometry(B.tr, 0.17, 6, 16).scale(1, 1, B.td / B.tr).translate(0, 1.235, 0);
-  P.add(chest, 'chest', topC);
-  P.add(sph(1, B.sh + 0.004, 0.066, B.td * 0.94, 14).translate(0, 1.378, 0), 'chest', topC);
-  // clean hem ring hides the seam where torso and hips meet
-  P.add(new THREE.CylinderGeometry(B.tr * 1.05, B.tr * 1.06, 0.07, 20, 1, true).scale(1, 1, (B.td * (1.12 + B.belly * 0.26)) / B.tr).translate(0, 1.012, B.belly * 0.02), 'spine', shade(topC, 0.9));
-  P.add(sph(1, B.tr * 0.96, 0.12 + B.belly * 0.03, B.td * (1 + B.belly * 0.22), 14).translate(0, 1.07 + B.belly * 0.02, B.belly * 0.022), 'spine', topC);
-  P.add(sph(1, B.hip, 0.125, B.td * 1.06, 14).translate(0, 0.965, 0), 'hips', botC);
+  // ---- torso: one smooth turned shape from the hem to the collar ----
+  const zr = B.td / B.tr;
+  const bel = B.belly * 0.028;
+  const hipW = Math.max(B.hip, B.tr * 0.95);
+  const torso = lathe(
+    [
+      [hipW * 1.035, 0.925],
+      [hipW * 1.03, 0.965],
+      [B.tr * 0.93 + bel * 0.6, 1.04],
+      [B.tr * 0.95 + bel, 1.12],
+      [B.tr * 1.0 + bel * 0.4, 1.2],
+      [B.tr * 1.03, 1.27],
+      [B.tr * 1.0, 1.34],
+      [(B.sh + B.tr) * 0.5, 1.4],
+      [B.tr * 0.62, 1.445],
+      [0.058, 1.47],
+    ],
+    zr,
+  );
+  P.addBlend(torso, 'spine', 'chest', 1.1, 1.24, topC);
+  // shoulder yoke so the torso flows into the arms
+  P.add(sph(1, B.sh + 0.004, 0.064, B.td * 0.94, 16).translate(0, 1.378, 0), 'chest', topC);
+  // hem band: a slightly darker edge reads as fabric
+  P.add(lathe([[hipW * 1.045, 0.922], [hipW * 1.045, 0.945]], zr), 'spine', shade(topC, 0.86));
+  // trousers / skirt waist: sits just inside the top's hem, so no seam shows
+  P.add(lathe([[0.03, 0.845], [B.hip * 0.7, 0.855], [B.hip * 0.93, 0.89], [B.hip * 1.0, 0.94], [B.hip * 0.98, 1.0]], zr * 0.92), 'hips', botC);
   P.add(new THREE.CylinderGeometry(0.046, 0.054, 0.13, 12).translate(0, 1.485, 0), 'neck', skin);
 
   // ---- arms + legs (mirrored) ----
@@ -140,9 +183,12 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
     const wr = J['hand' + s];
     P.add(sph(0.056 * L).translate(sh[0] - m * 0.012, sh[1] - 0.012, sh[2]), 'chest', sleeveUpper);
     P.add(seg(sh, el, 0.055 * L, 0.046 * L), 'arm' + s, sleeveUpper);
-    P.add(sph(0.047 * L).translate(el[0], el[1], el[2]), 'fore' + s, sleeveLower);
+    P.add(sph(0.05 * L, 1, 1, 1, 16).translate(el[0], el[1], el[2]), 'fore' + s, sleeveLower); // elbow: slightly fuller than both limb ends so no seam shows
     P.add(seg(el, wr, 0.045 * L, 0.035 * L), 'fore' + s, sleeveLower);
-    P.add(sph(0.045, 0.8, 1.15, 1).translate(wr[0], wr[1] - 0.038, wr[2]), 'hand' + s, skin);
+    // hand: palm, fingers and thumb (palms face the thighs)
+    P.add(sph(0.04, 0.62, 1.12, 1.05, 10).translate(wr[0], wr[1] - 0.04, wr[2]), 'hand' + s, skin);
+    P.add(sph(0.033, 0.55, 1.15, 0.95, 10).translate(wr[0], wr[1] - 0.088, wr[2] + 0.004), 'hand' + s, skin);
+    P.add(new THREE.CapsuleGeometry(0.011, 0.03, 3, 6).rotateX(0.5).translate(wr[0] - m * 0.004, wr[1] - 0.05, wr[2] + 0.034), 'hand' + s, skin);
     if (LONG_SLEEVE[a.top]) P.add(new THREE.CylinderGeometry(0.04 * L, 0.04 * L, 0.03, 10).translate(wr[0], wr[1] + 0.012, wr[2]), 'fore' + s, shade(topC, 0.85));
 
     const hp = J['thigh' + s];
@@ -151,9 +197,9 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
     const thighC = bareLegs ? skin : botC;
     const shinC = bareLegs || a.bottom === 'shorts' ? skin : botC;
     const tw = a.bottom === 'slacks' ? 0.92 : a.bottom === 'joggers' ? 1.06 : 1;
-    P.add(sph(0.088 * L).translate(hp[0], hp[1], hp[2]), 'thigh' + s, thighC);
+    P.add(sph(0.09 * L, 1, 1, 1, 16).translate(hp[0], hp[1], hp[2]), 'thigh' + s, thighC);
     P.add(seg(hp, kn, 0.088 * L * tw, 0.066 * L * tw), 'thigh' + s, thighC);
-    P.add(sph(0.066 * L * tw).translate(kn[0], kn[1], kn[2]), 'shin' + s, shinC);
+    P.add(sph(0.07 * L * tw, 1, 1, 1, 16).translate(kn[0], kn[1], kn[2]), 'shin' + s, shinC); // knee
     P.add(seg(kn, an, 0.065 * L * tw, 0.05 * L * tw), 'shin' + s, shinC);
     if (a.bottom === 'shorts' && !bareLegs) P.add(new THREE.CylinderGeometry(0.074 * L, 0.078 * L, 0.05, 10).translate(kn[0], kn[1] + 0.07, kn[2]), 'thigh' + s, shade(botC, 0.9));
 
@@ -218,14 +264,25 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
     P.add(sph(0.0062, 1, 1, 0.4, 8).translate(ex, HY + ey, ez + 0.0052), 'head', '#0c0c0e');
     P.add(sph(0.0026, 1, 1, 0.5, 6).translate(ex + 0.004, HY + ey + 0.004, ez + 0.0072), 'head', '#ffffff');
     P.add(bx(0.042 * es[0], 0.004, 0.006).rotateZ(-m * 0.06).translate(ex, HY + ey + 0.019 * es[1], ez + 0.0005), 'head', '#241a14');
+    // relaxed upper eyelid covers the top of the eye
+    P.add(new THREE.SphereGeometry(0.0212, 12, 6, 0, Math.PI * 2, 0, Math.PI * 0.36).scale(es[0] * 1.04, es[1] * 1.0, 0.42).translate(ex, HY + ey + 0.001, ez - 0.0038), 'head', shade(skin, 0.93));
+    // cheek: a hint of warmth
+    P.add(sph(0.017, 1.15, 0.7, 0.18, 10).translate(m * 0.056, HY - 0.022, faceZ(m * 0.056, -0.022) - 0.0028), 'head', mix(skin, '#e07a7a', 0.1));
     // brow
     const browC = a.hair === 'bald' ? '#3a2a1e' : mix(a.hairColor, '#1a1410', 0.35);
     const bt = a.brows === 'thick' ? 0.013 : 0.008;
     const br = a.brows === 'arched' ? 0.24 : a.brows === 'straight' ? 0 : 0.1;
     P.add(bx(0.042, bt, 0.009).rotateZ(-m * br).translate(ex, HY + 0.046, faceZ(ex, 0.046) + 0.003), 'head', browC);
   }
-  P.add(sph(0.0125, 0.9, 1.15, 0.9, 8).translate(0, HY - 0.014, faceZ(0, -0.014) - 0.001), 'head', shade(skin, 0.94));
-  P.add(new THREE.TorusGeometry(0.02, 0.0042, 5, 10, Math.PI).rotateZ(Math.PI).translate(0, HY - 0.04, faceZ(0, -0.05) + 0.001), 'head', mix(skin, '#8a2f3a', 0.6));
+  // nose: bridge + tip + nostrils
+  P.add(sph(0.0085, 0.85, 2.2, 0.9, 8).translate(0, HY + 0.004, faceZ(0, 0.004) - 0.002), 'head', shade(skin, 0.97));
+  P.add(sph(0.0125, 0.95, 0.95, 0.9, 10).translate(0, HY - 0.016, faceZ(0, -0.016) + 0.0005), 'head', shade(skin, 0.95));
+  for (const m of [-1, 1]) P.add(sph(0.0075, 1, 0.8, 0.8, 6).translate(m * 0.0105, HY - 0.021, faceZ(m * 0.0105, -0.021) - 0.002), 'head', shade(skin, 0.9));
+  // lips with a gentle smile line
+  const lip = mix(skin, '#a8414f', 0.42);
+  P.add(sph(0.0165, 1.25, 0.32, 0.55, 10).translate(0, HY - 0.0385, faceZ(0, -0.0385) - 0.002), 'head', shade(lip, 0.92));
+  P.add(sph(0.0165, 1.15, 0.42, 0.6, 10).translate(0, HY - 0.047, faceZ(0, -0.047) - 0.0025), 'head', lip);
+  P.add(new THREE.TorusGeometry(0.019, 0.0018, 4, 10, Math.PI).rotateZ(Math.PI).translate(0, HY - 0.0405, faceZ(0, -0.045) + 0.0012), 'head', shade(lip, 0.55));
 
   addHair(P, a, { hx, hy, hz, HY, faceZ });
   addFacialHair(P, a, { hx, hy, hz, HY, faceZ });
@@ -333,7 +390,9 @@ function addHair(P, a, H) {
       break;
     case 'long':
       top(cap(1.075, 0.52 * PI, -0.3));
-      P.add(sph(1, hx * 1.06, 0.2, hz * 0.74, 14).translate(0, HY - 0.1, -0.046), 'head', c);
+      // a shell around the back and sides that falls to the shoulders (face left open)
+      P.add(new THREE.SphereGeometry(1, 20, 12, PI / 2 + 0.9, PI * 2 - 1.8, 0.28 * PI, 0.6 * PI).scale(hx * 1.1, hy * 1.75, hz * 1.08).translate(0, HY - 0.035, -0.006), 'head', c);
+      P.add(sph(1, hx * 0.92, 0.07, hz * 0.62, 14).translate(0, HY - 0.15, -0.045), 'head', shade(c, 0.92));
       break;
     case 'wavy':
       top(cap(1.1, 0.52 * PI, -0.32));
