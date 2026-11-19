@@ -1798,7 +1798,8 @@ export const scenarios = {
       g.state.time.total = 9 * 60;
       g.enterPlace(g.city.placeById.dealer);
     });
-    await wait(1600);
+    await page.waitForFunction(() => window.__game.inside && !window.__game.fading, null, { timeout: 30000 });
+    await wait(400);
     await page.evaluate(() => {
       const g = window.__game;
       g.npcs.clearIndoor();

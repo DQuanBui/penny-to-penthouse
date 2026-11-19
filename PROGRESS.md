@@ -21,6 +21,11 @@ RESUME HERE: All 13 phases are complete and deployed. Post-launch polish round d
 - [x] Crowd greetings: socialize() pairs, handshake/talk/wave animation, keep-right passing
 - [x] Neighbourhood businesses: data/shops.js (minor place types), CityGenerator step 2b, ui/SmallBusiness.js, interiors pub/club/pizza/deli/pharmacy/barber/salon/bookstore/laundromat/florist/cinema/diner/arcade/bakery, NPC customers and dancers, map filters
 - [x] Zoo (world/Zoo.js, block kind 'zoo'), campus + school (world/Campus.js), airport + air traffic (world/Airport.js) and trips (sim/Trips.js, ui/Travel.js, Game.travelTo)
+- [x] Vehicles: parametric BODIES in world/CarModel.js (vehicleGeometry(type) -> body + see-through glass with a driver); Traffic one mesh pair per style; parked cars chunked + distance-culled; dealer models carry `body`
+- [x] Bicycles (world/Bikes.js): bike-share docks (city.bikeDocks), own bikes from the bike shop (state.bike, G), PlayerController.updateRide, cyclists as Traffic 'bike' slots in BIKE_LANE
+- [x] Umbrellas (characters/Umbrella.js): crowd impostors + rigs, NPCs, player when raining
+- [x] World food: 12 more shop types in data/shops.js with eatery() themed interiors
+- [x] Bigger cities (grid 12), suspension bridge (world/Bridge.js: walkable corridor, deckY ground, BridgeLife strollers), subway (world/Subway.js: platform + subwaycar interiors, trains, rides)
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
@@ -75,7 +80,9 @@ RESUME HERE: All 13 phases are complete and deployed. Post-launch polish round d
 - **Interior trims** must be one-sided planes facing into the room; boxes show through the cut-away walls nearest the camera.
 - **Special blocks** are chosen in CityGenerator step 1 (kind 'zoo' | 'campus' | 'school' | 'airport') before lots; their builders add to the BuildingBatch, so they must run before `batch.build()`. Their places carry `outdoor` (zoo: booth dialog) or `custom` (own front) and Storefronts skips both.
 - **Trips**: state.trip = { cityId } while visiting. The world (Game.city) is the visited city; the sim keeps the home city cfg (getCity(state.cityId)) for prices, rent and rankings. homePlace() returns the hotel; Vehicles.sync() shows no cars; Trips.daily charges a hotel night.
-- **Performance**: parked cars use carGeometry({ low: true }) (~600 tris vs ~1,800); keep instanced props light because hundreds are drawn at once.
+- **Performance**: parked cars use vehicleGeometry(type, { low: true }) (~600 tris vs ~1,800), split into 4×4-block chunks and hidden beyond ~240 m (ctx.lod, city.update(elapsed, night, px, pz)); keep instanced props light because hundreds are drawn at once.
+- **Bridge walkway**: city.groundY() returns deckY() on the walkway; ColliderWorld.corridors exempt it from the city bounds; the rails and the lookout railing are colliders.
+- **Rail transit**: cfg.transit.kind ('subway' | 'elevated' | 'bus'). Stations in rail cities enter the 'platform' interior (SubwayLife adds the train); boarding uses openStation(game, station, onPick) and a 'subwaycar' pseudo-place whose x/z/nx/nz are the destination station, so leaving the car puts you there.
 
 - **Cities**: 5 data files in data/cities (+32-36 residents each in data/npcs). New Life flow = creator -> ui/CitySelect.js (live skyline preview) -> beginLife. The city is regenerated when the season changes (Game.checkSeason): fall colours, bare trees and white lawns in snowy-winter cities.
 - **Weather**: world/Weather.js weatherAt(city,total) is deterministic per 6-hour block (clear/cloudy/rain/snow/haze); drives sky overcast + fog, particles and crowd density.
@@ -90,7 +97,7 @@ RESUME HERE: All 13 phases are complete and deployed. Post-launch polish round d
 
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- New scenarios: collide, crowd, faces, fronts, animals, park, events, pets, hud, rooms, photo, buses, walkers, turns, people, meet, shops, zoo, campus, travel, airfield.
+- New scenarios: collide, crowd, faces, fronts, animals, park, events, pets, hud, rooms, photo, buses, walkers, turns, people, meet, shops, zoo, campus, travel, airfield, cars, bikes, rain, food, bridge, subway.
 - Scenarios: polish (post FX, audio, debug panel), drive (dealer, driving, parking, traffic), life (tutorial, events, Goals/Rankings/Calendar), cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 

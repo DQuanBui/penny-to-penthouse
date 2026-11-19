@@ -13,12 +13,13 @@ Penny to Penthouse is a 3D third-person life simulation that runs in your browse
 
 ## Features
 
-- **Five open cities** — New York, Los Angeles, Chicago, Miami and Austin, each generated procedurally with its own districts, skyline, landmarks, economy, weather and residents. Day/night cycle, seasons, rain, snow and heat haze.
+- **Five open cities** — New York, Los Angeles, Chicago, Miami and Austin, each generated procedurally (12 × 12 blocks, about 860 m across) with its own districts, skyline, landmarks, economy, weather and residents. Day/night cycle, seasons, rain (umbrellas out!), snow and heat haze.
 - **A living street** — busy sidewalks of animated pedestrians who wait for the walk signal, step around obstacles, and now and then stop to shake hands and chat; dog walkers, pigeons that scatter, gulls and ducks; traffic that signals and takes smooth curved turns, and city buses that stop at shelters; parked cars, hydrants, bus shelters, food carts, buskers and people down on their luck you can help; parks with playgrounds and picnic tables; benches you can sit on.
 - **People with jobs** — police officers, construction workers in hi-vis, nurses, doctors, chefs, delivery riders, mail carriers, business people, students, teachers, tourists and joggers, each dressed for the part.
-- **Every street is open** — around 110 named neighbourhood businesses per city you can walk into: bars, nightclubs with dance floors, pizzerias, delis, diners, bakeries, pharmacies, barbers (change your hairstyle), nail spas, bookstores, laundromats, florists, cinemas and arcades, each with opening hours, staff, customers and a menu. Map filters for food, nightlife, shops, services and fun.
+- **Every street is open** — around 280 named neighbourhood businesses per city you can walk into, including Vietnamese pho, Korean BBQ, ramen, sushi, dumplings, tacos, Thai, Indian, halal, bubble tea, ice cream and wine bars, plus bars, nightclubs with dance floors, pizzerias, delis, diners, bakeries, pharmacies, barbers (change your hairstyle), nail spas, bookstores, laundromats, florists, cinemas and arcades, each with opening hours, staff, customers and a menu. Map filters for food, nightlife, shops, services and fun.
 - **Zoo, campus and school** — a city zoo with giraffes, zebras, elephants, lions, penguins and flamingos; a university campus with a clock tower and a lecture hall; a public school with recess, where you can volunteer.
 - **Fly between cities** — every city has an airport with planes landing and taking off. Fly to another city for a trip (stay at its grand hotel) and fly home whenever you like.
+- **Every way to get around** — ten car body styles on the road (compacts, sedans, sport sedans, coupés, supercars, SUVs, pickups, box trucks, yellow cabs, police cruisers with flashing light bars) with drivers behind see-through glass; buy a supercar at the dealer; ride a CityCycle from a bike-share dock or your own bike (G); take the subway (underground platforms in New York, the elevated L in Chicago) and ride the train between stations; or walk out onto the great suspension bridge and sit by the water.
 - **Real-looking places (fictional brands)** — every café, bank, gym, dealer, mall and pet rescue has its own storefront: awnings, logo signs, glass lobbies, patios, mannequins and showroom cars. Interiors have city views that light up at night, curtains, wall clocks that keep game time and set tables.
 - **Weekly city events** — farmers' markets, night markets, park concerts, art fairs, fun runs and street festivals on the Map and Calendar.
 - **Adopt a dog** — choose a dog at the pet rescue; it heels beside you, waits outside shops, rides in your car, comes home with you and plays fetch. Walk it every day.
@@ -53,6 +54,8 @@ Penny to Penthouse is a 3D third-person life simulation that runs in your browse
 | B | Build mode (inside your home) |
 | T | Wait / skip time |
 | H | Photo mode |
+| G | Get on / off your bike |
+| W / S, A / D (on a bike) | Pedal / brake, steer |
 | F | Get in / out of your car |
 | W / S, A / D (in a car) | Throttle / brake, steer |
 | Esc | Pause, or close the current screen |
