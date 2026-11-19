@@ -388,6 +388,18 @@ const SHAPES = {
     for (const x of [-0.9, 0.9]) for (const z of [-1.35, 1.35]) S.cyl(0.34, 0.34, 0.24, x, 0.34, z, '#15171c', 14, 0, Math.PI / 2);
     S.glow(new THREE.BoxGeometry(1.5, 0.1, 0.04).translate(0, 0.62, 2.16), '#fff3c8', 0.8);
   },
+  bikeDisplay(S, f) {
+    const cols = ['#c53a3a', '#27406b', '#18a999'];
+    for (let k = 0; k < 3; k++) {
+      const x = -f.w / 2 + 0.5 + k * ((f.w - 1) / 2);
+      for (const z of [-0.36, 0.36]) S.add(new THREE.TorusGeometry(0.3, 0.025, 6, 18).rotateY(Math.PI / 2).translate(x, 0.32, z), '#1d1f24');
+      S.box(0.04, 0.04, 0.72, x, 0.75, 0, cols[k]);
+      S.box(0.04, 0.5, 0.04, x, 0.55, -0.15, cols[k]);
+      S.box(0.04, 0.45, 0.04, x, 0.55, 0.3, cols[k]);
+      S.box(0.44, 0.03, 0.03, x, 0.98, 0.34, '#2b2d33');
+      S.box(0.1, 0.04, 0.2, x, 0.83, -0.18, '#1d1f24');
+    }
+  },
   chalkboard(S, f) {
     S.box(f.w, 1.3, 0.05, 0, 1.6, -0.22, '#6b4a2a');
     S.box(f.w - 0.12, 1.18, 0.06, 0, 1.6, -0.2, '#2f4a3a');

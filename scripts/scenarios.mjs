@@ -167,6 +167,88 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Bicycles: cyclists in traffic, bike-share docks, riding, your own bike. */
+  async bikes({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 11 * 60;
+      g.state.money.checking = 3000;
+      const t = g.traffic;
+      const bikeMesh = t.meshes.find((M) => M.type === 'bike');
+      return { docks: g.city.bikeDocks.length, cyclists: bikeMesh ? bikeMesh.body.count : 0, bikeshops: g.city.places.filter((p) => p.type === 'bikeshop').length };
+    });
+    console.log('bikes', JSON.stringify(info));
+    await wait(4000);
+    // look at a cyclist
+    const cy = await page.evaluate(() => {
+      const g = window.__game;
+      const t = g.traffic;
+      for (let i = 0; i < t.bus0; i++) {
+        if (t.alive[i] && t.typeOf(i) === 'bike' && t.speed[i] > 0.5) {
+          // hold this rider still for the photo (legs keep their last pedal pose)
+          t.max[i] = 0.001;
+          const ry = t.ry[i];
+          g.player.teleport(t.x[i] + Math.sin(ry) * 5 + Math.cos(ry) * 3, t.z[i] + Math.cos(ry) * 5 - Math.sin(ry) * 3, ry + Math.PI);
+          g.playerRig.group.visible = false;
+          g.cam.snapBehind(Math.atan2(t.x[i] - g.player.pos.x, t.z[i] - g.player.pos.z));
+          g.cam.pitch = 0.08;
+          g.cam.dist = 4;
+          return { lane: t.lane[i], speed: t.speed[i].toFixed(1) };
+        }
+      }
+      return null;
+    });
+    console.log('cyclist', JSON.stringify(cy));
+    await wait(1500);
+    await shot('bikes-cyclist');
+    await page.evaluate(() => (window.__game.playerRig.group.visible = true));
+    // rent a share bike
+    await page.evaluate(() => {
+      const g = window.__game;
+      const d = g.city.bikeDocks[0];
+      g.player.teleport(d.x, d.z, 0);
+    });
+    await page.waitForFunction(() => window.__game.interactable && /CityCycle/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    const p0 = await page.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z, riding: !!window.__game.player.riding }));
+    await page.keyboard.down('KeyW');
+    await wait(4000);
+    const r1 = await page.evaluate((p) => ({ moved: Math.hypot(window.__game.player.pos.x - p.x, window.__game.player.pos.z - p.z).toFixed(1), v: window.__game.player.riding?.v.toFixed(1) }), p0);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading + 0.7);
+      g.cam.dist = 3.5;
+      g.cam.pitch = 0.15;
+    });
+    await wait(500);
+    await shot('bikes-riding');
+    await page.keyboard.up('KeyW');
+    console.log('rented', JSON.stringify(p0), JSON.stringify(r1));
+    // dock it again
+    const dock = await page.evaluate(() => {
+      const g = window.__game;
+      const d = g.city.bikeDocks[0];
+      g.state.time.total += 70;
+      g.player.teleport(d.x, d.z, 0);
+      const m0 = g.state.money.checking;
+      g.dismountBike(true);
+      return { charged: (m0 - g.state.money.checking).toFixed(2), riding: !!g.player.riding };
+    });
+    console.log('docked', JSON.stringify(dock));
+    // your own e-bike with G
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.bike = { model: 'ebike' };
+    });
+    await page.keyboard.down('KeyG');
+    await wait(400);
+    await page.keyboard.up('KeyG');
+    await wait(600);
+    const own = await page.evaluate(() => ({ riding: window.__game.player.riding && window.__game.player.riding.kind }));
+    console.log('own bike', JSON.stringify(own));
+  },
   /** Vehicle variety: every body style side by side, mixed traffic, a supercar of your own. */
   async cars({ page, shot, wait }) {
     await startLife(page, wait);

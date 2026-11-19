@@ -136,6 +136,17 @@ export const SHOP_TYPES = {
       { id: 'tournament', name: 'Join the Friday tournament', icon: '🏆', price: 20, minutes: 90, needs: { fun: 34, social: 14 }, line: 'Knocked out in the semis, but you made friends.' },
     ],
   },
+  bikeshop: {
+    label: 'Bike Shop', icon: '🚲', color: '#18a999', cat: 'shop', hours: [9, 20], interior: 'bikeshop', weight: 1.1,
+    look: { front: 'shopfront', brand: '#14615a', trim: '#f2f2ee', awning: 'flat', extras: ['bikeRack', 'planters'] },
+    names: ['Spoke & Chain', 'Two Wheels Cycles', 'Freewheel Bikes', 'Pedal Pushers', 'Crank Cycle Co.', 'Urban Gear Bikes'],
+    menu: [
+      { id: 'cruiser', name: 'City cruiser (yours to keep, ride free with G)', icon: '🚲', price: 320, minutes: 15, needs: { fun: 10 }, line: 'Comfy saddle, a basket and a bell. Press G outside to ride.', special: 'bike', bike: 'cruiser' },
+      { id: 'road', name: 'Road bike (faster)', icon: '🚴', price: 780, minutes: 15, needs: { fun: 12 }, line: 'Light, fast and a little terrifying downhill. Press G outside to ride.', special: 'bike', bike: 'road' },
+      { id: 'ebike', name: 'E-bike (fastest, no sweat)', icon: '⚡', price: 1900, minutes: 15, needs: { fun: 14 }, line: 'A silent push with every pedal stroke. Press G outside to ride.', special: 'bike', bike: 'ebike' },
+      { id: 'tuneup', name: 'Tune-up and a coffee while you wait', icon: '🔧', price: 35, minutes: 30, needs: { fun: 5 }, line: 'Gears clicking like new.' },
+    ],
+  },
   bakery: {
     label: 'Bakery', icon: '🥐', color: '#d9a35a', cat: 'food', hours: [6, 19], interior: 'bakery', weight: 1.5,
     look: { front: 'shopfront', brand: '#f1e3c8', trim: '#7a4a2a', awning: 'slant', extras: ['patio', 'chalkboard'] },
@@ -182,5 +193,5 @@ export const STYLE_MIX = {
   warehouse: { club: 2.5, pub: 1.6, arcade: 1.8, pizza: 1 },
   beach: { pub: 1.6, club: 1.4, salon: 1.4, diner: 1.2 },
   campus: { pizza: 1.6, bookstore: 1.8, arcade: 1.3, cinema: 1.4 },
-  houses: { deli: 1.2, laundromat: 1.4, barber: 1.4 },
+  houses: { deli: 1.2, laundromat: 1.4, barber: 1.4, bikeshop: 1.5 },
 };

@@ -42,6 +42,7 @@ import { PetFollower, ShelterDogs } from '../world/Pet.js';
 import { ZooLife } from '../world/Zoo.js';
 import { CampusLife } from '../world/Campus.js';
 import { AirTraffic } from '../world/Airport.js';
+import { makeBike, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { openService } from '../ui/Shops.js';
 import { openPet } from '../ui/Pets.js';
 import { PhotoMode } from '../ui/PhotoMode.js';
@@ -61,9 +62,10 @@ import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { PostFX } from './PostFX.js';
 import { pushOutOBB } from '../world/Collision.js';
 import { AudioEngine } from '../audio/AudioEngine.js';
-import { fmtMoney } from './utils.js';
+import { fmtMoney, dampAngle } from './utils.js';
 
 const PIXEL_RATIO = { low: 0.8, medium: 1.25, high: 2 };
+const BIKE_RIDE = { rates: { fun: 3, health: 0.6 } };
 const SIT_REST = { rates: { fun: 6, energy: 3.5, social: 1.5 } };
 
 export class Game {
@@ -341,6 +343,7 @@ export class Game {
     }
     this.playerRig = createRig(appearance);
     (parent || this.scene).add(this.playerRig.group);
+    if (this.bikeMesh) this.playerRig.group.add(this.bikeMesh);
     this.player.setRig(this.playerRig);
   }
 
@@ -393,6 +396,7 @@ export class Game {
   /** Stand the player outside a place's door, facing the street. */
   placePlayerAt(place) {
     this.player.sitting = false;
+    if (this.player.riding) this.dismountBike(false);
     const ry = Math.atan2(place.nx, place.nz);
     this.player.teleport(place.x, place.z, ry);
     this.cam.snapBehind(ry + 1.1);
@@ -423,6 +427,7 @@ export class Game {
   // ------------------------------------------------------------ interiors
   /** Walk through a door: fade into the place's interior scene. */
   enterPlace(place, instant) {
+    if (this.player.riding) this.dismountBike(place.type === 'station');
     if (place.station) return this.useStation(place);
     if (place.outdoor) return this.zooLife.openBooth(place);
     // the hotel: guests go up to their room, everyone else books at the front desk
@@ -555,6 +560,9 @@ export class Game {
     this.pet.setPet(null);
     this.shelterDogs.clear();
     this.photoMode.toggle(false);
+    this.player.riding = null;
+    this.bikeMesh?.removeFromParent();
+    this.bikeMesh = null;
     this.player.sitting = false;
     this.state = null;
     this.sim = null;
@@ -742,6 +750,61 @@ export class Game {
     this.pet.heel(this.player);
   }
 
+  // ---- bicycles ----------------------------------------------------------------------
+  /** Hop on a bike: 'share' (rented at a dock) or your own model. */
+  mountBike(kind) {
+    if (this.player.riding || this.inside || this.vehicles.driving) return;
+    const def = kind === 'share' ? { ...SHARE, color: SHARE_COLOR, name: 'CityCycle' } : OWN_BIKES[kind] || OWN_BIKES.cruiser;
+    this.player.sitting = false;
+    this.player.riding = { max: def.max, accel: def.accel, v: 0, kind, effort: def.effort ?? 1 };
+    this.bikeMesh = makeBike(def.color);
+    this.playerRig.group.add(this.bikeMesh);
+    this.audio?.play('click');
+    this.hud.hint('bike', 'On the bike: W pedal · S brake · A/D steer. Press G (or E) to get off.', 9);
+  }
+
+  /** Get off the bike. A rented one is charged by time when docked. */
+  dismountBike(atDock = false) {
+    const R = this.player.riding;
+    if (!R) return;
+    this.player.riding = null;
+    this.bikeMesh?.removeFromParent();
+    this.bikeMesh = null;
+    const st = this.state;
+    if (R.kind === 'share' && st.flags.bikeShare) {
+      const pi = this.sim.city.priceIndex || 1;
+      const mins = st.time.total - st.flags.bikeShare.start;
+      const extra = Math.max(0, Math.ceil((mins - SHARE.includedMin) / 15)) * SHARE.per15 * pi;
+      const stray = atDock ? 0 : SHARE.strayFee * pi;
+      if (extra + stray > 0) this.sim.finance.charge(Math.round((extra + stray) * 100) / 100, 'transit', 'CityCycle ride');
+      st.flags.bikeShare = null;
+      st.stats.bikeRides = (st.stats.bikeRides || 0) + 1;
+      this.events.emit('toast', { icon: '🚲', title: atDock ? 'Bike docked' : 'Bike left outside a dock', text: `${Math.round(mins)} min ride${extra + stray > 0 ? ` · extra ${fmtMoney(extra + stray)}` : ' · no extra charge'}${atDock ? '' : '. Next time, return it to a dock.'}`, kind: atDock ? 'good' : 'warn' });
+    }
+  }
+
+  nearestDock(p, r = 3) {
+    let best = null;
+    let bd = r * r;
+    for (const d of this.city.bikeDocks || []) {
+      const dd = (d.x - p.x) ** 2 + (d.z - p.z) ** 2;
+      if (dd < bd) {
+        bd = dd;
+        best = d;
+      }
+    }
+    return best;
+  }
+
+  rentBike() {
+    const st = this.state;
+    const price = Math.round(SHARE.unlock * (this.sim.city.priceIndex || 1) * 100) / 100;
+    if (!this.sim.finance.spend(price, 'transit', 'CityCycle unlock')) return;
+    st.flags.bikeShare = { start: st.time.total };
+    this.mountBike('share');
+    this.events.emit('toast', { icon: '🚲', title: 'CityCycle unlocked', text: `First ${SHARE.includedMin} minutes included, then ${fmtMoney(SHARE.per15 * (this.sim.city.priceIndex || 1))} per 15 min. Return it to any dock.`, kind: 'info' });
+  }
+
   // ---- benches -------------------------------------------------------------------
   nearestBench(p) {
     let best = null;
@@ -798,6 +861,15 @@ export class Game {
     const p = this.player.pos;
     if (this.player.sitting) return { label: 'Stand up', action: () => this.standUp() };
     if (this.vehicles.driving) return { label: `Get out · ${this.vehicles.mph()} mph`, key: 'F', action: () => this.vehicles.exit() };
+    if (this.player.riding) {
+      const share = this.player.riding.kind === 'share';
+      const dock = share && this.nearestDock(p, 3.2);
+      return { label: dock ? 'Dock the CityCycle' : share ? 'Get off (not at a dock: extra fee)' : `Get off · ${Math.round(this.player.riding.v * 2.237)} mph`, action: () => this.dismountBike(!!dock) };
+    }
+    if (!this.inside) {
+      const dock = this.nearestDock(p, 2.4);
+      if (dock) return { label: `🚲 Rent a CityCycle · ${fmtMoney(SHARE.unlock * (this.sim.city.priceIndex || 1))}`, action: () => this.rentBike() };
+    }
     if (this.pet.near(p) && (!this.inside || this.pet.mesh.parent === this.interior.scene)) {
       // only when you turn to look at your dog (it is usually at your heel)
       const dx = this.pet.pos.x - p.x;
@@ -908,6 +980,12 @@ export class Game {
       if (input.pressed('KeyM') && (this.map.isOpen() || !this.overlays.length)) this.map.toggle();
       if (!blocked) {
         if (input.pressed('KeyH')) this.photoMode.toggle();
+        if (input.pressed('KeyG')) {
+          if (this.player.riding) this.dismountBike(this.player.riding.kind === 'share' && !!this.nearestDock(this.player.pos, 3.2));
+          else if (this.inside) this.events.emit('toast', { icon: '🚲', title: 'Bike', text: 'Go outside to ride.', kind: 'info' });
+          else if (st.bike) this.mountBike(st.bike.model);
+          else this.events.emit('toast', { icon: '🚲', title: 'No bike yet', text: 'Rent a CityCycle at a dock, or buy your own at a bike shop (map: Shops).', kind: 'info' });
+        }
         if (input.pressed('KeyT') && !this.photoMode.active) this.openWait();
         if (this.player.sitting && ['KeyW', 'KeyA', 'KeyS', 'KeyD'].some((k) => input.pressed(k))) this.standUp();
         if (input.pressed('KeyB')) {
@@ -932,13 +1010,14 @@ export class Game {
     if (!blocked && !this.photoMode.active) {
       const minPerSec = (1440 / (BALANCE.time.realMinutesPerDay * 60)) * this.settings.get('timeSpeed');
       // sitting on a bench is a gentle rest; otherwise needs just tick
-      this.sim.advance(dt * minPerSec, this.player.sitting ? SIT_REST : undefined);
+      this.sim.advance(dt * minPerSec, this.player.sitting ? SIT_REST : this.player.riding && this.player.riding.v > 1 ? BIKE_RIDE : undefined);
     }
 
     // --- world ---
     const driving = this.vehicles.update(dt, blocked ? null : input);
     this.player.frozen = blocked || driving;
     if (!driving) this.player.update(dt, blocked || this.photoMode.active ? null : input, this.cam.yaw);
+    if (this.player.riding && !blocked && !(input.buttons & 7)) this.cam.yaw = dampAngle(this.cam.yaw, this.player.heading + Math.PI, 2.4, dt);
     this.cam.update(dt, blocked ? null : input, this.player.pos);
     worldUniforms.uTime.value = elapsed;
     const inside = this.inside;
@@ -965,6 +1044,7 @@ export class Game {
       if (!inside && !driving && !blocked && this.player.speed > 0.8) this.sim.pets.walk(dt * (1440 / (BALANCE.time.realMinutesPerDay * 60)) * this.settings.get('timeSpeed'));
     }
     if (inside?.place.type === 'shelter') this.shelterDogs.update(dt);
+    if (this.bikeMesh) for (const w of this.bikeMesh.userData.wheels) w.rotation.x += ((this.player.riding?.v || 0) * dt) / 0.34;
     this.traffic.parked = this.vehicles.parkedOBBs();
     this.traffic.update(dt, elapsed, hourOf(st.time.total), this.player.pos.x, this.player.pos.z, this.crowd, !inside, this.weather.info.crowd);
 

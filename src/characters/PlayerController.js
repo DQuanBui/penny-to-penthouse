@@ -21,6 +21,7 @@ export class PlayerController {
     this.talking = false;
     this.frozen = false; // true while UI owns the player (dialogs, mini-games)
     this.speedMul = 1;
+    this.riding = null; // { max, accel, v } while on a bicycle
     this.rig = null;
     this.world = null; // { colliders, groundY(x,z) }
     this.stepAccum = 0;
@@ -47,12 +48,52 @@ export class PlayerController {
     this.rig.group.rotation.y = this.heading;
   }
 
+  /** Bicycle: W pedal, S brake, A/D steer. */
+  updateRide(dt, input, w) {
+    const R = this.riding;
+    let throttle = 0;
+    let steer = 0;
+    if (input && !this.frozen) {
+      if (input.isDown('KeyW') || input.isDown('ArrowUp')) throttle += 1;
+      if (input.isDown('KeyS') || input.isDown('ArrowDown')) throttle -= 1;
+      if (input.isDown('KeyA') || input.isDown('ArrowLeft')) steer += 1;
+      if (input.isDown('KeyD') || input.isDown('ArrowRight')) steer -= 1;
+    }
+    R.v = R.v || 0;
+    if (throttle > 0) R.v = Math.min(R.max, R.v + R.accel * dt);
+    else if (throttle < 0) R.v = Math.max(0, R.v - 7 * dt);
+    else R.v = damp(R.v, 0, 0.5, dt);
+    R.steer = damp(R.steer || 0, steer, 6, dt);
+    this.heading += R.steer * 2.1 * Math.min(1, 0.35 + R.v / 4) * dt;
+    const px = this.pos.x;
+    const pz = this.pos.z;
+    this.pos.x += Math.sin(this.heading) * R.v * dt;
+    this.pos.z += Math.cos(this.heading) * R.v * dt;
+    if (w) {
+      w.colliders.resolve(this.pos, 0.4, this.pos.y + 0.25, 1.4);
+      if (w.obstacles && w.obstacles(this.pos, 0.4, this.pos.y)) w.colliders.resolve(this.pos, 0.4, this.pos.y + 0.25, 1.4);
+      const gy = w.groundY(this.pos.x, this.pos.z);
+      this.pos.y = damp(this.pos.y, gy, 18, dt);
+    }
+    // bumping into something slows you down
+    const moved = Math.hypot(this.pos.x - px, this.pos.z - pz) / Math.max(dt, 1e-4);
+    if (moved < R.v * 0.6) R.v = moved;
+    this.vel.set(Math.sin(this.heading) * R.v, 0, Math.cos(this.heading) * R.v);
+    this.speed = R.v;
+    this.grounded = true;
+    if (this.rig) {
+      this.sync();
+      animateRig(this.rig, dt, { speed: R.v, grounded: true, riding: true });
+    }
+  }
+
   update(dt, input, camYaw) {
     const w = this.world;
     let mx = 0;
     let mz = 0;
     let wantJump = false;
     let running = false;
+    if (this.riding) return this.updateRide(dt, input, w);
     if (input && !this.frozen && !this.sitting) {
       if (input.isDown('KeyW') || input.isDown('ArrowUp')) mz -= 1;
       if (input.isDown('KeyS') || input.isDown('ArrowDown')) mz += 1;

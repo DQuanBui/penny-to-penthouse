@@ -227,6 +227,7 @@ export class VehicleManager {
   }
 
   enter(car) {
+    if (this.game.player.riding) this.game.dismountBike(false);
     const game = this.game;
     if (this.driving || game.inside) return;
     this.driving = car;

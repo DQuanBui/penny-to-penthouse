@@ -8,6 +8,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { InstanceBatch, FACADE } from './Buildings.js';
 import { LANE_OUT } from './Vehicles.js';
 import { vehicleGeometry, carMaterial, BODY_DIMS } from './CarModel.js';
+import { dockedBikeGeometry, SHARE_COLOR } from './Bikes.js';
 import { pick } from '../core/utils.js';
 
 const CAR_COLORS = ['#f4f4f2', '#1d1f24', '#8a8d92', '#b0463c', '#27406b', '#d9c7a8', '#3f5f4a', '#5a6270', '#a8adb4', '#7a2230', '#2f4f6f', '#c9b16b'];
@@ -87,6 +88,11 @@ export function buildStreetscape(ctx) {
     }
   }
 
+  // ---- bike-share racks ------------------------------------------------------------
+  const dockBikes = new InstanceBatch(dockedBikeGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.3 }), { castShadow: true });
+  const dockPosts = new InstanceBatch(box(0.12, 0.9, 0.12, 0, 0.45, 0), new THREE.MeshStandardMaterial({ color: '#2b3a44', roughness: 0.5 }));
+  const kiosks = new InstanceBatch(mergeGeometries([box(0.5, 1.7, 0.35, 0, 0.85, 0), box(0.42, 0.3, 0.02, 0, 1.35, 0.18)]), new THREE.MeshStandardMaterial({ color: SHARE_COLOR, roughness: 0.4 }), { castShadow: true });
+
   // ---- street furniture ------------------------------------------------------------
   const red = new THREE.MeshStandardMaterial({ color: '#c0352b', roughness: 0.5, metalness: 0.2 });
   const hydrants = new InstanceBatch(mergeGeometries([cyl(0.13, 0.15, 0.55, 0, 0.3, 0, 10), new THREE.SphereGeometry(0.13, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 0.57, 0), cyl(0.05, 0.05, 0.36, 0, 0.38, 0, 8).rotateZ(Math.PI / 2), cyl(0.18, 0.18, 0.06, 0, 0.03, 0, 10)]), red, { castShadow: true });
@@ -146,6 +152,27 @@ export function buildStreetscape(ctx) {
           colliders.add(x - 0.27, z - 0.27, x + 0.27, z + 0.27, 1.3);
         }
       }
+      // bike-share dock: a rack of bikes and a pay kiosk on some corners
+      if (si === (b.i * 3 + b.j) % 4 && (b.i + b.j) % 3 === 1) {
+        let ok = true;
+        const spots = [];
+        for (let k = 0; k < 6 && ok; k++) {
+          const [dx, dz] = at(-6 - k * 0.85, 0.9);
+          if (!clear(dx, dz, 1.2)) ok = false;
+          spots.push([dx, dz]);
+        }
+        if (ok) {
+          for (const [dx, dz] of spots) {
+            dockBikes.add(dx, Y, dz, { ry: ry + Math.PI / 2 });
+            dockPosts.add(dx + nx * 0.55, Y, dz + nz * 0.55, { ry });
+          }
+          const [kx, kz] = at(-5.0, 1.0);
+          kiosks.add(kx + nx * 0.5, Y, kz + nz * 0.5, { ry: ry + Math.PI });
+          const [cx2, cz2] = at(-6 - 2.5 * 0.85, 0.9);
+          colliders.add(Math.min(spots[0][0], spots[5][0]) - 0.45, Math.min(spots[0][1], spots[5][1]) - 0.45, Math.max(spots[0][0], spots[5][0]) + 0.45, Math.max(spots[0][1], spots[5][1]) + 0.45, 1.1);
+          (ctx.bikeDocks ||= []).push({ id: `dock_${b.i}_${b.j}_${si}`, x: cx2 - nx * 1.2, z: cz2 - nz * 1.2 });
+        }
+      }
       // a bus shelter on one side of every other block
       if (si === (b.i + b.j) % 4 && (b.i + b.j) % 2 === 0 && dense) {
         [x, z] = at(6, 0.35);
@@ -196,7 +223,7 @@ export function buildStreetscape(ctx) {
     }
   }
 
-  for (const m of [...Object.values(carBatches).map((b) => b.build()), hydrants.build(), bins.build(), news.build(), mail.build(), shelterFrame.build(), ads.build(), awnings.build(), signs.build()]) if (m) group.add(m);
+  for (const m of [...Object.values(carBatches).map((b) => b.build()), dockBikes.build(), dockPosts.build(), kiosks.build(), hydrants.build(), bins.build(), news.build(), mail.build(), shelterFrame.build(), ads.build(), awnings.build(), signs.build()]) if (m) group.add(m);
   const g = shelterGlass.build();
   if (g) {
     g.renderOrder = 3;

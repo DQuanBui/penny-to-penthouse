@@ -165,6 +165,16 @@ export function commercialLayout(place) {
         { id: 'armchair', x: 11.2, z: 6.8, r: 3 },
         { id: 'plant_floor', x: 0.6, z: 8.4, r: 0 },
       ]);
+    case 'bikeshop':
+      return L(11, 8, 'concrete', '#e9ece6', [
+        { id: 'shop_counter', x: 8.8, z: 6.4, r: 3 },
+        { id: 'bike_display', x: 2.2, z: 0.6, r: 0 },
+        { id: 'bike_display', x: 5.6, z: 0.6, r: 0 },
+        { id: 'bike_display', x: 3.5, z: 3.6, r: 0 },
+        { id: 'workbench', x: 9.6, z: 0.6, r: 0, use: '' },
+        { id: 'shop_shelf', x: 0.6, z: 5, r: 1 },
+        { id: 'plant_floor', x: 0.5, z: 7.4, r: 0 },
+      ]);
     case 'terminal':
       return L(20, 14, 'tile', '#e6ebf0', [
         { id: 'reception', x: 5, z: 1.6, r: 0 },

@@ -56,6 +56,7 @@ function buy(game, place, it, price) {
   game.closeTop();
   let line = it.line;
   if (it.special === 'gift') st.inventory.gifts = (st.inventory.gifts || 0) + 1;
+  if (it.special === 'bike') st.bike = { model: it.bike };
   if (it.special === 'lottery') {
     const r = sim.rng();
     const win = r < 0.002 ? 1000 : r < 0.02 ? 100 : r < 0.12 ? 10 : r < 0.3 ? 2 : 0;
