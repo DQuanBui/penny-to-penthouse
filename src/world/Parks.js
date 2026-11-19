@@ -27,18 +27,6 @@ class Bag {
 const bx = (w, h, d, x = 0, y = 0, z = 0) => new THREE.BoxGeometry(w, h, d).translate(x, y, z);
 const cy = (r0, r1, h, x = 0, y = 0, z = 0, s = 10) => new THREE.CylinderGeometry(r0, r1, h, s).translate(x, y, z);
 
-/** A food cart (front faces +z), in local coordinates. */
-function cartParts(bag, x, y, z, ry, color) {
-  const g = (geo, c) => bag.add(geo, c, x, y, z, ry);
-  g(bx(1.8, 0.95, 0.9, 0, 0.75, 0), '#f4f1ea');
-  g(bx(1.82, 0.22, 0.92, 0, 0.62, 0), color);
-  g(bx(1.9, 0.06, 1.0, 0, 1.25, 0), '#b9bdc3');
-  g(cy(0.04, 0.04, 1.3, 0.75, 1.9, -0.3, 6), '#b9bdc3');
-  g(new THREE.ConeGeometry(1.4, 0.55, 8).translate(0.75, 2.75, -0.3), color);
-  for (const wx of [-0.75, 0.75]) g(cy(0.24, 0.24, 0.1, wx, 0.24, 0.47, 12).rotateX(0), '#26282d');
-  g(bx(0.5, 0.18, 0.4, -0.5, 1.37, 0), '#d9d9d9');
-}
-
 export function decorateParks(ctx) {
   const { group, colliders, rng, K, blocks, places, landmarks } = ctx;
   const Y = K.CURB;
@@ -114,9 +102,8 @@ export function decorateParks(ctx) {
       ctx.benchSpots?.push({ x, z: z + 0.65, ry: Math.PI });
     }
     // a food cart by the fountain and a busker on the north path
-    cartParts(bag, cx + 8, Y, cz - 2.3, 0, '#e84a4a');
     colliders.add(cx + 7, cz - 2.8, cx + 9, cz - 1.8, 1.3);
-    ctx.vendors.push({ x: cx + 8, z: cz - 2.3, ry: 0, kind: 'cart', id: `cart_${b.i}_${b.j}` });
+    ctx.vendors.push({ x: cx + 8, z: cz - 2.3, ry: 0, kind: 'cart', cart: rng() < 0.6 ? 'icecream' : 'hotdog', id: `cart_${b.i}_${b.j}` });
     ctx.buskers.push({ x: cx - 2.9, z: cz - 10, ry: Math.PI / 2, id: `busk_${b.i}_${b.j}` });
   }
 
@@ -128,11 +115,14 @@ export function decorateParks(ctx) {
     const x = p.doorX - tx * 7 - p.nx * 0.4;
     const z = p.doorZ - tz * 7 - p.nz * 0.4;
     const ry = Math.atan2(-p.nx, -p.nz);
-    cartParts(bag, x, Y, z, ry, '#2f6db5');
     colliders.add(x - 1, z - 1, x + 1, z + 1, 1.3);
-    ctx.vendors.push({ x, z, ry, kind: 'cart', id: 'cart_' + p.id });
+    ctx.vendors.push({ x, z, ry, kind: 'cart', cart: rng() < 0.55 ? 'coffee' : 'halal', id: 'cart_' + p.id });
   }
-  for (const lm of landmarks || []) ctx.buskers.push({ x: lm.x + 19, z: lm.z + 19, ry: -Math.PI * 0.75, id: 'busk_' + lm.name });
+  // (Times Square's corners are billboard towers: its busker plays in front of the red steps)
+  for (const lm of landmarks || []) {
+    const [ox, oz] = lm.type === 'times_square' ? [-9, 9] : [19, 19];
+    ctx.buskers.push({ x: lm.x + ox, z: lm.z + oz, ry: -Math.PI * 0.75, id: 'busk_' + lm.name });
+  }
 
   const mats = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75 });
   if (bag.list.length) {

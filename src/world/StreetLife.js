@@ -6,6 +6,7 @@ import { createRig } from '../characters/CharacterFactory.js';
 import { animateRig } from '../characters/Animation.js';
 import { randomAppearance, roleAppearance } from '../characters/Customization.js';
 import { STREET_FOOD } from '../data/items.js';
+import { CART_KINDS, steamPuffs } from './FoodCarts.js';
 import { addNeed } from '../sim/Needs.js';
 import { mod } from '../sim/Player.js';
 import { mulberry32, hashStr, fmtMoney } from '../core/utils.js';
@@ -118,19 +119,22 @@ export class StreetLife {
       }
       if (!a) {
         const r = mulberry32(hashStr(s.id));
-        const rig = createRig(s.kind === 'sitter' ? roleAppearance('homeless', r) : randomAppearance(r));
+        const rig = createRig(s.kind === 'sitter' ? roleAppearance('homeless', r) : s.kind === 'vendor' ? roleAppearance('vendor', r) : randomAppearance(r));
         // vendors stand behind the cart, buskers on their spot
         const back = s.kind === 'vendor' ? -0.95 : 0;
         rig.group.position.set(s.x + Math.sin(s.ry) * back, this.city.groundY(s.x, s.z), s.z + Math.cos(s.ry) * back);
         rig.group.rotation.y = s.ry;
         if (s.kind === 'busker') rig.group.add(guitar());
         if (s.kind === 'sitter') rig.group.add(sitterProps(s.cart));
+        let steam = null;
+        if (s.kind === 'vendor' && CART_KINDS[s.cart]?.steam) rig.group.add((steam = steamPuffs()));
         this.game.scene.add(rig.group);
-        a = { spot: s, rig, kind: s.kind };
+        a = { spot: s, rig, kind: s.kind, steam };
         this.actors.set(s.id, a);
       }
       animateRig(a.rig, dt, { speed: 0, grounded: true, floor: a.kind === 'sitter', talking: a.kind === 'busker' || (a.kind !== 'sitter' && d2 < 9) || (a.kind === 'sitter' && a.chatT > 0) });
       if (a.chatT > 0) a.chatT -= dt;
+      a.steam?.userData.tick(performance.now() / 1000);
     }
     // the busker's guitar: plucked pentatonic notes, louder as you get closer
     this.noteT -= dt;
@@ -148,23 +152,27 @@ export class StreetLife {
     for (const a of this.actors.values()) {
       const s = a.spot;
       if ((s.x - pos.x) ** 2 + (s.z - pos.z) ** 2 > 2.6 * 2.6) continue;
-      if (a.kind === 'vendor') return { label: 'Buy street food', action: () => this.openCart() };
+      if (a.kind === 'vendor') {
+        const k = CART_KINDS[s.cart];
+        return { label: k ? `${k.icon} ${k.name}: buy something` : 'Buy street food', action: () => this.openCart(s) };
+      }
       if (a.kind === 'sitter') return { label: 'Stop and say hello', action: () => this.openSitter(a) };
       return { label: 'Listen to the busker', action: () => this.openBusker() };
     }
     return null;
   }
 
-  openCart() {
+  openCart(spot) {
     const game = this.game;
     const sim = game.sim;
     const pm = (sim.city.priceIndex || 1) * mod(game.state, 'priceMul');
+    const k = CART_KINDS[spot?.cart];
     const el = dialog(game, {
-      title: '🌭 Street cart',
+      title: k ? `${k.icon} ${k.name}` : '🌭 Street cart',
       body: h(
         'div.menu-col',
         h('div.muted', 'Quick, cheap and handed over with a smile.'),
-        STREET_FOOD.map((f) => {
+        (k ? k.menu : STREET_FOOD).map((f) => {
           const price = Math.round(f.price * pm * 100) / 100;
           return btn(`${f.icon}  ${f.name}  ·  ${Object.entries(f.needs).map(([k, v]) => `${k} +${v}`).join(' · ')}  ·  ${fmtMoney(price)}`, () => {
             if (!sim.finance.spend(price, 'food', f.name)) return;

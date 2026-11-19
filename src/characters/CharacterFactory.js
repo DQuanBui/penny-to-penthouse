@@ -520,7 +520,13 @@ function addWorkwear(P, a, H) {
     for (const x of [-0.045, 0.045]) for (const y of [1.17, 1.25, 1.33]) P.add(sph(0.009).translate(x, y, zf + 0.004), 'chest', '#d8d8d8');
     P.add(new THREE.CylinderGeometry(0.06, 0.062, 0.035, 14).translate(0, 1.455, 0), 'neck', shade(topC, 0.95));
     P.add(lathe([[hipW * 1.06, 0.86], [hipW * 1.08, 0.97]], zr), 'hips', a.apronColor || '#f4f1ea');
-  } else if (t === 'coat') {
+  }
+  if (a.apron && t !== 'chefcoat') {
+    // a bib apron over the clothes
+    P.add(lathe([[hipW * 1.07, 0.6], [hipW * 1.09, 0.97]], zr), 'hips', a.apronColor || '#f4f1ea');
+    P.add(bx(0.2, 0.22, 0.012).translate(0, 1.2, zf + 0.006), 'chest', a.apronColor || '#f4f1ea');
+  }
+  if (t === 'coat') {
     coatSkirt(0.36, 1.24, topC);
     lapels(shade(topC, 0.8));
     for (const y of [1.12, 1.22, 1.32]) P.add(sph(0.01).translate(0.03, y, zf + 0.004), 'chest', shade(topC, 0.6));

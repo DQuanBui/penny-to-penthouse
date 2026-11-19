@@ -434,6 +434,60 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Street food carts on corners: halal, hot dogs, pretzels, ice cream, coffee... */
+  async carts({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60;
+      const v = g.city.vendors;
+      const kinds = {};
+      for (const c of v) kinds[c.cart] = (kinds[c.cart] || 0) + 1;
+      const c = v.find((x) => x.corner && x.cart === 'halal') || v.find((x) => x.corner);
+      g.player.teleport(c.x + Math.sin(c.ry) * 2.2 + Math.cos(c.ry) * 1.2, c.z + Math.cos(c.ry) * 2.2 - Math.sin(c.ry) * 1.2, c.ry + Math.PI - 0.5);
+      g.cam.snapBehind(c.ry + Math.PI - 0.5);
+      g.cam.pitch = 0.05;
+      g.cam.dist = 4.5;
+      return { total: v.length, corners: v.filter((x) => x.corner).length, kinds, cart: c.cart };
+    });
+    console.log('carts', JSON.stringify(info));
+    await page.waitForFunction(() => /buy something/.test(window.__game.interactable?.label || ''), null, { timeout: 15000 });
+    await wait(2000);
+    // a wider look from along the sidewalk
+    await page.evaluate(() => {
+      const g = window.__game;
+      const c = g.city.vendors.find((x) => x.corner && x.cart === 'halal') || g.city.vendors.find((x) => x.corner);
+      const tx = Math.cos(c.ry);
+      const tz = -Math.sin(c.ry);
+      const x = c.x + tx * 6 + Math.sin(c.ry) * 2.5;
+      const z = c.z + tz * 6 + Math.cos(c.ry) * 2.5;
+      const ry = Math.atan2(c.x - x, c.z - z);
+      g.player.teleport(x, z, ry);
+      g.cam.snapBehind(ry);
+      g.cam.dist = 5;
+      g.cam.pitch = 0.12;
+    });
+    await wait(2500);
+    await shot('cart-corner');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const c = g.city.vendors.find((x) => x.corner && x.cart === 'halal') || g.city.vendors.find((x) => x.corner);
+      g.player.teleport(c.x + Math.sin(c.ry) * 2.2, c.z + Math.cos(c.ry) * 2.2, c.ry + Math.PI);
+    });
+    await page.waitForFunction(() => /buy something/.test(window.__game.interactable?.label || ''), null, { timeout: 15000 });
+    const before = await page.evaluate(() => window.__game.state.needs.hunger);
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog');
+    await wait(600);
+    await shot('cart-menu');
+    await page.click('.dialog .menu-col .btn >> nth=0');
+    await wait(800);
+    const after = await page.evaluate(() => window.__game.state.needs.hunger);
+    console.log('hunger', before.toFixed(1), '->', after.toFixed(1));
+  },
   /** Times Square: billboard towers, tickers, the red steps, tourists. */
   async times({ page, shot, wait }) {
     await startLife(page, wait);

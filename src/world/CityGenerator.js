@@ -14,6 +14,7 @@ import { buildLandmarks } from './Landmarks.js';
 import { buildStorefronts } from './Storefronts.js';
 import { buildStreetscape, addRooftops } from './Streetscape.js';
 import { decorateParks } from './Parks.js';
+import { buildFoodCarts } from './FoodCarts.js';
 import { buildZoo } from './Zoo.js';
 import { buildCampus, buildSchool } from './Campus.js';
 import { buildAirport, airportSide } from './Airport.js';
@@ -350,6 +351,7 @@ export function generateCity(cfg, opts = {}) {
 
   buildProps(ctx);
   decorateParks(ctx);
+  buildFoodCarts(ctx);
   if (zooBlock) buildZoo(ctx, zooBlock);
   if (bridge) buildBridge(ctx, bridge);
   buildStreetscape(ctx);
