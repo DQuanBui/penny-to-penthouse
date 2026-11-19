@@ -25,6 +25,9 @@ export class PlayerController {
     this.riding = null; // { max, accel, v } while on a bicycle
     this.umbrella = false; // holding an umbrella (rain)
     this.emote = null; // { id, t, held } (ui/Emotes.js)
+    this.swimming = false; // in deep water (world/Beach.js)
+    this.floatY = null; // the height you float at while swimming
+    this.lying = false; // sunbathing on a towel
     this.rig = null;
     this.world = null; // { colliders, groundY(x,z) }
     this.stepAccum = 0;
@@ -49,6 +52,11 @@ export class PlayerController {
     if (!this.rig) return;
     this.rig.group.position.copy(this.pos);
     if (this.sitting && this.sitLift) this.rig.group.position.y += this.sitLift;
+    if (this.swimming) this.rig.group.position.y += Math.sin(performance.now() / 450) * 0.035;
+    // lying on your back: tip the whole body over (order YXZ: heading first)
+    const lie = this.lying && this.sitting;
+    this.rig.group.rotation.order = 'YXZ';
+    this.rig.group.rotation.x = lie ? -Math.PI / 2 : 0;
     this.rig.group.rotation.y = this.heading;
   }
 
@@ -103,8 +111,8 @@ export class PlayerController {
       if (input.isDown('KeyS') || input.isDown('ArrowDown')) mz += 1;
       if (input.isDown('KeyA') || input.isDown('ArrowLeft')) mx -= 1;
       if (input.isDown('KeyD') || input.isDown('ArrowRight')) mx += 1;
-      running = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
-      wantJump = input.pressed('Space');
+      running = (input.isDown('ShiftLeft') || input.isDown('ShiftRight')) && !this.swimming;
+      wantJump = input.pressed('Space') && !this.swimming;
     }
     const len = Math.hypot(mx, mz);
     if (len > 0 && this.emote) this.emote = null; // moving ends any action
@@ -143,7 +151,8 @@ export class PlayerController {
         // cars, pedestrians and other moving things
         if (w.obstacles && w.obstacles(this.pos, RADIUS, this.pos.y)) w.colliders.resolve(this.pos, RADIUS, this.pos.y + 0.25, 1.4);
       }
-      const gy = w.groundY(this.pos.x, this.pos.z);
+      let gy = w.groundY(this.pos.x, this.pos.z);
+      if (this.floatY != null) gy = Math.max(gy, this.floatY);
       if (this.pos.y <= gy) {
         this.pos.y = this.grounded ? damp(this.pos.y, gy, 30, dt) : gy;
         if (this.pos.y < gy - 0.2) this.pos.y = gy;
@@ -158,7 +167,7 @@ export class PlayerController {
     this.speed = Math.hypot(this.vel.x, this.vel.z);
 
     // footsteps (audio hook)
-    if (this.grounded && this.speed > 0.5) {
+    if (this.grounded && this.speed > 0.5 && !this.swimming) {
       this.stepAccum += this.speed * dt;
       const stride = this.speed > 4.5 ? 1.25 : 0.72;
       if (this.stepAccum > stride) {
@@ -170,7 +179,8 @@ export class PlayerController {
     if (this.rig) {
       this.sync();
       const em = this.emote?.id;
-      animateRig(this.rig, dt, { speed: this.speed, grounded: this.grounded, sitting: this.sitting, talking: this.talking, umbrella: this.umbrella && !this.sitting && !em, waving: em === 'wave', cheering: em === 'cheer', dancing: em === 'dance', jacks: em === 'jacks', floor: em === 'sit', phone: em === 'phone' || em === 'selfie' });
+      const lie = this.lying && this.sitting;
+      animateRig(this.rig, dt, { speed: this.swimming ? 0 : this.speed, grounded: this.grounded, swimming: this.swimming, swimMove: this.speed, lying: lie, sitting: this.sitting && !lie, talking: this.talking, umbrella: this.umbrella && !this.sitting && !em && !this.swimming, waving: em === 'wave', cheering: em === 'cheer' || (em === 'volley' && this.emote.hit > 0), dancing: em === 'dance', jacks: em === 'jacks', floor: em === 'sit', phone: em === 'phone' || em === 'selfie' });
     }
   }
 }

@@ -15,6 +15,7 @@ import { buildStorefronts } from './Storefronts.js';
 import { buildStreetscape, addRooftops } from './Streetscape.js';
 import { decorateParks } from './Parks.js';
 import { buildFoodCarts } from './FoodCarts.js';
+import { beachSpec, buildBeach, beachY } from './Beach.js';
 import { buildZoo } from './Zoo.js';
 import { buildCampus, buildSchool } from './Campus.js';
 import { buildAirport, airportSide } from './Airport.js';
@@ -48,6 +49,7 @@ export function generateCity(cfg, opts = {}) {
 
   // a great bridge strides out from the waterfront
   const bridge = bridgeSpec(cfg, { N, half, roadCenter, K });
+  const beach = beachSpec(cfg, { half, K });
 
   const districts = cfg.districts.map((d, q) => {
     const qi = q % 2;
@@ -319,7 +321,7 @@ export function generateCity(cfg, opts = {}) {
     }
   }
 
-  const ctx = { cfg, rng, N, half, total, K, blockMin, roadCenter, blocks, allBlocks, group, colliders, places, reserved, water, districts, batch, season: opts.season, bridgeSpec: bridge };
+  const ctx = { cfg, rng, N, half, total, K, blockMin, roadCenter, blocks, allBlocks, group, colliders, places, reserved, water, districts, batch, season: opts.season, bridgeSpec: bridge, beachSpec: beach };
 
   // --- 5. Landmarks, roads, props -------------------------------------------
   buildLandmarks(ctx);
@@ -351,6 +353,7 @@ export function generateCity(cfg, opts = {}) {
 
   buildProps(ctx);
   decorateParks(ctx);
+  if (beach) buildBeach(ctx, beach);
   buildFoodCarts(ctx);
   if (zooBlock) buildZoo(ctx, zooBlock);
   if (bridge) buildBridge(ctx, bridge);
@@ -370,6 +373,10 @@ export function generateCity(cfg, opts = {}) {
       const d = onWalkway(bridge, x, z);
       if (d >= 0) return deckY(d, K.CURB);
     }
+    if (beach) {
+      const y = beachY(beach, x, z);
+      if (y != null) return y;
+    }
     if (Math.abs(x) > half || Math.abs(z) > half) return K.CURB;
     return inBlockAxis(x) && inBlockAxis(z) ? K.CURB : 0;
   };
@@ -377,7 +384,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */

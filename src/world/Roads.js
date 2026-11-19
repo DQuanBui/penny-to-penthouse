@@ -62,14 +62,26 @@ export function buildRoads(ctx) {
         // top rail + posts
         // top rail + posts (with a gap where the bridge walkway starts)
         const br = ctx.bridgeSpec && ctx.bridgeSpec.side === side ? ctx.bridgeSpec.along : null;
-        const segs = br == null ? [[-len / 2, len / 2]] : [[-len / 2, br - 4], [br + 4, len / 2]];
+        // gaps where the bridge walkway starts and where the beach opens up
+        const gaps = [];
+        if (br != null) gaps.push([br - 4, br + 4]);
+        const bs = ctx.beachSpec && ctx.beachSpec.side === side ? ctx.beachSpec : null;
+        if (bs) gaps.push([bs.a0, bs.a1]);
+        gaps.sort((p, q) => p[0] - q[0]);
+        const segs = [];
+        let from = -len / 2;
+        for (const [g0, g1] of gaps) {
+          if (g0 > from) segs.push([from, g0]);
+          from = g1;
+        }
+        segs.push([from, len / 2]);
         for (const [a0, a1] of segs) {
           const l = a1 - a0;
           const m = (a0 + a1) / 2;
           rail.add(horiz ? m : e, K.CURB + 1.05, horiz ? e : m, { sx: horiz ? l : 0.12, sy: 0.1, sz: horiz ? 0.12 : l });
         }
         for (let p = -len / 2; p <= len / 2; p += 4) {
-          if (br != null && Math.abs(p - br) < 4) continue;
+          if (gaps.some(([g0, g1]) => p > g0 - 0.01 && p < g1 + 0.01)) continue;
           rail.add(horiz ? p : e, K.CURB + 0.5, horiz ? e : p, { sx: 0.12, sy: 1.0, sz: 0.12 });
         }
       }

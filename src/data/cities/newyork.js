@@ -28,6 +28,7 @@ export default {
   waterfront: ['south', 'west'],
   waterName: 'the Harbor',
   promenade: 'boardwalk',
+  beach: { name: 'Brighton Sands Beach', side: 'south', at: 0.74, length: 200 },
   music: { root: 57, scale: 'minor', bpm: 78 },
   districts: [
     { id: 'midtown', name: 'Midtown', style: 'skyscraper', rentMul: 1.35, heightMul: 1.15 },

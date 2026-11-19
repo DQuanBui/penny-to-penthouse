@@ -19,6 +19,7 @@ export const EMOTE_RATES = {
   jacks: { rates: { health: 4, energy: -9, fun: 2 } },
   sit: { rates: { energy: 3, fun: 3 } },
   phone: { rates: { social: 6 } },
+  volley: { rates: { fun: 10, health: 3, social: 4, energy: -5 } },
 };
 
 export function openEmotes(game) {
@@ -58,6 +59,7 @@ export function startEmote(game, e) {
 export function updateEmote(game, dt) {
   const em = game.player.emote;
   if (!em) return;
+  if (em.hit > 0) em.hit -= dt;
   if (!em.held) {
     em.t -= dt;
     if (em.t <= 0) game.player.emote = null;

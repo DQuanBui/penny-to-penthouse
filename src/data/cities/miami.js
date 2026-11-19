@@ -27,6 +27,7 @@ export default {
   waterfront: ['east', 'south'],
   waterName: 'the Bay',
   promenade: 'beach',
+  beach: { name: 'Ocean Drive Beach', side: 'east', at: 0.4, length: 220 },
   music: { root: 60, scale: 'major', bpm: 92 },
   districts: [
     { id: 'wynwood', name: 'Wynwood', style: 'warehouse', rentMul: 1.0 },

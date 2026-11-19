@@ -434,6 +434,97 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** The beach: sand into the water, swimmers, sunbathers, volleyball; swim, sunbathe, play. */
+  async beach({ page, shot, wait }) {
+    await startLife(page, wait, process.env.CITY || 'New York');
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 13 * 60;
+      const B = g.city.beach;
+      if (!B) return null;
+      // stand on the promenade at the entrance, looking out to sea
+      const [x, z] = B.at(B.ac - 10, -6);
+      g.player.teleport(x, z, B.sea + 0.35);
+      g.cam.snapBehind(B.sea + 0.35);
+      g.cam.pitch = 0.18;
+      g.cam.dist = 8;
+      return { name: B.name, side: B.side, towels: B.towels.length, loungers: B.loungers.length, shore: B.shoreD.toFixed(1), y: g.city.groundY(x, z).toFixed(2) };
+    });
+    console.log('beach', JSON.stringify(info));
+    if (!info) throw new Error('no beach');
+    await page.waitForFunction(() => window.__game.beachLife.people.length > 0, null, { timeout: 20000 });
+    await wait(3000);
+    await shot('beach-overview');
+    // walk down the sand into the sea until swimming
+    await page.evaluate(() => {
+      const g = window.__game;
+      const B = g.city.beach;
+      const [x, z] = B.at(B.ac + 40, B.shoreD + 11);
+      g.player.teleport(x, z, B.sea);
+      g.cam.snapBehind(B.sea);
+    });
+    await page.keyboard.down('KeyW');
+    await page.waitForFunction(() => window.__game.player.swimming, null, { timeout: 60000 });
+    await wait(1500);
+    await page.keyboard.up('KeyW');
+    const sw = await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.city.beach.land + 0.5);
+      g.cam.pitch = 0.12;
+      g.cam.dist = 6;
+      return { swimming: g.player.swimming, y: g.player.pos.y.toFixed(2), rigY: g.player.rig.group.position.y.toFixed(2) };
+    });
+    console.log('swim', JSON.stringify(sw));
+    await wait(1800);
+    await shot('beach-swim');
+    // back to shore: no longer swimming
+    await page.evaluate(() => {
+      const g = window.__game;
+      const B = g.city.beach;
+      const t = B.towels.find((q) => !B.taken?.has(q));
+      g.player.teleport(t.x + 0.5, t.z + 0.5, 0);
+    });
+    await page.waitForFunction(() => !window.__game.player.swimming, null, { timeout: 10000 });
+    await page.waitForFunction(() => /sun/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await wait(1200);
+    const lying = await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.city.beach.sea + 2.2);
+      g.cam.pitch = 0.45;
+      g.cam.dist = 5;
+      return { sitting: g.player.sitting, lying: g.player.lying, rx: g.player.rig.group.rotation.x.toFixed(2) };
+    });
+    console.log('sunbathe', JSON.stringify(lying));
+    await wait(1500);
+    await shot('beach-sunbathe');
+    await page.keyboard.down('KeyS');
+    await page.waitForFunction(() => !window.__game.player.sitting, null, { timeout: 10000 });
+    await page.keyboard.up('KeyS');
+    // volleyball
+    await page.evaluate(() => {
+      const g = window.__game;
+      const c = g.city.beach.court;
+      g.player.teleport(c.x + 2, c.z + 2, 0);
+    });
+    await page.waitForFunction(() => /volleyball/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForFunction(() => window.__game.beachLife.volley.toss.to === window.__game.beachLife.members(window.__game.beachLife.volley).length - 1 || window.__game.player.emote?.hit > 0, null, { timeout: 60000 }).catch(() => {});
+    const vb = await page.evaluate(() => {
+      const g = window.__game;
+      const B = g.city.beach;
+      g.cam.snapBehind(B.sea);
+      g.cam.pitch = 0.25;
+      g.cam.dist = 11;
+      return { emote: g.player.emote?.id, players: g.beachLife.members(g.beachLife.volley).length };
+    });
+    console.log('volley', JSON.stringify(vb));
+    await wait(2000);
+    await shot('beach-volley');
+  },
   /** Street food carts on corners: halal, hot dogs, pretzels, ice cream, coffee... */
   async carts({ page, shot, wait }) {
     await startLife(page, wait);
@@ -1273,8 +1364,8 @@ export const scenarios = {
   /** People with jobs and styles; someone sitting on the pavement. */
   async people({ page, shot, wait }) {
     await startLife(page, wait);
-    // a lineup of every role, built with the same factory the crowd uses
-    await page.evaluate(async () => {
+    // a lineup of every role (or ROLES=a,b,c), built with the same factory the crowd uses
+    await page.evaluate(async (only) => {
       const g = window.__game;
       g.weather.force = 'clear';
       g.state.time.total = 12 * 60;
@@ -1285,22 +1376,26 @@ export const scenarios = {
       const h = g.player.heading;
       const fx = Math.sin(h);
       const fz = Math.cos(h);
-      const ids = ROLE_IDS.filter((r) => r !== 'civilian');
+      const ids = only ? only.split(',') : ROLE_IDS.filter((r) => r !== 'civilian');
       window.__lineup = ids.map((role, k) => {
         const rig = createRig(roleAppearance(role, Math.random));
-        const off = (k - (ids.length - 1) / 2) * 0.75;
-        rig.group.position.set(p.x + fx * 4 + fz * off, p.y, p.z + fz * 4 - fx * off);
+        const per = Math.ceil(ids.length / 2);
+        const off = ((k % per) - (per - 1) / 2) * 0.8;
+        const fwd = 6 + Math.floor(k / per) * 2.2;
+        rig.group.position.set(p.x + fx * fwd + fz * off, p.y, p.z + fz * fwd - fx * off);
         rig.group.rotation.y = h + Math.PI;
         g.scene.add(rig.group);
-        animateRig(rig, 0.016, { speed: 0, grounded: true, floor: role === 'homeless' });
+        animateRig(rig, 0.016, { speed: 0, grounded: true, floor: role === 'homeless', pushing: role === 'parent', cane: role === 'elderly' });
         return rig;
       });
       g.cam.snapBehind(h);
-      g.cam.pitch = 0.12;
-      g.cam.dist = 4.5;
-    });
+      g.cam.pitch = 0.2;
+      g.cam.dist = 3;
+      g.playerRig.group.visible = false;
+    }, process.env.ROLES || '');
     await wait(1500);
     await shot('people-lineup');
+    await page.evaluate(() => (window.__game.playerRig.group.visible = true));
     await page.evaluate(() => window.__lineup.forEach((r) => r.group.removeFromParent()));
     await wait(6000);
     const roles = await page.evaluate(() => {

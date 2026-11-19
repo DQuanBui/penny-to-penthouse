@@ -28,6 +28,7 @@ export default {
   waterfront: ['west'],
   waterName: 'the Pacific',
   promenade: 'beach',
+  beach: { name: 'Sunset Cove Beach', side: 'west', at: 0.26, length: 200 },
   music: { root: 62, scale: 'major', bpm: 84 },
   districts: [
     { id: 'hollywood', name: 'Hollywood', style: 'midrise', rentMul: 1.15, heightMul: 0.9 },

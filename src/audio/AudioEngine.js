@@ -189,6 +189,10 @@ export class AudioEngine {
         this.tone(d, { f: 90, f2: 40, dur: 0.25, gain: 0.35 });
         this.burst(d, { f: 900, dur: 0.18, gain: 0.18 });
         break;
+      case 'splash':
+        this.burst(d, { type: 'lowpass', f: 2200, f2: 300, dur: 0.6, gain: 0.3 });
+        this.burst(d, { type: 'bandpass', f: 900, q: 0.8, t: 0.05, dur: 0.3, gain: 0.12 });
+        break;
       case 'step':
         this.burst(d, { f: 500 + Math.random() * 250, dur: 0.06, gain: 0.07 });
         break;

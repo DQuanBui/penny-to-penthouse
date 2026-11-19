@@ -23,7 +23,7 @@ export class CityMap {
     this.city = city;
     this.waypoint = null;
     const K = city.K;
-    const pad = K.PROM + 30;
+    const pad = K.PROM + (city.beach ? 66 : 30);
     this.extent = city.half + pad;
     const size = Math.ceil(this.extent * 2 * PX);
     const cv = (this.image = document.createElement('canvas'));
@@ -40,6 +40,23 @@ export class CityMap {
     const lz1 = w.south ? city.half + K.PROM : this.extent;
     g.fillStyle = city.cfg.promenade === 'beach' ? '#d9c796' : '#8a7458';
     g.fillRect(X(lx0), X(lz0), (lx1 - lx0) * PX, (lz1 - lz0) * PX);
+    // the beach: sand down to the shoreline, then the shallows
+    const B = city.beach;
+    if (B) {
+      const rect = (d0, d1, color) => {
+        const [x0, z0] = B.at(B.a0, d0);
+        const [x1, z1] = B.at(B.a1, d1);
+        g.fillStyle = color;
+        g.fillRect(X(Math.min(x0, x1)), X(Math.min(z0, z1)), Math.abs(x1 - x0) * PX, Math.abs(z1 - z0) * PX);
+      };
+      rect(0, B.shoreD + 18, '#3f8fae');
+      rect(0, B.shoreD, '#e6d3a3');
+      const [bx, bz] = B.at(B.ac, B.shoreD / 2);
+      g.font = `${16 * PX}px sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('🏖️', X(bx), X(bz));
+    }
     g.fillStyle = '#353a48'; // roads
     g.fillRect(X(Math.max(lx0, -this.extent)), X(Math.max(lz0, -this.extent)), (Math.min(lx1, city.half) - Math.max(lx0, -city.half) + (w.west ? 0 : pad) + (w.east ? 0 : pad)) * PX, 0);
     g.fillRect(X(w.west ? -city.half : -this.extent), X(w.north ? -city.half : -this.extent), ((w.east ? city.half : this.extent) - (w.west ? -city.half : -this.extent)) * PX, ((w.south ? city.half : this.extent) - (w.north ? -city.half : -this.extent)) * PX);

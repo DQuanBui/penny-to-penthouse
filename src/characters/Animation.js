@@ -33,6 +33,11 @@ export function animateRig(rig, dt, p) {
   a.jacks = damp(a.jacks || 0, p.jacks ? 1 : 0, 8, dt);
   a.phone = damp(a.phone || 0, p.phone ? 1 : 0, 7, dt);
   a.dance = damp(a.dance || 0, p.dancing ? 1 : 0, 5, dt);
+  a.push = damp(a.push || 0, p.pushing ? 1 : 0, 6, dt);
+  a.cane = damp(a.cane || 0, p.cane ? 1 : 0, 6, dt);
+  a.swim = damp(a.swim || 0, p.swimming ? 1 : 0, 6, dt);
+  a.lie = damp(a.lie || 0, p.lying ? 1 : 0, 6, dt);
+  if (p.swimming) a.stroke = (a.stroke || 0) + dt * (1.6 + (p.swimMove || 0) * 1.6);
   // one full cycle = two steps
   const stride = lerp(1.45, 2.5, run);
   if (moving) a.phase += (speed / stride) * Math.PI * 2 * dt;
@@ -117,6 +122,21 @@ export function animateRig(rig, dt, p) {
   aRx = lerp(aRx, -0.9, a.floor);
   fLx = lerp(fLx, -0.45, a.floor);
   fRx = lerp(fRx, -0.6, a.floor);
+  // pushing a stroller: both hands forward on the handle
+  if (a.push > 0.01) {
+    aLx = lerp(aLx, -0.78, a.push);
+    aRx = lerp(aRx, -0.78, a.push);
+    fLx = lerp(fLx, -0.55, a.push);
+    fRx = lerp(fRx, -0.55, a.push);
+    aLz = lerp(aLz, 0.12, a.push);
+    aRz = lerp(aRz, -0.12, a.push);
+  }
+  // walking with a cane: the right arm steadies, a slight stoop
+  if (a.cane > 0.01) {
+    aRx = lerp(aRx, -0.15 + Math.sin(ph) * 0.12, a.cane);
+    fRx = lerp(fRx, -0.25, a.cane);
+    b.spine.rotation.x += 0.12 * a.cane;
+  }
   // talking: gentle hand gestures
   if (a.talk > 0.01) {
     const g = a.talk;
@@ -184,6 +204,33 @@ export function animateRig(rig, dt, p) {
     fRx = lerp(fRx, -0.5, a.wave);
     b.foreR.rotation.z = Math.sin(t * 9) * 0.45 * a.wave;
   } else b.foreR.rotation.z = 0;
+  // swimming: an overarm crawl when moving, treading water when still
+  if (a.swim > 0.01) {
+    const st = a.stroke || 0;
+    const mv = Math.min(1, (p.swimMove || 0) / 0.6);
+    const crawlL = -1.5 + Math.sin(st * 2) * 1.5;
+    const crawlR = -1.5 - Math.sin(st * 2) * 1.5;
+    aLx = lerp(aLx, lerp(-0.55 + Math.sin(st * 3) * 0.2, crawlL, mv), a.swim);
+    aRx = lerp(aRx, lerp(-0.55 - Math.sin(st * 3) * 0.2, crawlR, mv), a.swim);
+    aLz = lerp(aLz, lerp(0.85 + Math.sin(st * 3) * 0.35, 0.25, mv), a.swim);
+    aRz = lerp(aRz, lerp(-0.85 - Math.sin(st * 3) * 0.35, -0.25, mv), a.swim);
+    fLx = lerp(fLx, -0.35, a.swim);
+    fRx = lerp(fRx, -0.35, a.swim);
+    b.thighL.rotation.x = lerp(b.thighL.rotation.x, -0.3 + Math.sin(st * 5) * 0.3, a.swim);
+    b.thighR.rotation.x = lerp(b.thighR.rotation.x, -0.3 - Math.sin(st * 5) * 0.3, a.swim);
+    b.shinL.rotation.x = lerp(b.shinL.rotation.x, 0.4, a.swim);
+    b.shinR.rotation.x = lerp(b.shinR.rotation.x, 0.4, a.swim);
+    b.head.rotation.x -= 0.15 * a.swim;
+  }
+  // lying on a towel (the body itself is tipped over by the caller): arms relaxed out
+  if (a.lie > 0.01) {
+    aLz = lerp(aLz, 0.35, a.lie);
+    aRz = lerp(aRz, -0.35, a.lie);
+    aLx = lerp(aLx, 0, a.lie);
+    aRx = lerp(aRx, 0, a.lie);
+    fLx = lerp(fLx, -0.1, a.lie);
+    fRx = lerp(fRx, -0.1, a.lie);
+  }
   b.armL.rotation.x = aLx;
   b.armR.rotation.x = aRx;
   b.armL.rotation.z = aLz;
