@@ -22,6 +22,7 @@ export class PlayerController {
     this.frozen = false; // true while UI owns the player (dialogs, mini-games)
     this.speedMul = 1;
     this.riding = null; // { max, accel, v } while on a bicycle
+    this.umbrella = false; // holding an umbrella (rain)
     this.rig = null;
     this.world = null; // { colliders, groundY(x,z) }
     this.stepAccum = 0;
@@ -164,7 +165,7 @@ export class PlayerController {
 
     if (this.rig) {
       this.sync();
-      animateRig(this.rig, dt, { speed: this.speed, grounded: this.grounded, sitting: this.sitting, talking: this.talking });
+      animateRig(this.rig, dt, { speed: this.speed, grounded: this.grounded, sitting: this.sitting, talking: this.talking, umbrella: this.umbrella && !this.sitting });
     }
   }
 }

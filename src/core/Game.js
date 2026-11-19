@@ -43,6 +43,7 @@ import { ZooLife } from '../world/Zoo.js';
 import { CampusLife } from '../world/Campus.js';
 import { AirTraffic } from '../world/Airport.js';
 import { makeBike, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
+import { setUmbrella } from '../characters/Umbrella.js';
 import { openService } from '../ui/Shops.js';
 import { openPet } from '../ui/Pets.js';
 import { PhotoMode } from '../ui/PhotoMode.js';
@@ -1029,6 +1030,12 @@ export class Game {
     }
     this.weather.update(dt, this.city.cfg, st.time.total, this.camera.position, !inside);
     this.crowd.densityMul = this.weather.info.crowd;
+    // rainy days: umbrellas up (yours too, while walking outside)
+    const raining = this.weather.kind === 'rain' && !inside;
+    this.crowd.raining = raining;
+    this.npcs.raining = raining;
+    this.player.umbrella = raining && !driving && !this.player.riding;
+    setUmbrella(this.playerRig, this.player.umbrella, '#1d2433');
     this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside, elapsed);
     this.animals.update(dt, this.crowd, this.player.pos.x, this.player.pos.z, this.sky.night, !inside);
     this.streetLife.update(dt, this.player.pos, !!inside);

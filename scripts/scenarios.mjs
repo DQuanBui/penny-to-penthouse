@@ -167,6 +167,37 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Rain: umbrellas over the crowd, residents and you. */
+  async rain({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'rain';
+      g.state.time.total = 13 * 60;
+      g.cam.pitch = 0.12;
+      g.cam.dist = 5;
+    });
+    await wait(6000);
+    const r = await page.evaluate(() => {
+      const g = window.__game;
+      const c = g.crowd;
+      let far = 0;
+      const m = new (g.traffic._m.constructor)();
+      for (let i = 0; i < c.n; i++) {
+        c.umb.getMatrixAt(i, m);
+        if (m.elements[0] !== 0) far++;
+      }
+      const near = c.rigs.filter((rg) => rg.umbrella && rg.umbrella.visible).length;
+      return { raining: c.raining, far, near, player: !!(g.playerRig.umbrella && g.playerRig.umbrella.visible) };
+    });
+    console.log('umbrellas', JSON.stringify(r));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading + 0.5);
+    });
+    await wait(800);
+    await shot('rain-street');
+  },
   /** Bicycles: cyclists in traffic, bike-share docks, riding, your own bike. */
   async bikes({ page, shot, wait }) {
     await startLife(page, wait);

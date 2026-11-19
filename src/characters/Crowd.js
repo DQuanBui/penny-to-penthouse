@@ -12,12 +12,14 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createRig } from './CharacterFactory.js';
 import { glbNpcModels } from './GLBCharacters.js';
+import { umbrellaGeometry, setUmbrella, UMBRELLA_COLORS } from './Umbrella.js';
 import { randomAppearance, SKIN_TONES, HAIR_COLORS, roleAppearance, randomRole, ROLE_IDS } from './Customization.js';
 import { animateRig } from './Animation.js';
 import { worldUniforms } from '../world/Buildings.js';
 import { mulberry32 } from '../core/utils.js';
 
 const COUNTS = { low: [80, 8], medium: [170, 16], high: [240, 24] }; // [agents, rigs]
+const _zero = new THREE.Matrix4().makeScale(0, 0, 0);
 const RIG_ROLES = ['business', 'student', 'police', 'construction', 'nurse', 'tourist', 'shopper', 'delivery', 'jogger', 'business', 'student', 'teacher', 'chef', 'doctor', 'mail', 'shopper', 'nurse', 'construction', 'tourist', 'police'];
 const INSET = 2.6; // walking line: distance from the kerb
 const NEAR = 40; // full rigs inside this radius
@@ -216,6 +218,13 @@ export class Crowd {
     this.inst = imp.mesh;
     this.gait = imp.gait;
     this.imp = imp;
+    // umbrellas over the far crowd when it rains
+    this.umb = new THREE.InstancedMesh(umbrellaGeometry(), new THREE.MeshStandardMaterial({ roughness: 0.55, side: THREE.DoubleSide }), n);
+    this.umb.frustumCulled = false;
+    for (let i = 0; i < n; i++) this.umb.setColorAt(i, this._c.set(UMBRELLA_COLORS[Math.floor(this.rng() * UMBRELLA_COLORS.length)]));
+    this.umb.instanceColor.needsUpdate = true;
+    this.group.add(this.umb);
+    this.raining = false;
     this.group.add(this.inst);
     const models = glbNpcModels();
     // near rigs: a few civilians plus one of each common job, so whoever walks up
@@ -426,6 +435,10 @@ export class Crowd {
     }
   }
 
+  roleId(name) {
+    return (this._roleIds ||= {})[name] ??= ROLE_IDS.indexOf(name);
+  }
+
   /** Set an agent's far-away colours from an appearance. */
   dress(i, look) {
     const c = this._c;
@@ -589,7 +602,9 @@ export class Crowd {
       rig.group.rotation.y = this.ry[a];
       const met = this.meet[a] >= 0;
       const mt = this.meetT[a];
-      animateRig(rig, dt, { speed: this.cur[a], grounded: true, shaking: met && mt > 0.15 && mt < 2.0, waving: met && mt > 0 && this.pause[a] < 1.1, talking: (this.pause[a] > 0 && this.chat[a] === 1) || (met && mt >= 2.0 && this.pause[a] >= 1.1) });
+      const umb = this.raining && this.role[a] !== this.roleId('jogger');
+      setUmbrella(rig, umb);
+      animateRig(rig, dt, { speed: this.cur[a], grounded: true, umbrella: umb, shaking: met && mt > 0.15 && mt < 2.0, waving: met && mt > 0 && this.pause[a] < 1.1, talking: (this.pause[a] > 0 && this.chat[a] === 1) || (met && mt >= 2.0 && this.pause[a] >= 1.1) });
     }
 
     // impostors
@@ -602,7 +617,10 @@ export class Crowd {
         m.compose(this._p.set(this.x[i], groundY(this.x[i], this.z[i]), this.z[i]), this._q, this._s);
       }
       this.inst.setMatrixAt(i, m);
+      if (!this.raining || !this.alive[i] || this.rigOf[i] >= 0) this.umb.setMatrixAt(i, _zero);
+      else this.umb.setMatrixAt(i, m);
     }
     this.inst.instanceMatrix.needsUpdate = true;
+    this.umb.instanceMatrix.needsUpdate = true;
   }
 }

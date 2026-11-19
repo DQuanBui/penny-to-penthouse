@@ -13,6 +13,7 @@ import { relLevel, REL_ICONS } from '../sim/Relationships.js';
 import { hourOf } from '../core/Clock.js';
 import { mulberry32, hashStr, dampAngle } from '../core/utils.js';
 import { glbNpcModels } from './GLBCharacters.js';
+import { setUmbrella } from './Umbrella.js';
 
 const SHOW_DIST = 85;
 const MAX_OUT = 16;
@@ -252,7 +253,9 @@ export class NPCManager {
       animateRig(a.rig, dt, { speed: 0, grounded: true, dancing: true });
       return;
     }
-    animateRig(a.rig, dt, { speed: 0, grounded: true, sitting: a.sit && !a.talking, talking: a.talking || (!a.npc && !near && Math.sin(a.heading * 7 + performance.now() / 4000) > 0.6), waving: near && !a.talking && !a.sit && a.npc && a.tagLevel >= 2 && (a.waveT = (a.waveT || 0) + dt) < 1.6 });
+    const umb = !!this.raining && !this.indoor.includes(a) && !a.sit;
+    setUmbrella(a.rig, umb);
+    animateRig(a.rig, dt, { speed: 0, grounded: true, umbrella: umb, sitting: a.sit && !a.talking, talking: a.talking || (!a.npc && !near && Math.sin(a.heading * 7 + performance.now() / 4000) > 0.6), waving: near && !a.talking && !a.sit && a.npc && a.tagLevel >= 2 && (a.waveT = (a.waveT || 0) + dt) < 1.6 });
     if (!near) a.waveT = 0;
   }
 

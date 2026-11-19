@@ -6,7 +6,7 @@ import { damp, lerp, smoothstep } from '../core/utils.js';
 /**
  * @param rig   from CharacterFactory.buildCharacter
  * @param dt    seconds
- * @param p     { speed (m/s), grounded, sitting, floor (sitting on the ground), riding (a bicycle), talking, waving, shaking }
+ * @param p     { speed (m/s), grounded, sitting, floor (sitting on the ground), riding (a bicycle), umbrella, talking, waving, shaking }
  */
 export function animateRig(rig, dt, p) {
   if (rig.type === 'glb') {
@@ -28,6 +28,7 @@ export function animateRig(rig, dt, p) {
   a.talk = damp(a.talk, p.talking ? 1 : 0, 6, dt);
   a.wave = damp(a.wave, p.waving ? 1 : 0, 8, dt);
   a.shake = damp(a.shake || 0, p.shaking ? 1 : 0, 8, dt);
+  a.umb = damp(a.umb || 0, p.umbrella ? 1 : 0, 6, dt);
   a.dance = damp(a.dance || 0, p.dancing ? 1 : 0, 5, dt);
   // one full cycle = two steps
   const stride = lerp(1.45, 2.5, run);
@@ -134,6 +135,12 @@ export function animateRig(rig, dt, p) {
     b.chest.rotation.z = Math.sin(beat * 0.5) * 0.12 * d;
     b.head.rotation.x += Math.sin(beat) * 0.12 * d;
   } else b.chest.rotation.z = 0;
+  // holding an umbrella: right forearm up in front of the chest
+  if (a.umb > 0.01) {
+    aRx = lerp(aRx, -0.42, a.umb);
+    aRz = lerp(aRz, 0.02, a.umb);
+    fRx = lerp(fRx, -1.5, a.umb);
+  }
   // handshake: right arm out in front, forearm pumping
   if (a.shake > 0.01) {
     aRx = lerp(aRx, -0.9, a.shake);
