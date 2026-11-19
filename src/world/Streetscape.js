@@ -34,7 +34,11 @@ export function addRooftops(ctx) {
     if (b.y0 > 0.5 || b.style?.type === FACADE.PLAIN || b.w < 6 || b.d < 6) continue;
     const top = b.y0 + b.h;
     // stone cornice on masonry walls
-    if (b.style?.type === FACADE.MASONRY && b.h < 70) batch.add(b.x, b.z, b.w + 0.5, b.d + 0.5, 0.5, shadeHex(b.color, 0.82), { type: FACADE.PLAIN }, top - 0.2);
+    if (b.style?.type === FACADE.MASONRY && b.h < 70) {
+      batch.add(b.x, b.z, b.w + 0.5, b.d + 0.5, 0.5, shadeHex(b.color, 0.82), { type: FACADE.PLAIN }, top - 0.2);
+      // a second, thinner moulding below the cornice
+      if (b.h > 10) batch.add(b.x, b.z, b.w + 0.22, b.d + 0.22, 0.2, shadeHex(b.color, 0.72), { type: FACADE.PLAIN }, top - 1.05);
+    }
     if (b.h > 9 && b.h < 48 && rng() < 0.32) tanks.add(b.x + (rng() - 0.5) * b.w * 0.4, top, b.z + (rng() - 0.5) * b.d * 0.4, { ry: rng() * 6 });
     const n = b.h > 60 ? 0 : Math.floor(rng() * 3);
     for (let i = 0; i < n; i++) units.add(b.x + (rng() - 0.5) * (b.w - 2.5), top, b.z + (rng() - 0.5) * (b.d - 2.5), { ry: Math.floor(rng() * 4) * (Math.PI / 2) });

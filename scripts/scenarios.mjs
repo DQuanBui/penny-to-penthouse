@@ -434,6 +434,38 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Building details: fire escapes, rooftop billboards, warning lights, roof gardens. */
+  async facades({ page, shot, wait }) {
+    await startLife(page, wait);
+    const st = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 16 * 60;
+      // a brownstone street in Brooklyn
+      const d = g.city.districts.find((q) => q.id === 'brooklyn') || g.city.districts[3];
+      g.player.teleport(d.cx + 7, d.cz + 2, Math.PI / 2);
+      g.cam.snapBehind(Math.PI / 2 + 0.4);
+      g.cam.pitch = 0.25;
+      g.cam.dist = 7;
+      return g.city.facadeStats;
+    });
+    console.log('details', JSON.stringify(st));
+    await wait(3000);
+    await shot('facades-street');
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.time.total = 22 * 60;
+      const d = g.city.districts.find((q) => q.id === 'midtown') || g.city.districts[0];
+      g.player.teleport(d.cx + 7, d.cz + 2, 0);
+      g.cam.snapBehind(0.5);
+      g.cam.pitch = -0.25;
+      g.cam.dist = 6;
+    });
+    await wait(3000);
+    await shot('facades-night');
+  },
   /** Libraries, art and natural history museums, car showrooms. */
   async culture({ page, shot, wait }) {
     await startLife(page, wait);

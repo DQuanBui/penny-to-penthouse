@@ -61,6 +61,12 @@ function adTexture([title, sub, icon, [c0, c1], fg = '#ffffff'], tall = false) {
   return t;
 }
 
+let adCache = null;
+/** The fictional ads as wide billboard textures (shared, never disposed). */
+export function adTextures() {
+  return (adCache ||= ADS.map((a) => adTexture(a)));
+}
+
 function tickerTexture() {
   const c = document.createElement('canvas');
   c.width = 2048;

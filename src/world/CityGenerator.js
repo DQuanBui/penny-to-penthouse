@@ -17,6 +17,7 @@ import { decorateParks } from './Parks.js';
 import { buildFoodCarts } from './FoodCarts.js';
 import { beachSpec, buildBeach, beachY } from './Beach.js';
 import { buildSports } from './Sports.js';
+import { buildFacadeDetails } from './Facades.js';
 import { buildZoo } from './Zoo.js';
 import { buildCampus, buildSchool } from './Campus.js';
 import { buildAirport, airportSide } from './Airport.js';
@@ -251,18 +252,26 @@ export function generateCity(cfg, opts = {}) {
     const style = { floorH: st.floorH * (0.95 + rng() * 0.1), bay: st.bay * (0.9 + rng() * 0.25), seed: rng() * 100, type };
     batch.add(cx, cz, w, d, h, color, style);
     colliders.add(x0, z0, x1, z1, h);
+    let top = h;
     if (st.tiers && h > 80 && rng() < 0.75) {
       const h2 = h * (0.18 + rng() * 0.2);
       batch.add(cx, cz, w * 0.72, d * 0.72, h2, color, style, h);
+      top = h + h2;
       if (rng() < 0.5) {
         batch.add(cx, cz, w * 0.42, d * 0.42, h2 * 0.7, color, style, h + h2);
-        if (rng() < 0.6) batch.add(cx, cz, 0.8, 0.8, 18 + rng() * 14, '#9aa3ad', plain, h + h2 * 1.7);
+        top = h + h2 * 1.7;
+        if (rng() < 0.6) {
+          const sp = 18 + rng() * 14;
+          batch.add(cx, cz, 0.8, 0.8, sp, '#9aa3ad', plain, h + h2 * 1.7);
+          top += sp;
+        }
       }
     } else if (h > 9 && !isPlace) {
       batch.add(cx + (rng() - 0.5) * w * 0.3, cz + (rng() - 0.5) * d * 0.3, w * 0.34, d * 0.3, 2.4, '#8a8d92', plain, h);
     }
-    return { cx, cz, w, d, color };
+    return { cx, cz, w, d, color, type, floorH: style.floorH, top };
   };
+  const facades = []; // street walls for fire escapes, billboards, roof gardens (world/Facades.js)
 
   for (const b of blocks) {
     if (b.kind !== 'build') continue;
@@ -295,7 +304,8 @@ export function generateCity(cfg, opts = {}) {
         const x1 = lot.x1 - (lot.sides.includes('e') ? 0 : gap);
         const z0 = lot.z0 + (lot.sides.includes('n') ? 0 : gap);
         const z1 = lot.z1 - (lot.sides.includes('s') ? 0 : gap);
-        addBuilding(x0, z0, x1, z1, h, st, !!lot.place, over);
+        const info = addBuilding(x0, z0, x1, z1, h, st, !!lot.place, over);
+        facades.push({ x0, z0, x1, z1, h, sides: lot.sides, type: info.type, place: !!lot.place, floorH: info.floorH, top: info.top });
         if (st.lots === 'rows' && !lot.place) {
           // brownstone stoop
           const [nx, nz] = NORMALS[lot.sides[0]];
@@ -335,7 +345,7 @@ export function generateCity(cfg, opts = {}) {
     }
   }
 
-  const ctx = { cfg, rng, N, half, total, K, blockMin, roadCenter, blocks, allBlocks, group, colliders, places, reserved, water, districts, batch, season: opts.season, bridgeSpec: bridge, beachSpec: beach };
+  const ctx = { cfg, rng, N, half, total, K, blockMin, roadCenter, blocks, allBlocks, group, colliders, places, reserved, water, districts, batch, season: opts.season, bridgeSpec: bridge, beachSpec: beach, facades };
 
   // --- 5. Landmarks, roads, props -------------------------------------------
   buildLandmarks(ctx);
@@ -373,6 +383,7 @@ export function generateCity(cfg, opts = {}) {
   if (zooBlock) buildZoo(ctx, zooBlock);
   if (bridge) buildBridge(ctx, bridge);
   buildStreetscape(ctx);
+  ctx.facadeStats = buildFacadeDetails(ctx);
   decoratePlaces(ctx);
   const fronts = buildStorefronts(ctx);
 
@@ -405,7 +416,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, sports: ctx.sports || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, facadeStats: ctx.facadeStats, sports: ctx.sports || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */
