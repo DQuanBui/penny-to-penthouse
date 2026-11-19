@@ -2211,7 +2211,9 @@ export const scenarios = {
     await page.click('text=Budget');
     await page.click('text=Activity');
     await key(page, 'Escape');
+    await page.waitForFunction(() => window.__game.overlays.length === 0);
     await key(page, 'KeyM');
+    await page.waitForSelector('.map-place', { timeout: 20000 });
     await shot('p3-map');
     await page.click('.map-place');
     await key(page, 'Escape');

@@ -1025,7 +1025,7 @@ export class Game {
     this.sky.update(hourOf(st.time.total), dt, inside ? this._focus.set(inside.place.x, 0, inside.place.z) : this.player.pos);
     if (inside) this.interior.update(this.sky.night, this._winColor.copy(this.sky.top).lerp(this.sky.horizon, 0.55), st.time.total);
     else {
-      this.city.update(elapsed, this.sky.night);
+      this.city.update(elapsed, this.sky.night, this.player.pos.x, this.player.pos.z);
       this.updateLampLights(dt);
     }
     this.weather.update(dt, this.city.cfg, st.time.total, this.camera.position, !inside);

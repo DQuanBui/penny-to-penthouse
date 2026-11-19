@@ -59,7 +59,11 @@ export function buildStreetscape(ctx) {
   // ---- parked cars -----------------------------------------------------------
   const parkedMat = carMaterial();
   const PARKED = ['sedan', 'sedan', 'compact', 'compact', 'suv', 'suv', 'sport', 'pickup', 'coupe', 'taxi'];
-  const carBatches = Object.fromEntries([...new Set(PARKED)].map((t) => [t, new InstanceBatch(vehicleGeometry(t, { low: true }).body, parkedMat, { castShadow: true })]));
+  // one batch per body style per 4×4-block chunk, so far-away or off-screen chunks are skipped
+  const geos = Object.fromEntries([...new Set(PARKED)].map((t) => [t, vehicleGeometry(t, { low: true }).body]));
+  const CH = 4 * K.PITCH;
+  const carBatches = {};
+  const batchFor = (type, x, z) => (carBatches[`${type}|${Math.floor(x / CH)},${Math.floor(z / CH)}`] ||= new InstanceBatch(geos[type], parkedMat, { castShadow: true }));
   ctx.parkedCars = [];
   for (const b of blocks) {
     // [side, kerb-lane position, heading, along-axis]
@@ -73,12 +77,12 @@ export function buildStreetscape(ctx) {
       if (!inner) continue;
       const c0 = axis === 'z' ? b.x0 : b.z0;
       for (let t = c0 + 6; t < c0 + K.BLOCK - 6; t += 6.4) {
-        if (rng() > 0.42) continue;
+        if (rng() > 0.34) continue;
         const x = axis === 'z' ? t : lane;
         const z = axis === 'z' ? lane : t;
         const type = pick(rng, PARKED);
         if (type === 'pickup' && rng() < 0.5) continue; // long ones need the room
-        carBatches[type].add(x, 0, z, { ry, color: type === 'taxi' ? '#f2c230' : pick(rng, CAR_COLORS) });
+        batchFor(type, x, z).add(x, 0, z, { ry, color: type === 'taxi' ? '#f2c230' : pick(rng, CAR_COLORS) });
         const dm = BODY_DIMS[type];
         const hw = axis === 'z' ? dm.hl : dm.hw;
         const hd = axis === 'z' ? dm.hw : dm.hl;
@@ -223,7 +227,13 @@ export function buildStreetscape(ctx) {
     }
   }
 
-  for (const m of [...Object.values(carBatches).map((b) => b.build()), dockBikes.build(), dockPosts.build(), kiosks.build(), hydrants.build(), bins.build(), news.build(), mail.build(), shelterFrame.build(), ads.build(), awnings.build(), signs.build()]) if (m) group.add(m);
+  for (const b of Object.values(carBatches)) {
+    const m = b.build();
+    if (!m) continue;
+    group.add(m);
+    (ctx.lod ||= []).push({ mesh: m, x: m.boundingSphere.center.x, z: m.boundingSphere.center.z, r: m.boundingSphere.radius });
+  }
+  for (const m of [dockBikes.build(), dockPosts.build(), kiosks.build(), hydrants.build(), bins.build(), news.build(), mail.build(), shelterFrame.build(), ads.build(), awnings.build(), signs.build()]) if (m) group.add(m);
   const g = shelterGlass.build();
   if (g) {
     g.renderOrder = 3;

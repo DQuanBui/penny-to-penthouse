@@ -25,7 +25,7 @@ const NORMALS = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] };
 
 export function generateCity(cfg, opts = {}) {
   const rng = mulberry32(cfg.seed || 1);
-  const N = cfg.grid || 8;
+  const N = cfg.grid || 12; // blocks per side (12 × 12 ≈ 860 m across)
   const total = N * K.PITCH + K.ROAD;
   const half = total / 2;
   const blockMin = (i) => -half + K.ROAD + i * K.PITCH;
@@ -374,7 +374,9 @@ export function generateCity(cfg, opts = {}) {
       const p = t % 28;
       return p < 12 ? 'ns' : p < 14 ? 'ns_y' : p < 26 ? 'ew' : 'ew_y';
     },
-    update(elapsed, night) {
+    update(elapsed, night, px, pz) {
+      // distance culling for chunked props (parked cars)
+      if (px != null) for (const l of ctx.lod || []) l.mesh.visible = (l.x - px) ** 2 + (l.z - pz) ** 2 < (l.r + 240) ** 2;
       const ph = this.signalPhase(elapsed);
       if (ph !== this._ph) {
         this._ph = ph;
