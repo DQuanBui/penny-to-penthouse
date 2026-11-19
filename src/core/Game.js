@@ -44,6 +44,7 @@ import { CampusLife } from '../world/Campus.js';
 import { AirTraffic } from '../world/Airport.js';
 import { BridgeLife, onWalkway } from '../world/Bridge.js';
 import { SubwayLife, isRail, railKind } from '../world/Subway.js';
+import { TimesSquareLife } from '../world/TimesSquare.js';
 import { makeBike, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -130,6 +131,7 @@ export class Game {
     this.airTraffic = new AirTraffic(this);
     this.bridgeLife = new BridgeLife(this);
     this.subway = new SubwayLife(this);
+    this.timesSquare = new TimesSquareLife(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -277,6 +279,7 @@ export class Game {
     this.campusLife.setCity(this.city);
     this.airTraffic.setCity(this.city);
     this.bridgeLife.setCity(this.city);
+    this.timesSquare.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -852,7 +855,8 @@ export class Game {
   /** Sit down to rest and people-watch (fun and energy slowly recover). */
   sitOn(b) {
     this.player.sitting = true;
-    this.player.sitLift = 0;
+    this.player.sitLift = b.lift || 0;
+    this.player.sitExit = b.exit || null;
     this.player.teleport(b.x + Math.sin(b.ry) * 0.06, b.z + Math.cos(b.ry) * 0.06, b.ry);
     this.hud.hint('bench', 'Resting on a bench slowly restores Fun and Energy. Move (W A S D) or press E to stand up.', 8);
   }
@@ -873,6 +877,7 @@ export class Game {
     const back = def.d > 0.8 ? 0.08 : 0.02; // sofas: sit back into the cushions
     this.player.sitting = true;
     this.player.sitLift = seatH - 0.48;
+    this.player.sitExit = null;
     this.player.teleport(it.x + rx * off - fx * back, it.z + rz * off - fz * back, a);
     this.hud.hint('sitdown', 'Move (W A S D) to get up again.', 5);
   }
@@ -881,6 +886,9 @@ export class Game {
     const p = this.player;
     p.sitting = false;
     p.sitLift = 0;
+    const ex = p.sitExit;
+    p.sitExit = null;
+    if (ex) return p.teleport(ex.x, ex.z, p.heading);
     p.teleport(p.pos.x + Math.sin(p.heading) * 0.75, p.pos.z + Math.cos(p.heading) * 0.75, p.heading);
   }
 
@@ -936,6 +944,8 @@ export class Game {
       if (street) return street;
       const zoo = this.zooLife.interactable(p);
       if (zoo) return zoo;
+      const ts = this.city.timesSquare;
+      if (ts && (ts.front.x - p.x) ** 2 + (ts.front.z - p.z) ** 2 < 4 * 4) return { label: '🔴 Sit on the red steps and watch the lights', action: () => this.sitOn(ts.seats[18 + Math.floor(Math.random() * 12)]) };
       const br = this.city.bridge;
       if (br && (br.lookout.x - p.x) ** 2 + (br.lookout.z - p.z) ** 2 < 3.5 * 3.5) return { label: '🌉 Lean on the railing and take in the view', action: () => this.enjoyView(br) };
       const bench = this.nearestBench(p);
@@ -1099,6 +1109,7 @@ export class Game {
     this.campusLife.update(dt, this.player.pos, !inside);
     this.airTraffic.update(dt, this.player.pos, !inside);
     this.bridgeLife.update(dt, this.player.pos, !inside);
+    this.timesSquare.update(dt, this.player.pos, !inside);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);
     if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {

@@ -3,6 +3,7 @@
 // can reuse them freely.
 import * as THREE from 'three';
 import { FACADE } from './Buildings.js';
+import { timesSquare } from './TimesSquare.js';
 
 const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, ...o });
 
@@ -44,6 +45,8 @@ export function buildLandmarks(ctx) {
 }
 
 const BUILDERS = {
+  /** Times Square: billboard towers, tickers, the red steps. */
+  times_square: timesSquare,
   /** Art-deco stepped tower with a needle. */
   spire_tower(T) {
     const c = '#cbb89a';

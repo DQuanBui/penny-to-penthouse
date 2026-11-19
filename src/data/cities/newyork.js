@@ -37,6 +37,7 @@ export default {
   ],
   landmarks: [
     { type: 'spire_tower', name: 'Empire Spire', district: 'midtown' },
+    { type: 'times_square', name: 'Times Square', district: 'midtown' },
     { type: 'glass_obelisk', name: 'Liberty Tower', district: 'lower_manhattan' },
     { type: 'arch_bridge', name: 'Harbor Bridge', district: 'brooklyn' },
   ],

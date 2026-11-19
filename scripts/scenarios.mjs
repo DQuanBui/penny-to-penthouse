@@ -434,6 +434,71 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Times Square: billboard towers, tickers, the red steps, tourists. */
+  async times({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 14 * 60;
+      const ts = g.city.timesSquare;
+      if (!ts) return null;
+      g.player.teleport(ts.x, ts.z + 22, Math.PI);
+      g.cam.snapBehind(Math.PI);
+      g.cam.pitch = -0.05;
+      g.cam.dist = 7;
+      return { x: ts.x, z: ts.z, seats: ts.seats.length };
+    });
+    console.log('times square', JSON.stringify(info));
+    if (!info) throw new Error('no Times Square');
+    await page.waitForFunction(() => window.__game.timesSquare.people.length > 0, null, { timeout: 20000 });
+    await wait(2500);
+    await shot('times-day');
+    // walk to the steps and sit
+    await page.evaluate(() => {
+      const g = window.__game;
+      const ts = g.city.timesSquare;
+      g.player.teleport(ts.front.x, ts.front.z + 1, Math.PI);
+    });
+    await page.waitForFunction(() => /red steps/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await wait(1200);
+    const sat = await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(Math.PI);
+      g.cam.pitch = 0.1;
+      g.cam.dist = 9;
+      return { sitting: g.player.sitting, lift: g.player.sitLift.toFixed(2), y: g.player.rig.group.position.y.toFixed(2) };
+    });
+    console.log('sat', JSON.stringify(sat));
+    await wait(1500);
+    await shot('times-steps');
+    await page.keyboard.down('KeyS');
+    await page.waitForFunction(() => !window.__game.player.sitting, null, { timeout: 10000 });
+    await page.keyboard.up('KeyS');
+    const up = await page.evaluate(() => {
+      const g = window.__game;
+      const ts = g.city.timesSquare;
+      return { sitting: g.player.sitting, dz: (g.player.pos.z - ts.z).toFixed(2), blocked: g.city.colliders.pointBlocked(g.player.pos.x, 0.5, g.player.pos.z, 0.25) };
+    });
+    console.log('stood up', JSON.stringify(up));
+    // night: the screens glow
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.time.total = 22 * 60;
+      const ts = g.city.timesSquare;
+      g.player.teleport(ts.x - 4, ts.z + 26, Math.PI - 0.15);
+      g.cam.snapBehind(Math.PI - 0.15);
+      g.cam.pitch = -0.12;
+      g.cam.dist = 6;
+    });
+    await wait(3500);
+    await shot('times-night');
+    const ads = await page.evaluate(() => window.__game.city.group.getObjectsByProperty('type', 'Mesh').filter((m) => m.material?.map?.image?.width === 512).length);
+    console.log('screens', ads);
+  },
   /** World food and drink: pho, Korean BBQ, ramen, sushi, dumplings, tacos, boba... */
   async food({ page, shot, wait }) {
     await startLife(page, wait);
