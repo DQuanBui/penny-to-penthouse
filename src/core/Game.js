@@ -46,6 +46,7 @@ import { BridgeLife, onWalkway } from '../world/Bridge.js';
 import { SubwayLife, isRail, railKind } from '../world/Subway.js';
 import { makeBike, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
+import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
 import { openService } from '../ui/Shops.js';
 import { openPet } from '../ui/Pets.js';
 import { PhotoMode } from '../ui/PhotoMode.js';
@@ -402,6 +403,7 @@ export class Game {
   /** Stand the player outside a place's door, facing the street. */
   placePlayerAt(place) {
     this.player.sitting = false;
+    this.player.emote = null;
     if (this.player.riding) this.dismountBike(false);
     const ry = Math.atan2(place.nx, place.nz);
     this.player.teleport(place.x, place.z, ry);
@@ -1032,6 +1034,7 @@ export class Game {
       if (input.pressed('KeyM') && (this.map.isOpen() || !this.overlays.length)) this.map.toggle();
       if (!blocked) {
         if (input.pressed('KeyH')) this.photoMode.toggle();
+        if (input.pressed('KeyX') && !this.build.active) openEmotes(this);
         if (input.pressed('KeyG')) {
           if (this.player.riding) this.dismountBike(this.player.riding.kind === 'share' && !!this.nearestDock(this.player.pos, 3.2));
           else if (this.inside) this.events.emit('toast', { icon: '🚲', title: 'Bike', text: 'Go outside to ride.', kind: 'info' });
@@ -1062,7 +1065,8 @@ export class Game {
     if (!blocked && !this.photoMode.active) {
       const minPerSec = (1440 / (BALANCE.time.realMinutesPerDay * 60)) * this.settings.get('timeSpeed');
       // sitting on a bench is a gentle rest; otherwise needs just tick
-      this.sim.advance(dt * minPerSec, this.player.sitting ? SIT_REST : this.player.riding && this.player.riding.v > 1 ? BIKE_RIDE : undefined);
+      const em = this.player.emote;
+      this.sim.advance(dt * minPerSec, this.player.sitting ? SIT_REST : this.player.riding && this.player.riding.v > 1 ? BIKE_RIDE : em && EMOTE_RATES[em.id] ? EMOTE_RATES[em.id] : undefined);
     }
 
     // --- world ---
@@ -1104,6 +1108,17 @@ export class Game {
       if (!inside && !driving && !blocked && this.player.speed > 0.8) this.sim.pets.walk(dt * (1440 / (BALANCE.time.realMinutesPerDay * 60)) * this.settings.get('timeSpeed'));
     }
     if (inside?.place.type === 'shelter') this.shelterDogs.update(dt);
+    updateEmote(this, dt);
+    // a phone in your hand for calls and selfies
+    const wantPhone = ['phone', 'selfie'].includes(this.player.emote?.id) && this.playerRig.bones?.handR;
+    if (wantPhone && !this.phoneMesh) {
+      this.phoneMesh = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.075, 0.009), new THREE.MeshStandardMaterial({ color: '#16171b', roughness: 0.3, metalness: 0.4 }));
+      this.phoneMesh.position.set(0, -0.07, 0.035);
+      this.playerRig.bones.handR.add(this.phoneMesh);
+    } else if (!wantPhone && this.phoneMesh) {
+      this.phoneMesh.removeFromParent();
+      this.phoneMesh = null;
+    }
     if (this.bikeMesh) for (const w of this.bikeMesh.userData.wheels) w.rotation.x += ((this.player.riding?.v || 0) * dt) / 0.34;
     this.traffic.parked = this.vehicles.parkedOBBs();
     this.traffic.update(dt, elapsed, hourOf(st.time.total), this.player.pos.x, this.player.pos.z, this.crowd, !inside, this.weather.info.crowd);

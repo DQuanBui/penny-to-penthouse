@@ -6,7 +6,7 @@ import { damp, lerp, smoothstep } from '../core/utils.js';
 /**
  * @param rig   from CharacterFactory.buildCharacter
  * @param dt    seconds
- * @param p     { speed (m/s), grounded, sitting, floor (sitting on the ground), riding (a bicycle), umbrella, talking, waving, shaking }
+ * @param p     { speed (m/s), grounded, sitting, floor (sitting on the ground), riding (a bicycle), umbrella, talking, waving, shaking, dancing, cheering, jacks, phone }
  */
 export function animateRig(rig, dt, p) {
   if (rig.type === 'glb') {
@@ -29,6 +29,9 @@ export function animateRig(rig, dt, p) {
   a.wave = damp(a.wave, p.waving ? 1 : 0, 8, dt);
   a.shake = damp(a.shake || 0, p.shaking ? 1 : 0, 8, dt);
   a.umb = damp(a.umb || 0, p.umbrella ? 1 : 0, 6, dt);
+  a.cheer = damp(a.cheer || 0, p.cheering ? 1 : 0, 9, dt);
+  a.jacks = damp(a.jacks || 0, p.jacks ? 1 : 0, 8, dt);
+  a.phone = damp(a.phone || 0, p.phone ? 1 : 0, 7, dt);
   a.dance = damp(a.dance || 0, p.dancing ? 1 : 0, 5, dt);
   // one full cycle = two steps
   const stride = lerp(1.45, 2.5, run);
@@ -135,6 +138,33 @@ export function animateRig(rig, dt, p) {
     b.chest.rotation.z = Math.sin(beat * 0.5) * 0.12 * d;
     b.head.rotation.x += Math.sin(beat) * 0.12 * d;
   } else b.chest.rotation.z = 0;
+  // cheering: both arms thrown up, a little bounce
+  if (a.cheer > 0.01) {
+    aLz = lerp(aLz, 2.6 + Math.sin(t * 9) * 0.15, a.cheer);
+    aRz = lerp(aRz, -2.6 - Math.sin(t * 9) * 0.15, a.cheer);
+    fLx = lerp(fLx, -0.3, a.cheer);
+    fRx = lerp(fRx, -0.3, a.cheer);
+    b.hips.position.y += Math.abs(Math.sin(t * 9)) * 0.04 * a.cheer;
+  }
+  // jumping jacks: arms and legs out together, hop
+  if (a.jacks > 0.01) {
+    const j = (Math.sin(t * 9) + 1) / 2;
+    aLz = lerp(aLz, 0.15 + j * 2.6, a.jacks);
+    aRz = lerp(aRz, -0.15 - j * 2.6, a.jacks);
+    b.thighL.rotation.z = j * 0.32 * a.jacks;
+    b.thighR.rotation.z = -j * 0.32 * a.jacks;
+    b.hips.position.y += Math.abs(Math.cos(t * 9)) * 0.07 * a.jacks;
+  } else {
+    b.thighL.rotation.z = 0;
+    b.thighR.rotation.z = 0;
+  }
+  // on the phone: right hand at the ear, head tilted
+  if (a.phone > 0.01) {
+    aRx = lerp(aRx, -1.05, a.phone);
+    aRz = lerp(aRz, 0.28, a.phone);
+    fRx = lerp(fRx, -2.2, a.phone);
+    b.head.rotation.z = -0.12 * a.phone;
+  } else b.head.rotation.z = 0;
   // holding an umbrella: right forearm up in front of the chest
   if (a.umb > 0.01) {
     aRx = lerp(aRx, -0.42, a.umb);

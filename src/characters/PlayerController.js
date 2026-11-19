@@ -24,6 +24,7 @@ export class PlayerController {
     this.sitLift = 0; // seat height above a standard chair
     this.riding = null; // { max, accel, v } while on a bicycle
     this.umbrella = false; // holding an umbrella (rain)
+    this.emote = null; // { id, t, held } (ui/Emotes.js)
     this.rig = null;
     this.world = null; // { colliders, groundY(x,z) }
     this.stepAccum = 0;
@@ -106,6 +107,7 @@ export class PlayerController {
       wantJump = input.pressed('Space');
     }
     const len = Math.hypot(mx, mz);
+    if (len > 0 && this.emote) this.emote = null; // moving ends any action
     let tx = 0;
     let tz = 0;
     if (len > 0) {
@@ -167,7 +169,8 @@ export class PlayerController {
 
     if (this.rig) {
       this.sync();
-      animateRig(this.rig, dt, { speed: this.speed, grounded: this.grounded, sitting: this.sitting, talking: this.talking, umbrella: this.umbrella && !this.sitting });
+      const em = this.emote?.id;
+      animateRig(this.rig, dt, { speed: this.speed, grounded: this.grounded, sitting: this.sitting, talking: this.talking, umbrella: this.umbrella && !this.sitting && !em, waving: em === 'wave', cheering: em === 'cheer', dancing: em === 'dance', jacks: em === 'jacks', floor: em === 'sit', phone: em === 'phone' || em === 'selfie' });
     }
   }
 }

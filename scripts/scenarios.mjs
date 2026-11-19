@@ -167,6 +167,33 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Actions (X): dance, cheer, jumping jacks, phone call, sit on the ground, selfie. */
+  async emotes({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60;
+      g.cam.snapBehind(g.player.heading + Math.PI);
+      g.cam.pitch = 0.1;
+      g.cam.dist = 3.6;
+    });
+    await key(page, 'KeyX', 700);
+    await page.waitForSelector('.emote-grid');
+    await shot('emotes-menu');
+    for (const name of ['Dance', 'Cheer', 'Jumping jacks', 'Take a phone call']) {
+      if (!(await page.locator('.emote-grid').count())) await key(page, 'KeyX', 700);
+      await page.click(`.emote-grid button:has-text("${name}")`);
+      await wait(1600);
+      const em = await page.evaluate(() => window.__game.player.emote && window.__game.player.emote.id);
+      console.log(name, em);
+      await shot('emote-' + name.split(' ')[0].toLowerCase());
+    }
+    await page.keyboard.down('KeyW');
+    await wait(2000);
+    await page.keyboard.up('KeyW');
+    console.log('after moving', await page.evaluate(() => window.__game.player.emote));
+  },
   /** Sitting: on a park bench, on the sofa at home, on a dining chair in a café. */
   async sit({ page, shot, wait }) {
     await startLife(page, wait);
