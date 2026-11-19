@@ -42,8 +42,18 @@ export function hotelService(game, place, body) {
   const here = game.city.cfg.id;
   const rate = hotelRate(here);
   const staying = st.trip?.cityId === here || (st.flags.hotelUntil || 0) > st.time.total;
-  body.append(h('div.muted', 'Marble floors, a chandelier, and a concierge who knows every restaurant in town.'));
-  if (staying) {
+  const inRoom = game.inside?.place.type === 'hotel';
+  body.append(h('div.muted', inRoom ? '"Front desk, how may I help you?"' : 'Marble floors, a chandelier, and a concierge who knows every restaurant in town.'));
+  if (inRoom) {
+    if (!st.trip && staying)
+      body.append(
+        btn('🧳  Check out', () => {
+          st.flags.hotelUntil = 0;
+          game.closeTop();
+          game.leaveInterior();
+        }),
+      );
+  } else if (staying) {
     body.append(
       h('div.good', '🔑 Your room is ready.'),
       btn('🛏️  Go up to your room', () => {

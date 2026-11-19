@@ -388,6 +388,11 @@ const SHAPES = {
     for (const x of [-0.9, 0.9]) for (const z of [-1.35, 1.35]) S.cyl(0.34, 0.34, 0.24, x, 0.34, z, '#15171c', 14, 0, Math.PI / 2);
     S.glow(new THREE.BoxGeometry(1.5, 0.1, 0.04).translate(0, 0.62, 2.16), '#fff3c8', 0.8);
   },
+  roomPhone(S) {
+    S.box(0.45, 0.55, 0.4, 0, 0.275, 0, '#6b4a2a');
+    S.box(0.2, 0.06, 0.16, 0, 0.58, 0, '#1d1f24');
+    S.box(0.18, 0.04, 0.05, 0, 0.63, -0.04, '#2b2d33');
+  },
   tracks(S, f) {
     S.box(f.w, 0.02, f.d, 0, 0.01, 0, '#2a2622');
     for (let x = -f.w / 2 + 0.3; x < f.w / 2; x += 0.6) S.box(0.24, 0.04, 2.0, x, 0.03, 0, '#4a3a2a');

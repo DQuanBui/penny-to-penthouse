@@ -98,6 +98,7 @@ export const FURNITURE = [
   F('gym_weights', 'Weight Bench', 'shop', 0, 1, 2, 0.9, 0, 'weights', { shop: true, use: 'workout', q: 1.2, p: {} }),
   F('gym_shower', 'Locker Room Shower', 'shop', 0, 1, 1, 2.1, 0, 'shower', { shop: true, use: 'shower', q: 1, p: { color: '#dfe7ee' } }),
   F('show_car', 'Showroom Car', 'shop', 0, 2, 4.5, 1.4, 0, 'car', { shop: true, p: { color: '#c53a3a' } }),
+  F('room_phone', 'Room Phone', 'shop', 0, 0.5, 0.5, 0.6, 0, 'roomPhone', { shop: true, use: 'service', p: {} }),
   F('tracks', 'Tracks', 'shop', 0, 34, 4, 0, 0, 'tracks', { shop: true, p: {} }),
   F('platform_edge', 'Platform Edge', 'shop', 0, 34, 0.5, 1.2, 0, 'platformEdge', { shop: true, use: 'board', p: {} }),
   F('column_steel', 'Column', 'shop', 0, 0.5, 0.5, 3, 0, 'column', { shop: true, p: {} }),

@@ -251,7 +251,7 @@ export function commercialLayout(place) {
         { id: 'plant_floor', x: 19.4, z: 13.4, r: 0 },
       ]);
     case 'hotelroom':
-      return L(9, 7, 'carpet', '#e9dfcf', autoFurnish(9, 7, ['bed_queen', 'lamp_table', 'wardrobe', 'desk_wood', 'tv_small', 'mini_fridge', 'shower_basic', 'toilet', 'sink', 'armchair', 'plant_floor']));
+      return L(9, 7, 'carpet', '#e9dfcf', autoFurnish(9, 7, ['bed_queen', 'room_phone', 'wardrobe', 'desk_wood', 'tv_small', 'mini_fridge', 'shower_basic', 'toilet', 'sink', 'armchair', 'plant_floor']));
     case 'lecture':
       return L(16, 12, 'wood', '#e6dccb', [
         { id: 'chalkboard_wall', x: 8, z: 0.25, r: 0 },

@@ -25,8 +25,10 @@ if (!browser) {
 }
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
+const warnings = new Map();
 page.on('console', (m) => {
   if (m.type() === 'error') errors.push(m.text());
+  if (m.type() === 'warning') warnings.set(m.text().slice(0, 160), (warnings.get(m.text().slice(0, 160)) || 0) + 1);
 });
 page.on('pageerror', (e) => errors.push('PAGEERROR ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')));
 
@@ -43,6 +45,10 @@ try {
   errors.push('SCENARIO ' + e.message);
 }
 await browser.close();
+// report (without failing) warnings and the WebGL messages we normally ignore
+const gl = errors.filter((e) => /WebGL: INVALID|GL Driver Message/i.test(e));
+for (const e of new Set(gl)) warnings.set(e.slice(0, 160), (warnings.get(e.slice(0, 160)) || 0) + 1);
+if (process.env.WARN) for (const [w, n] of warnings) console.log('⚠ ' + n + '× ' + w);
 const real = errors.filter((e) => !/favicon|fonts\.g|ERR_INTERNET|net::ERR|GPU stall|WebGL: INVALID|GL Driver Message/i.test(e));
 if (real.length) {
   console.error(`✗ ${name}: ${real.length} error(s)`);

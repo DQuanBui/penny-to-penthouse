@@ -81,7 +81,7 @@ export class Game {
 
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
 
@@ -476,6 +476,7 @@ export class Game {
       this.audio?.play('door');
       this.events.emit('entered', { place, home });
       if (home) this.hud.hint('home', 'This is your place. Walk up to furniture and press E: bed to sleep, fridge to eat, shower to wash.', 9);
+      else if (place.station) this.hud.hint('platform', 'Wait behind the yellow line. When the train stops and opens its doors, press E to board.', 8);
       else if (PLACE_TYPES[place.type].service) this.hud.hint('counter', 'Walk up to the counter and press E to be served.', 7);
       if (home) this.hud.hint('buildkey', 'Press B at home to furnish and decorate in build mode.', 8);
     };
@@ -690,6 +691,11 @@ export class Game {
     const w = this.cityWorld();
     this.player.setWorld(w);
     this.cam.setWorld(w);
+    if (state.flags.bikeShare) {
+      // you were riding a CityCycle when the game was saved: it was returned for you
+      state.flags.bikeShare = null;
+      this.events.emit('toast', { icon: '🚲', title: 'CityCycle returned', text: 'Your bike-share ride ended when you left. It was docked for you.', kind: 'info' });
+    }
     this.pet.setPet(state.pet || null);
     this.pet.attach(this.scene);
     this.pet.heel(this.player);
@@ -944,7 +950,7 @@ export class Game {
       if (!pt) return null;
       if (pt.exit) return { label: this.inside.home ? 'Leave home' : `Leave ${this.inside.place.name}`, action: () => this.leaveInterior() };
       if (pt.lift) return { label: pt.label, action: () => this.switchFloor() };
-      const label = pt.use === 'service' ? `${this.inside.place.label} counter` : pt.label;
+      const label = pt.item?.id === 'room_phone' ? '📞 Call the front desk' : pt.use === 'service' ? `${this.inside.place.label} counter` : pt.label;
       return { label, action: () => useFurniture(this, pt) };
     }
     let best = null;
@@ -1079,7 +1085,7 @@ export class Game {
     const raining = this.weather.kind === 'rain' && !inside;
     this.crowd.raining = raining;
     this.npcs.raining = raining;
-    this.player.umbrella = raining && !driving && !this.player.riding;
+    this.player.umbrella = raining && !driving && !this.player.riding && !this.player.sitting;
     setUmbrella(this.playerRig, this.player.umbrella, '#1d2433');
     this.crowd.update(dt, this.player.pos.x, this.player.pos.z, hourOf(st.time.total), !inside, elapsed);
     this.animals.update(dt, this.crowd, this.player.pos.x, this.player.pos.z, this.sky.night, !inside);
