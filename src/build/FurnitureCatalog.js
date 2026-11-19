@@ -388,6 +388,39 @@ const SHAPES = {
     for (const x of [-0.9, 0.9]) for (const z of [-1.35, 1.35]) S.cyl(0.34, 0.34, 0.24, x, 0.34, z, '#15171c', 14, 0, Math.PI / 2);
     S.glow(new THREE.BoxGeometry(1.5, 0.1, 0.04).translate(0, 0.62, 2.16), '#fff3c8', 0.8);
   },
+  tracks(S, f) {
+    S.box(f.w, 0.02, f.d, 0, 0.01, 0, '#2a2622');
+    for (let x = -f.w / 2 + 0.3; x < f.w / 2; x += 0.6) S.box(0.24, 0.04, 2.0, x, 0.03, 0, '#4a3a2a');
+    for (const z of [-0.72, 0.72]) S.box(f.w, 0.09, 0.07, 0, 0.08, z, '#8a8f99');
+    S.box(f.w, 0.1, 0.12, 0, 0.08, 1.45, '#b9a24a');
+  },
+  platformEdge(S, f) {
+    S.box(f.w, 0.012, 0.5, 0, 0.006, 0, '#f2c230');
+    S.box(f.w, 0.012, 0.06, 0, 0.007, 0.32, '#f4f4f2');
+  },
+  column(S) {
+    S.box(0.3, 3, 0.3, 0, 1.5, 0, '#2f5a4a');
+    S.box(0.44, 0.12, 0.44, 0, 0.06, 0, '#24463a');
+    S.box(0.44, 0.12, 0.44, 0, 2.94, 0, '#24463a');
+  },
+  platformBench(S, f) {
+    S.box(f.w, 0.07, 0.42, 0, 0.45, 0.02, '#7a5a3c');
+    S.box(f.w, 0.4, 0.06, 0, 0.72, -0.18, '#7a5a3c');
+    for (const x of [-f.w / 2 + 0.2, f.w / 2 - 0.2]) S.box(0.06, 0.45, 0.4, x, 0.22, 0, '#2b2d33');
+  },
+  turnstile(S) {
+    S.box(0.28, 1.0, 0.8, -0.35, 0.5, 0, '#9aa2ad');
+    S.box(0.3, 0.06, 0.82, -0.35, 1.03, 0, '#3a3f48');
+    for (const a of [0, 2.1, 4.2]) S.add(new THREE.CylinderGeometry(0.02, 0.02, 0.5).rotateZ(Math.PI / 2).rotateY(a).translate(-0.05, 0.85, 0), '#c9ced6');
+  },
+  subwaySeat(S, f) {
+    S.box(f.w, 0.08, 0.46, 0, 0.45, 0.02, '#e9a33a');
+    S.box(f.w, 0.42, 0.06, 0, 0.7, -0.2, '#e9a33a');
+    S.box(f.w, 0.4, 0.3, 0, 0.2, -0.05, '#9aa2ad');
+  },
+  pole(S) {
+    S.cyl(0.025, 0.025, 2.4, 0, 1.2, 0, '#c9ced6', 10);
+  },
   grillTable(S, f) {
     S.box(f.w - 0.2, 0.06, f.d - 0.4, 0, 0.74, 0, '#5a3a2a');
     S.box(0.5, 0.72, 0.5, 0, 0.36, 0, '#2b2d33');

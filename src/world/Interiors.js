@@ -18,7 +18,7 @@ const SVC_LABEL = { clothing: 'Fashion counter', electronics: 'Tech counter', ca
 const USE_LABEL = {
   sleep: 'Sleep', relax: 'Relax', computer: 'Use the computer', read: 'Read a book', eat: 'Open the fridge', cook: 'Cook a meal',
   shower: 'Take a shower', bath: 'Take a bath', wardrobe: 'Change outfit', tv: 'Watch TV', game: 'Play video games', music: 'Listen to music',
-  piano: 'Play the piano', workout: 'Work out', paint: 'Paint', service: 'Talk to staff', work: 'Start your shift',
+  piano: 'Play the piano', workout: 'Work out', paint: 'Paint', service: 'Talk to staff', work: 'Start your shift', board: 'Board the train',
 };
 
 /** Footprint of an item after rotation (r = quarter turns). */
@@ -216,6 +216,29 @@ export function commercialLayout(place) {
         { id: 'shop_shelf', x: 0.6, z: 5, r: 1 },
         { id: 'plant_floor', x: 0.5, z: 7.4, r: 0 },
       ]);
+    case 'platform': {
+      const el = place.rail === 'elevated';
+      const items = [
+        { id: 'tracks', x: 17, z: 2, r: 0 },
+        { id: 'platform_edge', x: 17, z: 4.3, r: 0 },
+        ...[5, 11, 17, 23, 29].map((x) => ({ id: 'column_steel', x, z: 5.9, r: 0 })),
+        ...[8, 14, 20, 26].map((x) => ({ id: 'platform_bench', x, z: 7.6, r: 0 })),
+        ...[12.5, 14.5, 19.5, 21.5].map((x) => ({ id: 'turnstile', x, z: 9.6, r: 0 })),
+      ];
+      const l = L(34, 12, el ? 'concrete' : 'tile', el ? '#cfd6dc' : '#eef1ee', items);
+      l.windows = el ? 'panorama' : 'none';
+      return l;
+    }
+    case 'subwaycar': {
+      const l = L(16, 3.8, 'tile', '#dfe3e6', [
+        { id: 'subway_seat', x: 3.2, z: 0.3, r: 0 },
+        { id: 'subway_seat', x: 8, z: 0.3, r: 0 },
+        { id: 'subway_seat', x: 12.8, z: 0.3, r: 0 },
+        ...[2.2, 5.6, 10.4, 13.8].map((x) => ({ id: 'grab_pole', x, z: 1.9, r: 0 })),
+      ]);
+      l.windows = 'train';
+      return l;
+    }
     case 'terminal':
       return L(20, 14, 'tile', '#e6ebf0', [
         { id: 'reception', x: 5, z: 1.6, r: 0 },
@@ -538,6 +561,8 @@ export class Interior {
     this.layout = layout;
     this.opts = opts;
     this.dark = !!layout.dark;
+    this.windowMat.userData.keep = false;
+    this.scrollTex = null;
     const { w, d } = layout;
     const H = ROOM_H;
     const root = this.root;
@@ -594,7 +619,7 @@ export class Interior {
     const ww = pano ? Math.min(3.2, w / nWin - 0.5) : 1.5;
     const wh = pano ? 1.9 : 1.3;
     const wy = pano ? 1.65 : 1.95;
-    for (let i = 0; i < (layout.dark ? 0 : nWin); i++) {
+    for (let i = 0; i < (layout.dark || layout.windows === 'none' ? 0 : nWin); i++) {
       const x = (w / nWin) * (i + 0.5);
       const frame = new THREE.Mesh(new THREE.PlaneGeometry(ww, wh), trim);
       frame.position.set(x, wy, 0.012);
@@ -843,12 +868,13 @@ export class Interior {
   /** @param night 0..1  @param skyColor THREE.Color of the horizon/top mix */
   update(night, skyColor, minutes) {
     const dark = night > 0.55;
-    const map = dark ? Tex.skylineNight() : Tex.skylineDay();
+    const map = this.windowMat.userData.keep ? this.windowMat.map : dark ? Tex.skylineNight() : Tex.skylineDay();
     if (this.windowMat.map !== map) {
       this.windowMat.map = map;
       this.windowMat.needsUpdate = true;
     }
-    if (dark) this.windowMat.color.setScalar(0.75 + (night - 0.55) * 0.5);
+    if (this.windowMat.userData.keep) this.windowMat.color.setScalar(1);
+    else if (dark) this.windowMat.color.setScalar(0.75 + (night - 0.55) * 0.5);
     else this.windowMat.color.copy(skyColor).lerp(_white, 0.35 + (1 - night) * 0.25);
     if (this.clock && minutes != null) {
       const m = minutes % 1440;

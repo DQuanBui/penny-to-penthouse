@@ -173,7 +173,7 @@ export class NPCManager {
     }
     // everyday customers, so no business ever feels empty (bars fill up at night)
     const meta = PLACE_TYPES[place.type];
-    if (meta.minor || ['cafe', 'restaurant', 'bar', 'mall', 'gym', 'clothing', 'grocery', 'electronics'].includes(place.type)) {
+    if (meta.minor || ['cafe', 'restaurant', 'bar', 'mall', 'gym', 'clothing', 'grocery', 'electronics', 'station', 'subwaycar'].includes(place.type)) {
       const hr = hourOf(this.game.state.time.total);
       const nightlife = SHOP_TYPES[place.type]?.cat === 'night' || place.type === 'bar';
       const busy = nightlife ? (hr >= 21 || hr < 2 ? 8 : 3) : hr >= 11 && hr < 14 ? 5 : 3;

@@ -167,6 +167,83 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Subway: down to the platform, the train pulls in, ride, come up elsewhere; Chicago's L is elevated. */
+  async subway({ page, shot, wait }) {
+    await startLife(page, wait);
+    const s0 = await page.evaluate(() => {
+      const g = window.__game;
+      g.state.money.checking = 500;
+      g.state.time.total = 9 * 60;
+      const st = g.city.places.find((p) => p.station);
+      g.placePlayerAt(st);
+      g.enterPlace(st, true);
+      const L = g.inside.layout;
+      g.player.teleport(17, 6.6, Math.PI);
+      g.cam.snapBehind(Math.PI + 0.25);
+      g.cam.pitch = 0.45;
+      g.cam.dist = 8;
+      // the next train is due right away
+      g.subway.state = 'away';
+      g.subway.t = 0.1;
+      return { station: st.name, layout: [L.w, L.d], train: !!g.subway.train, uses: g.interior.points.map((p) => p.use) };
+    });
+    console.log('platform', JSON.stringify(s0));
+    await page.waitForFunction(() => window.__game.subway.doorsOpen(), null, { timeout: 60000 });
+    await wait(500);
+    await shot('subway-platform');
+    await page.waitForFunction(() => window.__game.interactable && /Board/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog button');
+    await page.locator('.dialog button').first().click();
+    await wait(1500);
+    const s1 = await page.evaluate(() => ({ inside: window.__game.inside && window.__game.inside.place.type, ride: !!window.__game.subway.ride }));
+    console.log('on the train', JSON.stringify(s1));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(Math.PI + 0.3);
+      g.cam.pitch = 0.5;
+      g.cam.dist = 6;
+    });
+    await wait(800);
+    await shot('subway-ride');
+    await page.waitForFunction(() => !window.__game.inside && !window.__game.fading, null, { timeout: 90000 });
+    const s2 = await page.evaluate(() => {
+      const g = window.__game;
+      const near = g.city.places.filter((p) => p.station).map((p) => [p.name, Math.round(Math.hypot(p.x - g.player.pos.x, p.z - g.player.pos.z))]).sort((a, b) => a[1] - b[1])[0];
+      return { outside: !g.inside, nearestStation: near, cash: Math.round(g.state.money.checking) };
+    });
+    console.log('arrived', JSON.stringify(s2));
+    // Chicago: the L runs overhead
+    await startLife(page, wait, 'Chicago');
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.time.total = 12 * 60;
+      const st = g.city.places.find((p) => p.station);
+      g.placePlayerAt(st);
+      // across the street, looking back at the raised platform
+      const face = Math.atan2(-st.nx, -st.nz);
+      g.player.teleport(st.doorX + st.nx * 8 + st.nz * 6, st.doorZ + st.nz * 8 - st.nx * 6, face + 0.5);
+      g.cam.snapBehind(face + 0.5);
+      g.cam.pitch = 0.35;
+      g.cam.dist = 16;
+      g.playerRig.group.visible = false;
+    });
+    await wait(1500);
+    await shot('subway-L-street');
+    await page.evaluate(() => (window.__game.playerRig.group.visible = true));
+    await page.evaluate(() => {
+      const g = window.__game;
+      const st = g.city.places.find((p) => p.station);
+      g.enterPlace(st, true);
+      g.player.teleport(17, 6.6, Math.PI);
+      g.cam.snapBehind(Math.PI + 0.25);
+      g.cam.pitch = 0.4;
+      g.subway.state = 'away';
+      g.subway.t = 0.1;
+    });
+    await page.waitForFunction(() => window.__game.subway.doorsOpen(), null, { timeout: 60000 });
+    await shot('subway-L-platform');
+  },
   /** The bridge: walk out from the promenade, sit on a bench, take in the view. */
   async bridge({ page, shot, wait }) {
     await startLife(page, wait);

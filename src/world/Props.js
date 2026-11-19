@@ -283,6 +283,19 @@ export function buildStation(ctx, x, z, ry, color) {
   g.add(posts);
   const pit = new THREE.Mesh(box(3.6, 0.04, 1.9, 0, 0.03, 0), new THREE.MeshStandardMaterial({ color: '#0d1016', roughness: 1 }));
   g.add(pit);
+  if (ctx.cfg?.transit?.kind === 'elevated') {
+    // the line runs overhead: a raised platform on steel legs, reached by stairs
+    pit.visible = false;
+    const steel = new THREE.MeshStandardMaterial({ color: '#4a5560', roughness: 0.5, metalness: 0.5 });
+    const parts = [box(9, 0.6, 3.2, 0, 6.3, 0), box(9.2, 1.1, 0.12, 0, 7.2, -1.6), box(9.2, 1.1, 0.12, 0, 7.2, 1.6)];
+    for (const px of [-4.2, 4.2]) for (const pz of [-1.4, 1.4]) parts.push(box(0.3, 6.3, 0.3, px, 3.15, pz));
+    for (let k = 0; k < 10; k++) parts.push(box(1.6, 0.18, 0.5, 3.4, 0.6 * k + 0.3, -1.6 + k * 0.35 - 1.6));
+    const deck = new THREE.Mesh(mergeGeometries(parts), steel);
+    deck.castShadow = true;
+    g.add(deck);
+    const canopy = new THREE.Mesh(box(9, 0.15, 3.4, 0, 9.2, 0), new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
+    g.add(canopy);
+  }
   g.position.set(x, ctx.K.CURB, z);
   g.rotation.y = ry;
   ctx.group.add(g);

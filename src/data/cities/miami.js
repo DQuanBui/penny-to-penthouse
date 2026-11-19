@@ -13,7 +13,7 @@ export default {
   homePriceIndex: 1.25,
   topIndustries: ['Real Estate', 'Tourism'],
   industries: { realestate: 1.3, hospitality: 1.2, creative: 1.05 },
-  transit: { name: 'Metromover', fare: 2.25, icon: '🚝' },
+  transit: { name: 'Metromover', fare: 2.25, icon: '🚝', kind: 'elevated', line: '#2f8f6a' },
   weather: { summary: 'Hot, humid, sudden showers', rain: 0.25, snowInWinter: 0, haze: 0.45, sunny: 0.55 },
   treeType: 'palm',
   busColor: '#1f9e8f', // city bus livery

@@ -32,7 +32,7 @@ function travel(game, place, minutes) {
 }
 
 /** E at a station: pick a destination. */
-export function openStation(game, station) {
+export function openStation(game, station, onPick = null) {
   const cfg = game.city.cfg;
   const others = game.city.places.filter((p) => p.station && p !== station);
   const el = dialog(game, {
@@ -45,6 +45,7 @@ export function openStation(game, station) {
         return btn(`${o.icon}  ${o.district.name}  ·  ${q.minutes} min  ·  ${fmtMoney(q.fare)}`, async () => {
           if (!game.sim.finance.spend(q.fare, 'transit', `${cfg.transit?.name || 'Transit'} fare`)) return;
           game.audio?.play('door');
+          if (onPick) return onPick(o, q);
           await travel(game, o, q.minutes);
         });
       }),

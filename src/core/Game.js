@@ -43,6 +43,7 @@ import { ZooLife } from '../world/Zoo.js';
 import { CampusLife } from '../world/Campus.js';
 import { AirTraffic } from '../world/Airport.js';
 import { BridgeLife, onWalkway } from '../world/Bridge.js';
+import { SubwayLife, isRail, railKind } from '../world/Subway.js';
 import { makeBike, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openService } from '../ui/Shops.js';
@@ -127,6 +128,7 @@ export class Game {
     this.campusLife = new CampusLife(this);
     this.airTraffic = new AirTraffic(this);
     this.bridgeLife = new BridgeLife(this);
+    this.subway = new SubwayLife(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -432,7 +434,9 @@ export class Game {
   /** Walk through a door: fade into the place's interior scene. */
   enterPlace(place, instant) {
     if (this.player.riding) this.dismountBike(place.type === 'station');
-    if (place.station) return this.useStation(place);
+    // rail cities: go down (or up) to the platform; bus cities: the stop's timetable
+    if (place.station && !isRail(this.city.cfg)) return this.useStation(place);
+    if (place.station) place.rail = railKind(this.city.cfg);
     if (place.outdoor) return this.zooLife.openBooth(place);
     // the hotel: guests go up to their room, everyone else books at the front desk
     if (place.type === 'hotel' && !this.hotelAccess()) return openService(this, place);
@@ -448,6 +452,7 @@ export class Game {
       this.interior.build(layout, { place, home, hasPc: hasComputer(st) });
       this.inside = { place, home, layout, level: 0 };
       this.npcs.populateInterior(this.interior, place);
+      this.subway.attach(this.interior, place);
       this.interior.scene.add(this.playerRig.group);
       this.player.setWorld(this.interior.world);
       this.cam.setWorld(this.interior.world);
@@ -1062,6 +1067,7 @@ export class Game {
     this.campusLife.update(dt, this.player.pos, !inside);
     this.airTraffic.update(dt, this.player.pos, !inside);
     this.bridgeLife.update(dt, this.player.pos, !inside);
+    if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);
     if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {
       const w = inside ? this.interior.world : this.city;

@@ -51,6 +51,7 @@ export function useFurniture(game, point) {
   if (use === 'wardrobe') return openWardrobe(game);
   if (use === 'service') return openService(game, game.inside.place, item.svc);
   if (use === 'work') return openShift(game, game.inside.place);
+  if (use === 'board') return game.subway.board();
   if (use === 'workout') return useGym(game, q);
   if (simple[use]) {
     if (use === 'cook' && game.state.inventory.meals < 1) return game.events.emit('toast', { icon: '🧊', title: 'Nothing to cook', text: 'Buy groceries first — look for the 🛒 on your map.', kind: 'bad' });
