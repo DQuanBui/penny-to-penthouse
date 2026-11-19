@@ -413,6 +413,89 @@ const SHAPES = {
     S.box(f.w, 0.4, 0.06, 0, 0.72, -0.18, '#7a5a3c');
     for (const x of [-f.w / 2 + 0.2, f.w / 2 - 0.2]) S.box(0.06, 0.45, 0.4, x, 0.22, 0, '#2b2d33');
   },
+  gallery(S, f, p) {
+    // a big framed canvas: four different abstract compositions
+    const hgt = 1.5;
+    const z = -f.d / 2 + 0.03;
+    const W = f.w - 0.2;
+    S.box(f.w, hgt + 0.16, 0.06, 0, 1.75, z, p.k % 2 ? '#2a2420' : '#c9a24a');
+    const pal = [['#1f3a6a', '#e9c04c', '#c53a3a', '#f4f1ea'], ['#f2ece0', '#1d1f24', '#c53a3a', '#2f5aa3'], ['#2f6a4a', '#e8c45a', '#7a3fd0', '#f4f1ea'], ['#d97a3a', '#3a2f5a', '#f2d7a0', '#1f6b6b']][p.k % 4];
+    S.box(W, hgt, 0.02, 0, 1.75, z + 0.035, pal[0]);
+    if (p.k === 0) {
+      S.cyl(0.32, 0.32, 0.02, -W * 0.2, 1.9, z + 0.045, pal[1], 18, Math.PI / 2);
+      S.box(W * 0.5, 0.18, 0.02, W * 0.15, 1.35, z + 0.045, pal[2]);
+      S.box(0.12, hgt * 0.7, 0.02, W * 0.3, 1.8, z + 0.046, pal[3]);
+    } else if (p.k === 1) {
+      for (let i = 0; i < 3; i++) S.box(0.04, hgt, 0.02, -W / 2 + W * (0.25 + i * 0.25), 1.75, z + 0.045, pal[1]);
+      S.box(W * 0.25, hgt * 0.4, 0.02, -W * 0.25, 2.1, z + 0.046, pal[2]);
+      S.box(W * 0.25, hgt * 0.3, 0.02, W * 0.375, 1.3, z + 0.046, pal[3]);
+    } else if (p.k === 2) {
+      S.box(W, hgt * 0.35, 0.02, 0, 1.75 - hgt * 0.32, z + 0.045, pal[1]);
+      S.cyl(0.25, 0.25, 0.02, W * 0.25, 2.15, z + 0.046, '#f4f1ea', 18, Math.PI / 2);
+      for (let i = 0; i < 4; i++) S.box(0.3, 0.5 + i * 0.12, 0.02, -W * 0.35 + i * 0.36, 1.45 + i * 0.06, z + 0.046, pal[2]);
+    } else {
+      S.cyl(0.36, 0.36, 0.02, 0, 1.75, z + 0.045, pal[1], 22, Math.PI / 2);
+      S.cyl(0.2, 0.2, 0.02, 0, 1.75, z + 0.05, pal[2], 18, Math.PI / 2);
+    }
+    // a little label beside it
+    S.box(0.22, 0.14, 0.02, f.w / 2 + 0.25, 1.35, z + 0.03, '#f4f1ea');
+  },
+  statue(S) {
+    S.box(0.8, 1.0, 0.8, 0, 0.5, 0, '#e9e6df');
+    S.box(0.9, 0.1, 0.9, 0, 1.05, 0, '#d8d4cb');
+    const m = '#f2f0ea';
+    S.add(new THREE.CapsuleGeometry(0.16, 0.5, 4, 10).translate(0, 1.55, 0), m);
+    S.add(new THREE.SphereGeometry(0.12, 12, 10).translate(0, 2.05, 0), m);
+    S.add(new THREE.CapsuleGeometry(0.05, 0.4, 4, 8).rotateZ(0.5).translate(0.24, 1.6, 0), m);
+    S.add(new THREE.CapsuleGeometry(0.05, 0.42, 4, 8).rotateZ(-2.6).translate(-0.24, 1.9, 0), m);
+    S.add(new THREE.CylinderGeometry(0.2, 0.28, 0.4, 12).translate(0, 1.25, 0), m);
+  },
+  dino(S, f) {
+    // a big two-legged skeleton on a low platform
+    S.box(f.w, 0.3, f.d, 0, 0.15, 0, '#3a3530');
+    const bone = '#e8dcc0';
+    const spine = (t) => [-3.4 + t * 6.8, 2.25 + Math.sin(t * Math.PI) * 0.35 - (t < 0.25 ? (0.25 - t) * 3.2 : 0) + (t > 0.85 ? (t - 0.85) * 4 : 0)];
+    for (let i = 0; i <= 26; i++) {
+      const t = i / 26;
+      const [x, y] = spine(t);
+      const r = 0.07 + Math.sin(t * Math.PI) * 0.09;
+      S.sph(r, x, y, 0, bone, 1, 1, 1);
+      // ribs over the chest
+      if (t > 0.42 && t < 0.72) S.add(new THREE.TorusGeometry(0.45 - Math.abs(t - 0.57) * 1.5, 0.025, 4, 14, Math.PI).rotateY(Math.PI / 2).rotateX(Math.PI).translate(x, y - 0.05, 0), bone);
+    }
+    // skull and jaw
+    const [hx, hy] = spine(1);
+    S.box(0.8, 0.42, 0.36, hx + 0.35, hy + 0.15, 0, bone);
+    S.box(0.6, 0.12, 0.3, hx + 0.4, hy - 0.15, 0, bone);
+    S.box(0.1, 0.1, 0.38, hx + 0.2, hy + 0.2, 0, '#2a2620');
+    // legs (strong back legs, tiny arms) and a stand
+    for (const s of [-1, 1]) {
+      S.add(new THREE.CylinderGeometry(0.1, 0.13, 1.4, 8).rotateZ(0.35).translate(0.35, 1.9, s * 0.35), bone);
+      S.add(new THREE.CylinderGeometry(0.08, 0.1, 1.3, 8).rotateZ(-0.3).translate(0.45, 0.9, s * 0.35), bone);
+      S.box(0.5, 0.08, 0.2, 0.7, 0.34, s * 0.35, bone);
+      S.add(new THREE.CylinderGeometry(0.03, 0.035, 0.45, 6).rotateZ(1.2).translate(2.0, 2.65, s * 0.25), bone);
+    }
+    for (const x of [-1.2, 1.6]) S.cyl(0.04, 0.04, 2.4, x, 1.4, 0, '#5a5d62', 6);
+  },
+  stanchion(S, f) {
+    for (const x of [-f.w / 2 + 0.1, f.w / 2 - 0.1]) {
+      S.cyl(0.15, 0.17, 0.05, x, 0.025, 0, '#c9a24a', 14);
+      S.cyl(0.03, 0.03, 0.95, x, 0.5, 0, '#c9a24a', 8);
+      S.sph(0.05, x, 0.98, 0, '#c9a24a', 1, 1, 1);
+    }
+    S.add(new THREE.TorusGeometry(f.w / 2 - 0.1, 0.022, 5, 18, Math.PI).rotateX(Math.PI).scale(1, 0.25, 1).translate(0, 0.92, 0), '#9a1f2b');
+  },
+  readingTable(S, f) {
+    S.box(f.w, 0.07, f.d, 0, 0.74, 0, '#6b4a2a');
+    for (const x of [-f.w / 2 + 0.12, f.w / 2 - 0.12]) for (const z of [-f.d / 2 + 0.12, f.d / 2 - 0.12]) S.box(0.08, 0.72, 0.08, x, 0.36, z, '#4a3220');
+    // green banker's lamps
+    for (const x of [-0.6, 0.6]) {
+      S.cyl(0.07, 0.09, 0.03, x, 0.79, 0, '#c9a24a', 10);
+      S.cyl(0.012, 0.012, 0.3, x, 0.95, 0, '#c9a24a', 6);
+      S.add(new THREE.CylinderGeometry(0.06, 0.13, 0.1, 12, 1, true).rotateZ(Math.PI / 2).translate(x, 1.1, 0), '#2f6a4a');
+      S.glow(new THREE.BoxGeometry(0.2, 0.02, 0.08).translate(x, 1.06, 0), '#fff1c8', 0.6);
+    }
+  },
   ticketMachine(S) {
     S.box(0.86, 1.75, 0.46, 0, 0.875, 0, '#2f4f7a');
     S.box(0.8, 0.22, 0.48, 0, 1.62, 0.005, '#e9c04c');

@@ -62,5 +62,9 @@ export default {
     { type: 'dealer', name: 'Apex Motors', district: 'queens' },
     { type: 'mall', name: 'Liberty Galleria', district: 'midtown' },
     { type: 'shelter', name: 'Brooklyn Paws Rescue', district: 'brooklyn' },
+    { type: 'artmuseum', name: 'The Halcyon Museum of Art', district: 'midtown' },
+    { type: 'historymuseum', name: 'Museum of Natural Wonders', district: 'midtown' },
+    { type: 'library', name: 'Grand Hall Public Library', district: 'midtown' },
+    { type: 'autoshow', name: 'Monarch Luxury Motors', district: 'lower_manhattan' },
   ],
 };

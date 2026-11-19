@@ -434,6 +434,65 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Libraries, art and natural history museums, car showrooms. */
+  async culture({ page, shot, wait }) {
+    await startLife(page, wait);
+    const found = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.state.time.total = 12 * 60;
+      const n = {};
+      for (const p of g.city.places) if (['library', 'artmuseum', 'historymuseum', 'autoshow'].includes(p.type)) n[p.type] = (n[p.type] || []).concat(p.name);
+      return n;
+    });
+    console.log('places', JSON.stringify(found));
+    for (const type of ['library', 'artmuseum', 'historymuseum', 'autoshow']) {
+      const ok = await page.evaluate((t) => {
+        const g = window.__game;
+        const p = g.city.places.find((q) => q.type === t);
+        if (!p) return false;
+        g.leaveInterior(true);
+        g.enterPlace(p, true);
+        return true;
+      }, type);
+      if (!ok) {
+        console.log('missing', type);
+        continue;
+      }
+      await page.waitForFunction((t) => window.__game.inside?.place.type === t, type, { timeout: 15000 });
+      await page.evaluate(() => {
+        const g = window.__game;
+        const L = g.interior.layout;
+        g.player.teleport(L.w / 2, L.d - 1.4, Math.PI);
+        g.cam.snapBehind(Math.PI);
+        g.cam.pitch = 0.42;
+        g.cam.dist = 7;
+      });
+      await wait(2000);
+      await shot('culture-' + type);
+    }
+    // study at the library
+    const before = await page.evaluate(() => window.__game.state.skills.coding || 0);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.leaveInterior(true);
+      const p = g.city.places.find((q) => q.type === 'library');
+      if (p) g.enterPlace(p, true);
+    });
+    await page.waitForFunction(() => window.__game.inside?.place.type === 'library', null, { timeout: 15000 });
+    await page.evaluate(() => {
+      const g = window.__game;
+      const r = g.interior.layout.items.find((it) => it.id === 'reception');
+      g.player.teleport(r.x, r.z - 1.2, 0);
+    });
+    await page.waitForFunction(() => /counter/i.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog:has-text("programming")');
+    await page.click('.dialog .slot:has-text("programming") .btn');
+    await wait(800);
+    console.log('coding skill', before, '->', await page.evaluate(() => window.__game.state.skills.coding || 0));
+  },
   /** Subway entrances: stairs down from the sidewalk; the station hall with tickets and police. */
   async stairs({ page, shot, wait }) {
     await startLife(page, wait);

@@ -352,6 +352,60 @@ export function commercialLayout(place) {
         { id: 'lamp_floor', x: 10.6, z: 4.3, r: 0 },
         { id: 'rug_small', x: 9.4, z: 4.3, r: 0 },
       ]);
+    case 'library':
+      return L(16, 12, 'wood', '#efe6d6', [
+        { id: 'reception', x: 13, z: 9.8, r: 2 },
+        ...[1, 2.1, 3.2, 4.3, 5.4, 6.5, 9.5, 10.6, 11.7, 12.8, 13.9, 15].map((x) => ({ id: 'bookshelf', x, z: 0.3, r: 0 })),
+        ...[1.6, 2.7, 3.8, 4.9].flatMap((x) => [{ id: 'bookshelf', x, z: 2.6, r: 2 }, { id: 'bookshelf', x, z: 3.2, r: 0 }]),
+        ...[0.3].flatMap((x) => [5.4, 6.5, 7.6].map((z) => ({ id: 'bookshelf', x, z, r: 1 }))),
+        ...[8.5, 12.5].flatMap((x) => [
+          { id: 'reading_table', x, z: 5.6, r: 0 },
+          { id: 'dining_chair', x: x - 0.6, z: 4.75, r: 0 },
+          { id: 'dining_chair', x: x + 0.6, z: 4.75, r: 0 },
+          { id: 'dining_chair', x: x - 0.6, z: 6.45, r: 2 },
+          { id: 'dining_chair', x: x + 0.6, z: 6.45, r: 2 },
+        ]),
+        { id: 'armchair', x: 2.2, z: 7.4, r: 1 },
+        { id: 'armchair', x: 2.2, z: 9, r: 1 },
+        { id: 'lamp_floor', x: 1.4, z: 8.2, r: 0 },
+        { id: 'rug_large', x: 3, z: 8.2, r: 0 },
+        { id: 'desk_wood', x: 15.2, z: 4.8, r: 3 },
+        { id: 'desk_wood', x: 15.2, z: 6.6, r: 3 },
+        { id: 'plant_floor', x: 15.4, z: 11.4, r: 0 },
+        { id: 'plant_floor', x: 0.6, z: 11.4, r: 0 },
+      ]);
+    case 'gallery':
+      return L(18, 12, 'wood', '#f6f5f0', [
+        { id: 'art_c', x: 3, z: 0.25, r: 0 },
+        { id: 'art_b', x: 9, z: 0.25, r: 0 },
+        { id: 'art_a', x: 15, z: 0.25, r: 0 },
+        { id: 'art_d', x: 0.25, z: 4, r: 1 },
+        { id: 'art_a', x: 0.25, z: 8, r: 1 },
+        { id: 'art_b', x: 17.75, z: 4, r: 3 },
+        { id: 'art_c', x: 17.75, z: 8.2, r: 3 },
+        ...[3, 9, 15].map((x) => ({ id: 'stanchion', x, z: 1.2, r: 0 })),
+        { id: 'sculpture', x: 6, z: 5.4, r: 0 },
+        { id: 'statue', x: 12, z: 5.4, r: 0 },
+        { id: 'platform_bench', x: 9, z: 6.6, r: 0 },
+        { id: 'reception', x: 15.5, z: 10.4, r: 2 },
+        { id: 'display_case', x: 3, z: 10.6, r: 2 },
+        { id: 'plant_tree', x: 0.7, z: 11.3, r: 0 },
+      ]);
+    case 'history':
+      return L(20, 14, 'tile', '#ece6d8', [
+        { id: 'dino', x: 10, z: 4.6, r: 0 },
+        ...[6, 14].map((x) => ({ id: 'stanchion', x, z: 6.9, r: 0 })),
+        { id: 'display_case', x: 2.2, z: 0.6, r: 0 },
+        { id: 'display_case', x: 17.8, z: 0.6, r: 0 },
+        { id: 'display_case', x: 0.6, z: 6, r: 1 },
+        { id: 'display_case', x: 19.4, z: 6, r: 3 },
+        { id: 'art_d', x: 0.25, z: 10, r: 1 },
+        { id: 'art_c', x: 19.75, z: 10, r: 3 },
+        { id: 'statue', x: 4.5, z: 9.5, r: 0 },
+        ...[7, 13].map((x) => ({ id: 'platform_bench', x, z: 9, r: 2 })),
+        { id: 'reception', x: 16.5, z: 12.4, r: 2 },
+        { id: 'plant_tree', x: 0.8, z: 13.2, r: 0 },
+      ]);
     case 'laundromat':
       return L(11, 8, 'tile', '#e8f4f8', [
         { id: 'shop_counter', x: 9, z: 6.6, r: 3 },

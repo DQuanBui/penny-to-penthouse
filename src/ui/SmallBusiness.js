@@ -5,7 +5,8 @@ import { dialog } from './Menus.js';
 import { SHOP_TYPES } from '../data/shops.js';
 import { HAIR_STYLES, HAIR_COLORS, FACIAL_HAIR, label } from '../characters/Customization.js';
 import { addNeed } from '../sim/Needs.js';
-import { mod } from '../sim/Player.js';
+import { mod, addSkill } from '../sim/Player.js';
+import { openService } from './Shops.js';
 import { LearnApp } from './Phone/Learn.js';
 import { fmtMoney } from '../core/utils.js';
 
@@ -52,10 +53,15 @@ function buy(game, place, it, price) {
     return;
   }
   if (it.special === 'haircut') return chooseHair(game, place, it, price);
+  if (it.special === 'dealer') {
+    game.closeTop();
+    return openService(game, place, 'dealer');
+  }
   if (price && !sim.finance.spend(price, it.needs.hunger ? 'food' : 'fun', `${it.name} · ${place.name}`)) return;
   game.closeTop();
   let line = it.line;
   if (it.special === 'gift') st.inventory.gifts = (st.inventory.gifts || 0) + 1;
+  if (it.xp) for (const k in it.xp) addSkill(sim, k, it.xp[k]);
   if (it.special === 'bike') st.bike = { model: it.bike };
   if (it.special === 'lottery') {
     const r = sim.rng();

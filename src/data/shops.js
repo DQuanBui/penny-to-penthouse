@@ -127,6 +127,48 @@ export const SHOP_TYPES = {
       { id: 'pie', name: 'Slice of pie', icon: '🥧', price: 6, minutes: 15, needs: { hunger: 15, fun: 5 }, line: 'Warm cherry, à la mode.' },
     ],
   },
+  autoshow: {
+    label: 'Car Showroom', icon: '🚘', color: '#d84a4a', cat: 'shop', hours: [9, 20], interior: 'showroom', weight: 0.9,
+    look: { front: 'showroom', brand: '#1d1f24', trim: '#f2f4f6', awning: 'none', extras: ['pennants', 'displayCar'] },
+    names: ['Vanta Motors', 'Kestrel Auto Gallery', 'Nordvik Cars', 'Sora Motors', 'Brightline EV', 'Ridgeback Trucks', 'Monarch Luxury Motors', 'Velo Electric', 'Halden Motor Co.'],
+    menu: [
+      { id: 'testdrive', name: 'Take a test drive', icon: '🏎️', price: 0, minutes: 30, needs: { fun: 16 }, line: 'The salesperson grips the door handle as you take the corner.' },
+      { id: 'sitin', name: 'Sit in the new models', icon: '💺', price: 0, minutes: 20, needs: { fun: 6 }, line: 'New car smell. You adjust the mirrors like you own it.' },
+      { id: 'buycar', name: 'Talk to sales about buying a car', icon: '🔑', price: 0, minutes: 0, needs: {}, line: '', special: 'dealer' },
+    ],
+  },
+  library: {
+    label: 'Public Library', icon: '🏛️', color: '#8a6a3a', cat: 'fun', hours: [9, 20], interior: 'library', weight: 0.4,
+    look: { front: 'classic', brand: '#3a2f24', trim: '#e9e2d0', awning: 'none', extras: ['planters'] },
+    names: ['Riverside Public Library', 'Elm Street Library', 'Grand Hall Library', 'Harbor Heights Library', 'Westgate Branch Library', 'Northside Reading Room'],
+    menu: [
+      { id: 'read', name: 'Read in the quiet room', icon: '📖', price: 0, minutes: 60, needs: { fun: 10, energy: 2 }, line: 'Total silence, a big oak table, a good book. Bliss.' },
+      { id: 'studycode', name: 'Study programming books', icon: '💻', price: 0, minutes: 90, needs: { fun: -2, energy: -5 }, xp: { coding: 0.25 }, line: 'Two chapters on algorithms. Something finally clicks.' },
+      { id: 'studyfin', name: 'Read up on money and investing', icon: '📊', price: 0, minutes: 90, needs: { energy: -5 }, xp: { finance: 0.25 }, line: 'Compound interest is starting to look like magic.' },
+      { id: 'studybiz', name: 'Business biographies and strategy', icon: '💼', price: 0, minutes: 90, needs: { energy: -5, fun: 2 }, xp: { business: 0.25 }, line: 'You fill three pages of notes on how founders think.' },
+      { id: 'card', name: 'Sign up for a library card', icon: '🪪', price: 0, minutes: 5, needs: { fun: 2 }, line: 'Free. Possibly the best deal in the whole city.' },
+    ],
+  },
+  artmuseum: {
+    label: 'Art Museum', icon: '🖼️', color: '#b5343c', cat: 'fun', hours: [10, 18], interior: 'gallery', weight: 0.45,
+    look: { front: 'classic', brand: '#7a1f2b', trim: '#f2ece0', awning: 'none', extras: ['planters'] },
+    names: ['Meridian Museum of Art', 'The Halcyon Gallery', 'Museum of Modern Light', 'Canvas & Stone Museum', 'The Aurelia Collection'],
+    menu: [
+      { id: 'visit', name: 'Admission: wander the galleries', icon: '🖼️', price: 25, minutes: 90, needs: { fun: 22 }, xp: { creativity: 0.15 }, line: 'You stand in front of one painting for ten minutes. It stays with you.' },
+      { id: 'tour', name: 'Guided tour with a curator', icon: '🎧', price: 35, minutes: 120, needs: { fun: 26, social: 8 }, xp: { creativity: 0.2 }, line: 'Hidden stories behind every frame. You will never look at art the same way.' },
+      { id: 'print', name: 'Gift shop: an art print', icon: '🎁', price: 30, minutes: 10, needs: { fun: 4 }, special: 'gift', line: 'Rolled in a tube, ready to give to someone.' },
+    ],
+  },
+  historymuseum: {
+    label: 'Natural History Museum', icon: '🦕', color: '#4f7a3a', cat: 'fun', hours: [10, 18], interior: 'history', weight: 0.45,
+    look: { front: 'classic', brand: '#2e4a3f', trim: '#ece4d2', awning: 'none', extras: ['planters'] },
+    names: ['Museum of Natural Wonders', 'Hall of Ages Museum', 'The Fossil & Star Museum', 'Earth & Sky Museum'],
+    menu: [
+      { id: 'visit', name: 'Admission: dinosaurs, gems and space', icon: '🦕', price: 23, minutes: 120, needs: { fun: 24 }, line: 'A full skeleton towers over you. Kids gasp. So do you.' },
+      { id: 'planetarium', name: 'Planetarium show', icon: '🔭', price: 15, minutes: 45, needs: { fun: 16, energy: 3 }, line: 'You lean back and fly through the rings of Saturn.' },
+      { id: 'plush', name: 'Gift shop: a plush dinosaur', icon: '🧸', price: 18, minutes: 10, needs: { fun: 5 }, special: 'gift', line: 'Soft, green and very huggable.' },
+    ],
+  },
   arcade: {
     label: 'Arcade', icon: '🕹️', color: '#5a4fd0', cat: 'fun', hours: [12, 25], interior: 'arcade', weight: 1.1,
     look: { front: 'shopfront', brand: '#1a1240', trim: '#4fe0ff', awning: 'none', extras: ['neonStrip', 'screens'] },
@@ -309,11 +351,11 @@ export function opensAt(type) {
 
 /** Which kinds of business suit a district style (weights multiply). */
 export const STYLE_MIX = {
-  skyscraper: { deli: 1.6, pharmacy: 1.4, pub: 1, club: 0.8, diner: 1.2 },
-  midrise: { pizza: 1.3, pub: 1.2, laundromat: 1.2, dumplings: 1.4, kbbq: 1.4, taqueria: 1.3, halal: 1.3 },
-  brownstone: { bakery: 1.6, bookstore: 1.6, florist: 1.5, pub: 1.2, pizza: 1.2, pho: 1.4, ramen: 1.3, winebar: 1.5 },
-  warehouse: { club: 2.5, pub: 1.6, arcade: 1.8, pizza: 1 },
+  skyscraper: { deli: 1.6, pharmacy: 1.4, pub: 1, club: 0.8, diner: 1.2, artmuseum: 2.2, historymuseum: 2, autoshow: 0.7 },
+  midrise: { autoshow: 1.6, library: 1.3, pizza: 1.3, pub: 1.2, laundromat: 1.2, dumplings: 1.4, kbbq: 1.4, taqueria: 1.3, halal: 1.3 },
+  brownstone: { library: 1.6, artmuseum: 1.3, bakery: 1.6, bookstore: 1.6, florist: 1.5, pub: 1.2, pizza: 1.2, pho: 1.4, ramen: 1.3, winebar: 1.5 },
+  warehouse: { autoshow: 2.2, club: 2.5, pub: 1.6, arcade: 1.8, pizza: 1 },
   beach: { pub: 1.6, club: 1.4, salon: 1.4, diner: 1.2 },
-  campus: { pizza: 1.6, bookstore: 1.8, arcade: 1.3, cinema: 1.4 },
-  houses: { deli: 1.2, laundromat: 1.4, barber: 1.4, bikeshop: 1.5 },
+  campus: { library: 2.2, historymuseum: 1.2, pizza: 1.6, bookstore: 1.8, arcade: 1.3, cinema: 1.4 },
+  houses: { library: 1.2, autoshow: 1.2, deli: 1.2, laundromat: 1.4, barber: 1.4, bikeshop: 1.5 },
 };
