@@ -56,7 +56,7 @@ export function buildStreetscape(ctx) {
   };
 
   // ---- parked cars -----------------------------------------------------------
-  const cars = new InstanceBatch(carGeometry(), carMaterial(), { castShadow: true });
+  const cars = new InstanceBatch(carGeometry({ low: true }), carMaterial(), { castShadow: true });
   ctx.parkedCars = [];
   for (const b of blocks) {
     // [side, kerb-lane position, heading, along-axis]

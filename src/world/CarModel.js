@@ -27,14 +27,28 @@ function add(geo, color, tint = 0, light = 0) {
 
 /** Extrude a side profile (x = forward, y = up) across the car's width, centred. */
 function profile(shape, width, bevel = 0.05) {
-  const g = new THREE.ExtrudeGeometry(shape, { depth: width - bevel * 2, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 10 });
+  const g = new THREE.ExtrudeGeometry(shape, { depth: width - bevel * 2, bevelEnabled: bevel > 0 && !LOW, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: LOW ? 3 : 10 });
   g.rotateY(-Math.PI / 2); // profile x -> world z, extrusion -> world -x
   g.translate(width / 2 - bevel, 0, 0);
   return g;
 }
 
 let cached = null;
-export function carGeometry() {
+let cachedLow = null;
+let LOW = false;
+/** Car geometry. { low: true } = a lighter version for the hundreds of parked cars. */
+export function carGeometry(opts = {}) {
+  if (opts.low) {
+    if (!cachedLow) {
+      LOW = true;
+      const prev = cached;
+      cached = null;
+      cachedLow = carGeometry();
+      cached = prev;
+      LOW = false;
+    }
+    return cachedLow.clone();
+  }
   if (cached) return cached.clone();
   parts.length = 0;
   const PAINT = '#ffffff';
@@ -97,8 +111,8 @@ export function carGeometry() {
   // ---- wheels ----
   for (const x of [-0.82, 0.82]) {
     for (const z of [-1.35, 1.35]) {
-      add(new THREE.CylinderGeometry(0.34, 0.34, 0.24, 16).rotateZ(Math.PI / 2).translate(x, 0.34, z), '#16171a');
-      add(new THREE.CylinderGeometry(0.2, 0.2, 0.25, 10).rotateZ(Math.PI / 2).translate(x * 1.01, 0.34, z), '#a9afb7');
+      add(new THREE.CylinderGeometry(0.34, 0.34, 0.24, LOW ? 8 : 16).rotateZ(Math.PI / 2).translate(x, 0.34, z), '#16171a');
+      add(new THREE.CylinderGeometry(0.2, 0.2, 0.25, LOW ? 5 : 10).rotateZ(Math.PI / 2).translate(x * 1.01, 0.34, z), '#a9afb7');
     }
   }
   cached = mergeGeometries(parts);
