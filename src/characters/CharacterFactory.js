@@ -34,7 +34,7 @@ const FACE = { oval: [0.94, 1.1, 1.0], round: [1.03, 1.03, 1.03], square: [1.0, 
 const EYE = { round: [1, 1], almond: [1.25, 0.78], wide: [1.15, 1.12], narrow: [1.2, 0.6] };
 const LONG_SLEEVE = { shirt: 1, hoodie: 1, sweater: 1, blazer: 1, jacket: 1, uniform: 1, labcoat: 1, chefcoat: 1, coat: 1 };
 
-const HEAD_SCALE = 1.17;
+const HEAD_SCALE = 1.06; // close to real proportions (was a cartoonish 1.17)
 const HEAD_PIVOT = 1.515;
 const LIFT = 0.065; // legs are shortened by this much; the mesh is lowered to keep feet on the ground
 
@@ -114,6 +114,26 @@ function seg(a, b, r0, r1, radial = 14) {
   g.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
   return g;
 }
+/**
+ * A smooth limb section from joint a down to joint b. prof = [[t, radius]]
+ * with t 0 (a) .. 1 (b); zr squashes it front-to-back. Open ends hide inside
+ * the neighbouring parts, and the elbow / knee is skinned with a blend.
+ */
+function limbTube(a, b, prof, zr = 1, radial = 14) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const dz = b[2] - a[2];
+  const len = Math.hypot(dx, dy, dz);
+  const pts = [...prof].sort((p, q) => q[0] - p[0]).map(([t, r]) => new THREE.Vector2(r, -t * len));
+  const g = new THREE.LatheGeometry(pts, radial);
+  const pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const t = -pos.getY(i) / len;
+    pos.setXYZ(i, a[0] + dx * t + pos.getX(i), a[1] + dy * t, a[2] + dz * t + pos.getZ(i) * zr);
+  }
+  g.computeVertexNormals();
+  return g;
+}
 const shade = (hex, f) => '#' + _c.set(hex).multiplyScalar(f).getHexString();
 const mix = (a, b, t) => '#' + _c.set(a).lerp(new THREE.Color(b), t).getHexString();
 
@@ -182,10 +202,13 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
     const sh = J['arm' + s];
     const el = J['fore' + s];
     const wr = J['hand' + s];
-    P.add(sph(0.056 * L).translate(sh[0] - m * 0.012, sh[1] - 0.012, sh[2]), 'chest', sleeveUpper);
-    P.add(seg(sh, el, 0.055 * L, 0.046 * L), 'arm' + s, sleeveUpper);
-    P.add(sph(0.05 * L, 1, 1, 1, 16).translate(el[0], el[1], el[2]), 'fore' + s, sleeveLower); // elbow: slightly fuller than both limb ends so no seam shows
-    P.add(seg(el, wr, 0.045 * L, 0.035 * L), 'fore' + s, sleeveLower);
+    P.add(sph(0.053 * L, 1, 0.9, 0.95).translate(sh[0] - m * 0.014, sh[1] - 0.012, sh[2]), 'chest', sleeveUpper);
+    // one continuous arm: shoulder, bicep, a soft elbow, forearm, wrist. The two
+    // sections overlap at the elbow and share a skin blend, so it bends smoothly.
+    const ea = [el[0], el[1] - 0.035, el[2]];
+    const eb = [el[0], el[1] + 0.035, el[2]];
+    P.addBlend(limbTube(sh, ea, [[0, 0.057], [0.3, 0.054], [0.55, 0.051], [0.85, 0.046], [1, 0.044]].map(([t, r]) => [t, r * L]), 0.92), 'fore' + s, 'arm' + s, el[1] - 0.045, el[1] + 0.045, sleeveUpper);
+    P.addBlend(limbTube(eb, wr, [[0, 0.043], [0.25, 0.045], [0.6, 0.04], [1, 0.033]].map(([t, r]) => [t, r * L * (LONG_SLEEVE[a.top] ? 1 : 0.97)]), 0.9), 'fore' + s, 'arm' + s, el[1] - 0.045, el[1] + 0.045, sleeveLower);
     // hand: palm, fingers and thumb (palms face the thighs)
     P.add(sph(0.04, 0.62, 1.12, 1.05, 10).translate(wr[0], wr[1] - 0.04, wr[2]), 'hand' + s, skin);
     P.add(sph(0.033, 0.55, 1.15, 0.95, 10).translate(wr[0], wr[1] - 0.088, wr[2] + 0.004), 'hand' + s, skin);
@@ -199,9 +222,12 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
     const shinC = bareLegs || a.bottom === 'shorts' ? skin : botC;
     const tw = a.bottom === 'slacks' ? 0.92 : a.bottom === 'joggers' ? 1.06 : 1;
     P.add(sph(0.09 * L, 1, 1, 1, 16).translate(hp[0], hp[1], hp[2]), 'thigh' + s, thighC);
-    P.add(seg(hp, kn, 0.088 * L * tw, 0.066 * L * tw), 'thigh' + s, thighC);
-    P.add(sph(0.07 * L * tw, 1, 1, 1, 16).translate(kn[0], kn[1], kn[2]), 'shin' + s, shinC); // knee
-    P.add(seg(kn, an, 0.065 * L * tw, 0.05 * L * tw), 'shin' + s, shinC);
+    // one continuous leg: full thigh, knee, calf, slim ankle (blended at the knee)
+    const ka = [kn[0], kn[1] - 0.04, kn[2]];
+    const kb = [kn[0], kn[1] + 0.04, kn[2]];
+    const lw = L * tw;
+    P.addBlend(limbTube(hp, ka, [[0, 0.09], [0.25, 0.088], [0.6, 0.078], [0.9, 0.068], [1, 0.066]].map(([t, r]) => [t, r * lw]), 0.95), 'shin' + s, 'thigh' + s, kn[1] - 0.055, kn[1] + 0.055, thighC);
+    P.addBlend(limbTube(kb, an, [[0, 0.064], [0.3, 0.067], [0.55, 0.06], [0.85, 0.05], [1, 0.047]].map(([t, r]) => [t, r * lw * (bareLegs || a.bottom === 'shorts' ? 0.97 : 1)]), 0.95), 'shin' + s, 'thigh' + s, kn[1] - 0.055, kn[1] + 0.055, shinC);
     if (a.bottom === 'shorts' && !bareLegs) P.add(new THREE.CylinderGeometry(0.074 * L, 0.078 * L, 0.05, 10).translate(kn[0], kn[1] + 0.07, kn[2]), 'thigh' + s, shade(botC, 0.9));
 
     // feet / shoes
