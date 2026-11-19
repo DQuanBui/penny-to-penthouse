@@ -180,7 +180,7 @@ export class PlayerController {
       this.sync();
       const em = this.emote?.id;
       const lie = this.lying && this.sitting;
-      animateRig(this.rig, dt, { speed: this.swimming ? 0 : this.speed, grounded: this.grounded, swimming: this.swimming, swimMove: this.speed, lying: lie, sitting: this.sitting && !lie, talking: this.talking, umbrella: this.umbrella && !this.sitting && !em && !this.swimming, waving: em === 'wave', cheering: em === 'cheer' || (em === 'volley' && this.emote.hit > 0), dancing: em === 'dance', jacks: em === 'jacks', floor: em === 'sit', phone: em === 'phone' || em === 'selfie' });
+      animateRig(this.rig, dt, { speed: this.swimming ? 0 : this.speed, grounded: this.grounded, swimming: this.swimming, swimMove: this.speed, lying: lie, sitting: this.sitting && !lie, talking: this.talking, umbrella: this.umbrella && !this.sitting && !em && !this.swimming, waving: em === 'wave' || em === 'feed', cheering: em === 'cheer' || (em === 'volley' && this.emote.hit > 0), dancing: em === 'dance', jacks: em === 'jacks', floor: em === 'sit', phone: em === 'phone' || em === 'selfie' });
     }
   }
 }

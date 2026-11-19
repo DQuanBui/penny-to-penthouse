@@ -434,6 +434,48 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Ducks and swans on the harbor; feed them from the railing. */
+  async ducks({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 10 * 60;
+      const D = g.ducks;
+      const c = D.clusters.find((q) => q.ducks.length > 3 && q.ducks[0].kind === 'hen') || D.clusters[0];
+      const edge = g.city.half + g.city.K.PROM;
+      const x = c.ox ? c.ox * (edge - 1.5) : c.x;
+      const z = c.oz ? c.oz * (edge - 1.5) : c.z;
+      const face = Math.atan2(c.ox, c.oz);
+      g.player.teleport(x, z, face);
+      g.cam.snapBehind(face + 0.5);
+      g.cam.pitch = 0.32;
+      g.cam.dist = 6;
+      const kinds = {};
+      for (const d of D.ducks) kinds[d.kind] = (kinds[d.kind] || 0) + 1;
+      return { clusters: D.clusters.length, kinds };
+    });
+    console.log('ducks', JSON.stringify(info));
+    await page.waitForFunction(() => /ducks|swans/.test(window.__game.interactable?.label || ''), null, { timeout: 15000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    const dist = () => page.evaluate(() => {
+      const g = window.__game;
+      const c = g.ducks.clusters.find((q) => q.feed);
+      return c ? Math.min(...c.ducks.map((d) => Math.hypot(d.x - c.feed.x, d.z - c.feed.z))) : -1;
+    });
+    const d0 = await dist();
+    await page.waitForFunction((start) => {
+      const g = window.__game;
+      const c = g.ducks.clusters.find((q) => q.feed);
+      return c && Math.min(...c.ducks.map((d) => Math.hypot(d.x - c.feed.x, d.z - c.feed.z))) < start - 2;
+    }, d0, { timeout: 90000 });
+    console.log('closer', d0.toFixed(1), '->', (await dist()).toFixed(1));
+    console.log('fed', await page.evaluate(() => window.__game.state.stats.ducksFed));
+    await wait(1500);
+    await shot('ducks-feed');
+  },
   /** The beach: sand into the water, swimmers, sunbathers, volleyball; swim, sunbathe, play. */
   async beach({ page, shot, wait }) {
     await startLife(page, wait, process.env.CITY || 'New York');
