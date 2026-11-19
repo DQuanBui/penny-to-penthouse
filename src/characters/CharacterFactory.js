@@ -32,7 +32,7 @@ const BODY = {
 };
 const FACE = { oval: [0.94, 1.1, 1.0], round: [1.03, 1.03, 1.03], square: [1.0, 1.06, 0.98], heart: [0.98, 1.08, 1.0] };
 const EYE = { round: [1, 1], almond: [1.25, 0.78], wide: [1.15, 1.12], narrow: [1.2, 0.6] };
-const LONG_SLEEVE = { shirt: 1, hoodie: 1, sweater: 1, blazer: 1, jacket: 1, uniform: 1, labcoat: 1, chefcoat: 1, coat: 1 };
+const LONG_SLEEVE = { shirt: 1, hoodie: 1, sweater: 1, blazer: 1, jacket: 1, uniform: 1, labcoat: 1, chefcoat: 1, coat: 1, turnout: 1 };
 
 const HEAD_SCALE = 1.06; // close to real proportions (was a cartoonish 1.17)
 const HEAD_PIVOT = 1.515;
@@ -521,6 +521,18 @@ function addWorkwear(P, a, H) {
     P.add(new THREE.CylinderGeometry(0.06, 0.062, 0.035, 14).translate(0, 1.455, 0), 'neck', shade(topC, 0.95));
     P.add(lathe([[hipW * 1.06, 0.86], [hipW * 1.08, 0.97]], zr), 'hips', a.apronColor || '#f4f1ea');
   }
+  if (t === 'turnout') {
+    // firefighter's turnout coat: long, with reflective bands at chest, hem and cuffs
+    coatSkirt(0.3, 1.22, topC);
+    const band = '#e2ef5a';
+    P.add(new THREE.TorusGeometry(B.tr * 1.07, 0.016, 4, 28).rotateX(Math.PI / 2).scale(1, 1, zr).translate(0, 1.2, 0), 'chest', band);
+    P.add(new THREE.TorusGeometry(hipW * 1.25, 0.016, 4, 28).rotateX(Math.PI / 2).scale(1, 1, zr * 1.05).translate(0, 0.7, 0), 'hips', band);
+    for (const m of [-1, 1]) {
+      const wr = J['hand' + (m > 0 ? 'L' : 'R')];
+      P.add(new THREE.TorusGeometry(0.047, 0.012, 4, 14).rotateX(Math.PI / 2).translate(wr[0], wr[1] + 0.07, wr[2]), m > 0 ? 'foreL' : 'foreR', band);
+    }
+    for (const y of [1.1, 1.2, 1.3]) P.add(bx(0.03, 0.012, 0.008).translate(0.02, y, zf + 0.006), 'chest', '#9aa2ad');
+  }
   if (a.apron && t !== 'chefcoat') {
     // a bib apron over the clothes
     P.add(lathe([[hipW * 1.07, 0.6], [hipW * 1.09, 0.97]], zr), 'hips', a.apronColor || '#f4f1ea');
@@ -552,6 +564,13 @@ function addHat(P, a, H) {
     P.add(new THREE.CylinderGeometry(hx * 1.06, hx * 1.06, 0.06, 18).scale(1, 1, zs).translate(0, HY + hy * 0.62, 0), 'head', '#f8f8f6');
     P.add(new THREE.CylinderGeometry(hx * 1.2, hx * 1.04, 0.12, 18).scale(1, 1, zs).translate(0, HY + hy * 0.62 + 0.09, 0), 'head', '#f8f8f6');
     P.add(sph(1, hx * 1.28, 0.055, hz * 1.28, 16).translate(0, HY + hy * 0.62 + 0.155, 0), 'head', '#f8f8f6');
+  } else if (a.hat === 'firehelmet') {
+    P.add(new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, 0.5 * Math.PI).scale(hx * 1.24, hy * 1.12, hz * 1.24).translate(0, HY + 0.02, 0), 'head', c);
+    // long brim, sweeping down at the back
+    P.add(new THREE.CylinderGeometry(hx * 1.55, hx * 1.62, 0.014, 22).scale(1, 1, zs * 1.25).rotateX(-0.12).translate(0, HY + 0.01, -0.03), 'head', c);
+    P.add(bx(0.024, 0.03, hz * 2.3).translate(0, HY + hy * 1.12, 0), 'head', shade(c, 0.8));
+    // the front shield
+    P.add(bx(0.085, 0.1, 0.012).rotateX(-0.2).translate(0, HY + hy * 0.72, hz * 1.2), 'head', '#e9c04c');
   } else if (a.hat === 'sunhat') {
     P.add(new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, 0.5 * Math.PI).scale(hx * 1.12, hy * 1.0, hz * 1.12).translate(0, HY + 0.02, 0), 'head', c);
     P.add(new THREE.CylinderGeometry(0.2, 0.21, 0.01, 22).translate(0, HY + 0.03, 0), 'head', c);
@@ -588,6 +607,30 @@ function addCarry(P, a, H) {
       P.add(bx(0.36, 0.36, 0.26).translate(0, 1.24, -B.td - 0.16), 'chest', c);
       P.add(bx(0.37, 0.04, 0.27).translate(0, 1.36, -B.td - 0.16), 'chest', shade(c, 0.75));
       for (const m of [-1, 1]) P.add(bx(0.03, 0.3, 0.012).translate(m * 0.09, 1.28, B.td * 0.9), 'chest', '#1a1b1f');
+      break;
+    case 'cane': {
+      const len = w[1] - 0.02;
+      P.add(new THREE.CylinderGeometry(0.011, 0.011, len, 6).translate(w[0] + 0.03, w[1] - len / 2 - 0.02, w[2] + 0.06), 'handR', c);
+      P.add(new THREE.TorusGeometry(0.04, 0.011, 5, 10, Math.PI).rotateY(Math.PI / 2).translate(w[0] + 0.03, w[1] - 0.02, w[2] + 0.02), 'handR', c);
+      break;
+    }
+    case 'stroller': {
+      // pushed in front: frame, seat, canopy and four wheels (moves with the hips)
+      const fz = 0.48;
+      P.add(new THREE.CylinderGeometry(0.014, 0.014, 0.46, 6).rotateZ(Math.PI / 2).translate(0, 1.0, fz), 'hips', '#2b2d33');
+      for (const m of [-1, 1]) P.add(new THREE.CylinderGeometry(0.012, 0.012, 0.75, 6).rotateX(0.62).translate(m * 0.2, 0.7, fz + 0.22), 'hips', '#2b2d33');
+      P.add(bx(0.4, 0.26, 0.48).translate(0, 0.52, fz + 0.48), 'hips', c);
+      P.add(new THREE.SphereGeometry(0.26, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.82, 0.9, 1).rotateX(-0.5).translate(0, 0.66, fz + 0.36), 'hips', shade(c, 0.8));
+      for (const m of [-1, 1]) for (const wz of [fz + 0.28, fz + 0.72]) P.add(new THREE.CylinderGeometry(0.07, 0.07, 0.03, 12).rotateZ(Math.PI / 2).translate(m * 0.2, 0.07, wz), 'hips', '#1a1b1f');
+      break;
+    }
+    case 'skateboard':
+      P.add(bx(0.025, 0.78, 0.2).translate(w[0] + 0.06, w[1] + 0.05, w[2]), 'handR', c);
+      for (const y of [-0.27, 0.37]) for (const m of [-1, 1]) P.add(new THREE.CylinderGeometry(0.026, 0.026, 0.03, 10).rotateZ(Math.PI / 2).translate(w[0] + 0.1, w[1] + y, w[2] + m * 0.07), 'handR', '#f4f1ea');
+      break;
+    case 'guitarcase':
+      P.add(new THREE.CapsuleGeometry(0.14, 0.62, 4, 10).scale(1, 1, 0.42).rotateZ(0.32).translate(0.02, 1.08, -B.td - 0.09), 'chest', c);
+      P.add(bx(0.03, 0.5, 0.012).rotateZ(-0.55).translate(0, 1.27, B.td + 0.012), 'chest', '#3a3a3a');
       break;
     case 'mailbag':
       P.add(bx(0.09, 0.24, 0.32).translate(B.tr + 0.09, 0.98, 0.02), 'hips', c);
