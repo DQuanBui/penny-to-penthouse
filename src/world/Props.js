@@ -269,8 +269,143 @@ export function buildProps(ctx) {
 }
 
 /** Transit entrance: canopy, sign posts and a dark stairwell pad. */
+/** Stair geometry shared by the stairwell and groundY: top at local x = +1.8, landing below. */
+export const WELL = { top: 1.8, foot: -1.0, end: -1.8, half: 0.95, drop: 3.0 };
+
+/** Ground height inside a subway stairwell (local x), or null outside it. */
+export function wellY(w, x, z) {
+  const c = Math.cos(w.ry);
+  const s = Math.sin(w.ry);
+  const dx = x - w.x;
+  const dz = z - w.z;
+  const lx = dx * c - dz * s;
+  const lz = dx * s + dz * c;
+  if (lx > WELL.top || lx < WELL.end || Math.abs(lz) > WELL.half) return null;
+  return lx >= WELL.foot ? -((WELL.top - lx) / (WELL.top - WELL.foot)) * WELL.drop : -WELL.drop;
+}
+
+/**
+ * A New York style subway entrance: an open stairwell going down below the
+ * sidewalk, green railings on three sides, globe lamps at the top of the steps.
+ * The sidewalk can't really have a hole in it, so a "punch" quad drawn right
+ * after the ground resets the depth buffer over the opening and the stairwell
+ * (drawn later) shows through.
+ */
+function subwayEntrance(ctx, g, color) {
+  const W = WELL;
+  const cream = new THREE.MeshStandardMaterial({ color: '#d9d2bf', roughness: 0.8, side: THREE.DoubleSide });
+  // the well: side walls, the far wall, a floor, and a ceiling only over the tunnel
+  // (no lid over the opening, or it would hide the sky from inside)
+  const X0 = -4.6;
+  const H = W.drop + 1;
+  const len = W.top - X0;
+  const shell = [];
+  for (const s of [-1, 1]) shell.push(new THREE.PlaneGeometry(len, H).translate((W.top + X0) / 2, -H / 2, s * (W.half + 0.02)));
+  shell.push(new THREE.PlaneGeometry(W.half * 2 + 0.04, H).rotateY(Math.PI / 2).translate(X0, -H / 2, 0));
+  shell.push(new THREE.PlaneGeometry(len, W.half * 2 + 0.04).rotateX(-Math.PI / 2).translate((W.top + X0) / 2, -H, 0));
+  shell.push(new THREE.PlaneGeometry(W.end - X0, W.half * 2 + 0.04).rotateX(Math.PI / 2).translate((W.end + X0) / 2, -0.02, 0));
+  const well = new THREE.Mesh(mergeGeometries(shell), cream);
+  well.receiveShadow = true;
+  g.add(well);
+  const parts = [];
+  const cols = [];
+  const add = (geo, c) => {
+    parts.push(geo.index ? geo.toNonIndexed() : geo);
+    cols.push([c, geo.index ? geo.index.count : geo.attributes.position.count]);
+  };
+  const n = 10;
+  const run = (W.top - W.foot) / n;
+  const rise = W.drop / n;
+  for (let k = 0; k < n; k++) {
+    const x0 = W.top - k * run;
+    const top = -(k + 1) * rise;
+    add(new THREE.BoxGeometry(run, W.drop + 1 + top, W.half * 2).translate(x0 - run / 2, (top - W.drop - 1) / 2, 0), '#8a8d92');
+    add(new THREE.BoxGeometry(0.06, 0.012, W.half * 2).translate(x0 - run + 0.03, top + 0.006, 0), '#e9c04c');
+    // a darker riser face so each step reads from above
+    add(new THREE.BoxGeometry(0.012, rise, W.half * 2 - 0.02).translate(x0 + 0.006, top + rise / 2, 0), '#55585e');
+  }
+  add(new THREE.BoxGeometry(W.foot - W.end + 2.8, 0.1, W.half * 2).translate((W.foot + W.end - 2.8) / 2, -W.drop - 0.05, 0), '#7a7d82');
+  // a band of green tile along both walls, handrails down the steps
+  for (const s of [-1, 1]) {
+    add(new THREE.BoxGeometry(W.top + 4.6, 0.25, 0.02).translate((W.top - 4.6) / 2, -W.drop + 1.6, s * (W.half - 0.005)), '#2f6a4a');
+    const len = Math.hypot(W.top - W.foot, W.drop);
+    add(new THREE.CylinderGeometry(0.025, 0.025, len, 6).rotateZ(Math.PI / 2 - Math.atan2(W.drop, W.top - W.foot)).translate((W.top + W.foot) / 2, -W.drop / 2 + 0.85, s * (W.half - 0.08)), '#c9ced6');
+  }
+  // the lit way through to the turnstiles, down at the end of the tunnel
+  const glowMat = new THREE.MeshBasicMaterial({ color: '#fff1c8', toneMapped: false });
+  const doorway = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2.2).rotateY(Math.PI / 2).translate(W.end - 2.75, -W.drop + 1.1, 0), glowMat);
+  g.add(doorway);
+  const strip = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.04, 0.2).translate(W.end - 1.4, -0.3, 0), glowMat);
+  g.add(strip);
+  const geo = mergeGeometries(parts.map((p, i) => {
+    const c = new THREE.Color(cols[i][0]);
+    const a = new Float32Array(p.attributes.position.count * 3);
+    for (let k = 0; k < p.attributes.position.count; k++) a.set([c.r, c.g, c.b], k * 3);
+    p.deleteAttribute('uv');
+    p.setAttribute('color', new THREE.BufferAttribute(a, 3));
+    return p;
+  }));
+  const steps = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 }));
+  steps.receiveShadow = true;
+  g.add(steps);
+  // the punch: clears depth over the opening right after the ground is drawn
+  const punchMat = new THREE.MeshBasicMaterial({ colorWrite: false, depthFunc: THREE.AlwaysDepth });
+  punchMat.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n  gl_FragDepth = 1.0;');
+  };
+  punchMat.customProgramCacheKey = () => 'well-punch';
+  const punch = new THREE.Mesh(new THREE.PlaneGeometry(W.top - W.end, W.half * 2).rotateX(-Math.PI / 2).translate((W.top + W.end) / 2, 0.004, 0), punchMat);
+  punch.renderOrder = -1;
+  g.add(punch);
+  // green railings with posts on three sides, globe lamps at the top of the steps
+  const green = new THREE.MeshStandardMaterial({ color: '#24513a', roughness: 0.45, metalness: 0.5 });
+  const rail = [];
+  for (const s of [-1, 1]) {
+    rail.push(box(W.top - W.end + 0.1, 0.06, 0.06, (W.top + W.end) / 2, 1.05, s * (W.half + 0.05)));
+    rail.push(box(W.top - W.end + 0.1, 0.04, 0.04, (W.top + W.end) / 2, 0.55, s * (W.half + 0.05)));
+    for (let x = W.end; x <= W.top + 0.01; x += (W.top - W.end) / 4) rail.push(box(0.06, 1.05, 0.06, x, 0.525, s * (W.half + 0.05)));
+  }
+  rail.push(box(0.06, 0.06, W.half * 2 + 0.16, W.end - 0.02, 1.05, 0), box(0.04, 0.04, W.half * 2 + 0.16, W.end - 0.02, 0.55, 0));
+  rail.push(box(0.12, 1.1, W.half * 2 + 0.1, W.end - 0.08, 0.55, 0)); // the solid end panel with the sign
+  for (const s of [-1, 1]) rail.push(cyl(0.05, 0.07, 2.6, W.top + 0.05, 1.3, s * (W.half + 0.05), 8));
+  const rails = new THREE.Mesh(mergeGeometries(rail), green);
+  rails.castShadow = true;
+  g.add(rails);
+  const globeMat = new THREE.MeshStandardMaterial({ color: '#7fe08a', emissive: '#3fbf5a', emissiveIntensity: 0.6, roughness: 0.3 });
+  for (const s of [-1, 1]) {
+    const globe = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), globeMat);
+    globe.position.set(W.top + 0.05, 2.75, s * (W.half + 0.05));
+    g.add(globe);
+  }
+  ctx.globeMats ||= [];
+  ctx.globeMats.push(globeMat);
+  // keep people out of the hole: walls below, railings above (open at the top of the steps)
+  const wx = g.position.x;
+  const wz = g.position.z;
+  const c = Math.cos(g.rotation.y);
+  const sn = Math.sin(g.rotation.y);
+  const toW = (lx, lz) => [wx + lx * c + lz * sn, wz - lx * sn + lz * c];
+  const solid = (x0, z0, x1, z1, y0, y1) => {
+    const [ax, az] = toW(x0, z0);
+    const [bx2, bz] = toW(x1, z1);
+    ctx.colliders.add(Math.min(ax, bx2), Math.min(az, bz), Math.max(ax, bx2), Math.max(az, bz), ctx.K.CURB + y1, ctx.K.CURB + y0);
+  };
+  for (const s of [-1, 1]) solid(W.end - 0.1, s * W.half, W.top, s * (W.half + 0.12), -6, 1.15);
+  solid(W.end - 0.15, -W.half - 0.12, W.end, W.half + 0.12, -6, 1.15);
+  ctx.wells ||= [];
+  ctx.wells.push({ x: wx, z: wz, ry: g.rotation.y });
+  void color;
+}
+
 export function buildStation(ctx, x, z, ry, color) {
   const g = new THREE.Group();
+  if (ctx.cfg?.transit?.kind === 'subway') {
+    g.position.set(x, ctx.K.CURB, z);
+    g.rotation.y = ry;
+    subwayEntrance(ctx, g, color);
+    ctx.group.add(g);
+    return g;
+  }
   const frame = new THREE.MeshStandardMaterial({ color: '#2b3340', roughness: 0.5, metalness: 0.4 });
   const roof = new THREE.Mesh(box(4.4, 0.18, 2.6, 0, 2.9, 0), new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
   roof.castShadow = true;

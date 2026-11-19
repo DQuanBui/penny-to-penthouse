@@ -18,7 +18,7 @@ const SVC_LABEL = { clothing: 'Fashion counter', electronics: 'Tech counter', ca
 const USE_LABEL = {
   sleep: 'Sleep', relax: 'Relax', computer: 'Use the computer', read: 'Read a book', eat: 'Open the fridge', cook: 'Cook a meal',
   shower: 'Take a shower', bath: 'Take a bath', wardrobe: 'Change outfit', tv: 'Watch TV', game: 'Play video games', music: 'Listen to music',
-  piano: 'Play the piano', workout: 'Work out', paint: 'Paint', service: 'Talk to staff', work: 'Start your shift', board: 'Board the train', sit: 'Sit down',
+  piano: 'Play the piano', workout: 'Work out', paint: 'Paint', service: 'Talk to staff', work: 'Start your shift', board: 'Board the train', sit: 'Sit down', tickets: '🎫 Ticket machine', snack: '📰 Newsstand',
 };
 
 /** Footprint of an item after rotation (r = quarter turns). */
@@ -224,8 +224,15 @@ export function commercialLayout(place) {
         ...[5, 11, 17, 23, 29].map((x) => ({ id: 'column_steel', x, z: 5.9, r: 0 })),
         ...[8, 14, 20, 26].map((x) => ({ id: 'platform_bench', x, z: 7.6, r: 0 })),
         ...[12.5, 14.5, 19.5, 21.5].map((x) => ({ id: 'turnstile', x, z: 9.6, r: 0 })),
+        // the mezzanine behind the turnstiles: ticket machines, a newsstand, maps
+        ...[2.4, 3.5, 4.6].map((x) => ({ id: 'ticket_machine', x, z: 15.55, r: 2 })),
+        { id: 'newsstand', x: 29.5, z: 14.9, r: 2 },
+        { id: 'subway_map', x: 9.5, z: 15.9, r: 2 },
+        { id: 'subway_map', x: 24.5, z: 15.9, r: 2 },
+        ...[7, 27].map((x) => ({ id: 'column_steel', x, z: 12.6, r: 0 })),
+        ...[2, 32].map((x) => ({ id: 'platform_bench', x, z: 11.2, r: 0 })),
       ];
-      const l = L(34, 12, el ? 'concrete' : 'tile', el ? '#cfd6dc' : '#eef1ee', items);
+      const l = L(34, 16, el ? 'concrete' : 'tile', el ? '#cfd6dc' : '#eef1ee', items);
       l.windows = el ? 'panorama' : 'none';
       return l;
     }

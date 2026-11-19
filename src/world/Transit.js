@@ -42,8 +42,9 @@ export function openStation(game, station, onPick = null) {
       h('div.muted', `${cfg.transit?.name || 'Transit'} runs between every district. Cheap, and it never gets stuck in traffic.`),
       others.map((o) => {
         const q = transitQuote(game, station, o);
-        return btn(`${o.icon}  ${o.district.name}  ·  ${q.minutes} min  ·  ${fmtMoney(q.fare)}`, async () => {
-          if (!game.sim.finance.spend(q.fare, 'transit', `${cfg.transit?.name || 'Transit'} fare`)) return;
+        const pass = (game.state.transitPass || 0) > game.sim.day;
+        return btn(`${o.icon}  ${o.district.name}  ·  ${q.minutes} min  ·  ${pass ? '🎟️ pass' : fmtMoney(q.fare)}`, async () => {
+          if (!pass && !game.sim.finance.spend(q.fare, 'transit', `${cfg.transit?.name || 'Transit'} fare`)) return;
           game.audio?.play('door');
           if (onPick) return onPick(o, q);
           await travel(game, o, q.minutes);

@@ -40,6 +40,31 @@ export async function runActivity(game, id, opts = {}) {
 }
 
 /** Seat height of things you can sit on (sofas, chairs, stools, benches). */
+/** The ticket machine: a single ride, or a 7-day unlimited pass. */
+function openTickets(game) {
+  const sim = game.sim;
+  const cfg = game.city.cfg;
+  const st = game.state;
+  const fare = cfg.transit?.fare || 2.5;
+  const weekly = Math.round(fare * 11.7);
+  const has = (st.transitPass || 0) > sim.day;
+  const el = dialog(game, {
+    title: '🎫 Ticket machine',
+    body: h(
+      'div.menu-col',
+      h('div.muted', has ? `Your unlimited pass is good for ${st.transitPass - sim.day} more day(s). Just tap and go.` : `A single ride is ${fmtMoney(fare)}. Ride a lot? A 7-day unlimited pass pays for itself in about 12 rides.`),
+      btn(`🎟️  7-day unlimited · ${fmtMoney(weekly)}`, () => {
+        if (!sim.finance.spend(weekly, 'transit', `${cfg.transit?.name || 'Transit'} 7-day pass`)) return;
+        st.transitPass = Math.max(st.transitPass || 0, sim.day) + 7;
+        game.audio?.play('cash');
+        game.closeOverlay(el);
+        game.events.emit('toast', { icon: '🎟️', title: 'Unlimited pass', text: 'Every ride is free for the next 7 days.', kind: 'good' });
+      }),
+      btn('Cancel', () => game.closeOverlay(el)),
+    ),
+  });
+}
+
 export const SEAT_H = { sofa: 0.44, armchair: 0.44, loveseat: 0.44, sectional: 0.44, designer_sofa: 0.44, beanbag: 0.3, dining_chair: 0.47, chair_basic: 0.47, office_chair: 0.5, bar_stool: 0.76, subway_seat: 0.46, platform_bench: 0.46 };
 
 /** Entry point: player used a furniture interaction point inside an interior. */
@@ -60,6 +85,8 @@ export function useFurniture(game, point) {
   if (use === 'service') return openService(game, game.inside.place, item.svc);
   if (use === 'work') return openShift(game, game.inside.place);
   if (use === 'board') return game.subway.board();
+  if (use === 'tickets') return openTickets(game);
+  if (use === 'snack') return game.streetLife.openCart({ cart: 'newsstand' });
   if (use === 'workout') return useGym(game, q);
   if (simple[use]) {
     if (use === 'cook' && game.state.inventory.meals < 1) return game.events.emit('toast', { icon: '🧊', title: 'Nothing to cook', text: 'Buy groceries first — look for the 🛒 on your map.', kind: 'bad' });

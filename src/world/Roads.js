@@ -27,6 +27,7 @@ export function buildRoads(ctx) {
   land.rotation.x = -Math.PI / 2;
   land.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2);
   land.receiveShadow = true;
+  land.renderOrder = -2; // drawn first: subway stairwells punch through it (Props.js)
   group.add(land);
 
   // --- Water + promenade -----------------------------------------------------
@@ -38,6 +39,7 @@ export function buildRoads(ctx) {
     w.rotation.x = -Math.PI / 2;
     w.position.y = -0.45;
     group.add(w);
+    w.renderOrder = -2; // with the ground, before the stairwell punch
     ctx.waterMesh = w;
 
     const beach = cfg.promenade === 'beach';
@@ -98,7 +100,9 @@ export function buildRoads(ctx) {
     { receiveShadow: true },
   );
   for (const b of ctx.allBlocks) slab.add(b.cx, K.CURB / 2, b.cz);
-  group.add(slab.build());
+  const slabMesh = slab.build();
+  slabMesh.renderOrder = -2;
+  group.add(slabMesh);
 
   // --- Lane markings -----------------------------------------------------------
   const flat = new THREE.PlaneGeometry(1, 1);

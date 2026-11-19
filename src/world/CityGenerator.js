@@ -9,7 +9,7 @@ import { SHOP_TYPES, SHOP_IDS, STYLE_MIX } from '../data/shops.js';
 import { BuildingBatch, InstanceBatch, FACADE } from './Buildings.js';
 import { ColliderWorld } from './Collision.js';
 import { buildRoads } from './Roads.js';
-import { buildProps, buildStation } from './Props.js';
+import { buildProps, buildStation, wellY } from './Props.js';
 import { buildLandmarks } from './Landmarks.js';
 import { buildStorefronts } from './Storefronts.js';
 import { buildStreetscape, addRooftops } from './Streetscape.js';
@@ -392,6 +392,12 @@ export function generateCity(cfg, opts = {}) {
       const y = beachY(beach, x, z);
       if (y != null) return y;
     }
+    // down the steps of a subway entrance
+    for (const w of ctx.wells || []) {
+      if (Math.abs(x - w.x) > 2.2 || Math.abs(z - w.z) > 2.2) continue;
+      const y = wellY(w, x, z);
+      if (y != null) return K.CURB + y;
+    }
     if (Math.abs(x) > half || Math.abs(z) > half) return K.CURB;
     return inBlockAxis(x) && inBlockAxis(z) ? K.CURB : 0;
   };
@@ -399,7 +405,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, sports: ctx.sports || null, parkedCars: ctx.parkedCars || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, sports: ctx.sports || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */
@@ -515,6 +521,13 @@ function decoratePlaces(ctx) {
       sign.scale.setScalar(0.7);
       sign.position.set(p.doorX, KK.CURB + 3.6, p.doorZ);
       sign.rotation.y = ry;
+      if (ctx.cfg.transit?.kind === 'subway') {
+        // on top of the end panel of the stairwell railing, facing the top of the steps
+        const sry = p.nz < 0 ? 0 : Math.PI;
+        sign.position.set(p.doorX - Math.cos(sry) * 1.9, KK.CURB + 1.55, p.doorZ + Math.sin(sry) * 1.9);
+        sign.rotation.y = sry + Math.PI / 2;
+        sign.scale.setScalar(0.42);
+      }
       group.add(sign);
       const back = sign.clone();
       back.rotation.y = ry + Math.PI;

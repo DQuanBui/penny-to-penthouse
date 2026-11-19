@@ -171,6 +171,13 @@ export class NPCManager {
       if (!s) break;
       add(this.makeActor(n), s.x, s.z, rng() * Math.PI * 2);
     }
+    // transit police keep an eye on the station hall
+    if (place.type === 'station') {
+      for (const [x, z] of [[10.5, 11.4], [23.5, 11.6]]) {
+        const cop = this.makeActor(null, roleAppearance('police', rng));
+        add(cop, x, z, Math.PI + (rng() - 0.5));
+      }
+    }
     // everyday customers, so no business ever feels empty (bars fill up at night)
     const meta = PLACE_TYPES[place.type];
     if (meta.minor || ['cafe', 'restaurant', 'bar', 'mall', 'gym', 'clothing', 'grocery', 'electronics', 'station', 'subwaycar'].includes(place.type)) {

@@ -434,6 +434,103 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Subway entrances: stairs down from the sidewalk; the station hall with tickets and police. */
+  async stairs({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 11 * 60;
+      const w = g.city.wells?.[0] || null;
+      if (!w) return null;
+      // stand on the sidewalk past the top of the steps, looking down them
+      const ax = Math.cos(w.ry);
+      const az = -Math.sin(w.ry);
+      // beside the railing, looking down into the stairwell
+      const sx = w.x + ax * 0.6 + az * 3.2;
+      const sz = w.z + az * 0.6 - ax * 3.2;
+      const face = Math.atan2(w.x - sx, w.z - sz);
+      g.player.teleport(sx, sz, face);
+      g.playerRig.group.visible = false;
+      g.cam.snapBehind(face);
+      g.cam.pitch = 0.95;
+      g.cam.dist = 4.5;
+      return { wells: g.city.wells.length, w };
+    });
+    console.log('wells', JSON.stringify(info));
+    if (!info) throw new Error('no stairwells');
+    await wait(2500);
+    await shot('stairs-top');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const w = g.city.wells[0];
+      const ax = Math.cos(w.ry);
+      const az = -Math.sin(w.ry);
+      const face = Math.atan2(-ax, -az);
+      g.playerRig.group.visible = true;
+      g.player.teleport(w.x + ax * 3.4, w.z + az * 3.4, face);
+      g.cam.snapBehind(face);
+      g.cam.pitch = 0.4;
+      g.cam.dist = 4;
+    });
+    await page.keyboard.down('KeyW');
+    await page.waitForFunction(() => window.__game.player.pos.y < -2, null, { timeout: 60000 });
+    await page.keyboard.up('KeyW');
+    const down = await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.pitch = 0.35;
+      return { y: g.player.pos.y.toFixed(2), label: g.interactable?.label };
+    });
+    console.log('at the bottom', JSON.stringify(down));
+    await wait(1500);
+    await shot('stairs-bottom');
+    // a wide street view of the entrance
+    await page.evaluate(() => {
+      const g = window.__game;
+      const w = g.city.wells[0];
+      const ax = Math.cos(w.ry);
+      const az = -Math.sin(w.ry);
+      const x = w.x + ax * 7 + az * 3;
+      const z = w.z + az * 7 - ax * 3;
+      const face = Math.atan2(w.x - x, w.z - z);
+      g.player.teleport(x, z, face);
+      g.cam.snapBehind(face);
+      g.cam.pitch = 0.32;
+      g.cam.dist = 6;
+    });
+    await wait(2000);
+    await shot('stairs-street');
+    // inside: the hall, the ticket machine, transit police
+    const hall = await page.evaluate(() => {
+      const g = window.__game;
+      const st = g.city.places.find((p) => p.station);
+      g.enterPlace(st, true);
+      return st.name;
+    });
+    await page.waitForFunction(() => window.__game.inside?.place.station, null, { timeout: 15000 });
+    await wait(2000);
+    const npc = await page.evaluate(() => {
+      const g = window.__game;
+      const cops = g.npcs.indoor.filter((a) => a.rig.appearance?.role === 'police').length;
+      const tm = g.interior.layout.items.find((it) => it.id === 'ticket_machine');
+      g.player.teleport(tm.x, tm.z - 1.1, Math.PI);
+      g.cam.snapBehind(Math.PI + 0.6);
+      g.cam.pitch = 0.3;
+      g.cam.dist = 5;
+      return { hall: g.interior.layout.w + 'x' + g.interior.layout.d, cops };
+    });
+    console.log('station', hall, JSON.stringify(npc));
+    await page.waitForFunction(() => /Ticket/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await wait(1200);
+    await shot('stairs-hall');
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog:has-text("7-day")');
+    await page.click('.dialog .btn:has-text("7-day")');
+    await wait(500);
+    console.log('pass until day', await page.evaluate(() => [window.__game.state.transitPass, window.__game.sim.day]));
+  },
   /** The sports block: basketball and soccer pickup games; join in. */
   async sports({ page, shot, wait }) {
     await startLife(page, wait);

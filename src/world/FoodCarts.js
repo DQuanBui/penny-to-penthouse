@@ -79,7 +79,17 @@ export const CART_KINDS = {
     ],
   },
 };
-export const CART_IDS = Object.keys(CART_KINDS);
+// the station newsstand sells from the same kind of menu (not a street cart)
+CART_KINDS.newsstand = {
+  name: 'Newsstand', sign: 'NEWS', icon: '📰', body: '#3f5a3a', band: '#2b3a28', umb: ['#3f5a3a', '#f4f1ea'], steam: false,
+  menu: [
+    F('water', 'Bottle of water', '💧', 2, { energy: 4 }, 'Cold, from the fridge by the register.'),
+    F('candy', 'Candy bar', '🍫', 2, { hunger: 10, fun: 4 }, 'Gone before the train comes.'),
+    F('paper', 'Newspaper', '📰', 1.5, { fun: 7 }, 'Something to read on the ride.'),
+    F('gum', 'Pack of gum', '🍬', 1, { fun: 2 }, 'Minty.'),
+  ],
+};
+export const CART_IDS = Object.keys(CART_KINDS).filter((k) => k !== 'newsstand');
 
 class Bag {
   constructor() {
