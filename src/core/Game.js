@@ -48,6 +48,7 @@ import { TimesSquareLife } from '../world/TimesSquare.js';
 import { BeachLife } from '../world/Beach.js';
 import { DuckLife } from '../world/Ducks.js';
 import { LiveEvents } from '../world/LiveEvents.js';
+import { SportsLife } from '../world/Sports.js';
 import { makeBike, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -140,6 +141,7 @@ export class Game {
     this.beachLife = new BeachLife(this);
     this.ducks = new DuckLife(this);
     this.liveEvents = new LiveEvents(this);
+    this.sports = new SportsLife(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -291,6 +293,7 @@ export class Game {
     this.beachLife.setCity(this.city);
     this.ducks.setCity(this.city);
     this.liveEvents.setCity(this.city);
+    this.sports.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -963,6 +966,8 @@ export class Game {
       if (ducks) return ducks;
       const live = this.liveEvents.interactable(p);
       if (live) return live;
+      const sport = this.sports.interactable(p);
+      if (sport) return sport;
       const ts = this.city.timesSquare;
       if (ts && (ts.front.x - p.x) ** 2 + (ts.front.z - p.z) ** 2 < 4 * 4) return { label: '🔴 Sit on the red steps and watch the lights', action: () => this.sitOn(ts.seats[18 + Math.floor(Math.random() * 12)]) };
       const br = this.city.bridge;
@@ -1132,6 +1137,7 @@ export class Game {
     this.beachLife.update(dt, this.player.pos, !inside);
     this.ducks.update(dt, this.player.pos, !inside);
     this.liveEvents.update(dt, this.player.pos, !!inside);
+    this.sports.update(dt, this.player.pos, !inside);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);
     if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {

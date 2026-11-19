@@ -434,6 +434,58 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** The sports block: basketball and soccer pickup games; join in. */
+  async sports({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 16 * 60;
+      const S = g.city.sports;
+      if (!S) return null;
+      // outside the fence at the south gate, looking north over both courts
+      g.player.teleport(S.x - 6, S.z + 27, Math.PI);
+      g.cam.snapBehind(Math.PI);
+      g.cam.pitch = 0.42;
+      g.cam.dist = 12;
+      return { x: S.x, z: S.z, district: g.city.districtAt(S.x, S.z).name };
+    });
+    console.log('sports', JSON.stringify(info));
+    if (!info) throw new Error('no sports block');
+    await page.waitForFunction(() => window.__game.sports.people.length > 0, null, { timeout: 20000 });
+    await wait(3000);
+    await shot('sports-overview');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const S = g.city.sports;
+      g.player.teleport(S.bb.x + 6, S.bb.z + 2, Math.PI / 2);
+    });
+    await page.waitForFunction(() => /pickup/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(Math.PI / 2 + 0.3);
+      g.cam.pitch = 0.2;
+      g.cam.dist = 7;
+    });
+    // pass it to the player near the hoop, and watch the shot go up
+    await page.evaluate(() => {
+      const g = window.__game;
+      const h = g.sports.hoops;
+      const M = g.sports.members(h);
+      const hoop = g.city.sports.bb.hoops[1];
+      g.player.teleport(hoop[0] - 4, hoop[1] + 1, Math.PI / 2);
+      h.flight = null;
+      h.holder = M.length - 1;
+      h.hold = 0.6;
+    });
+    await page.waitForFunction(() => window.__game.sports.hoops.flight?.shot, null, { timeout: 30000 });
+    console.log('got the ball', await page.evaluate(() => ({ emote: window.__game.player.emote?.id, players: window.__game.sports.members(window.__game.sports.hoops).length })));
+    await wait(1200);
+    await shot('sports-hoops');
+  },
   /** Live street events: a crash with police and an ambulance; a purse snatcher to chase. */
   async live({ page, shot, wait }) {
     await startLife(page, wait);

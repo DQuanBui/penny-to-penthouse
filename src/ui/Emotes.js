@@ -20,6 +20,8 @@ export const EMOTE_RATES = {
   sit: { rates: { energy: 3, fun: 3 } },
   phone: { rates: { social: 6 } },
   volley: { rates: { fun: 10, health: 3, social: 4, energy: -5 } },
+  hoops: { rates: { fun: 10, health: 4, social: 4, energy: -7 } },
+  soccer: { rates: { fun: 10, health: 4, social: 4, energy: -7 } },
 };
 
 export function openEmotes(game) {

@@ -16,6 +16,7 @@ import { buildStreetscape, addRooftops } from './Streetscape.js';
 import { decorateParks } from './Parks.js';
 import { buildFoodCarts } from './FoodCarts.js';
 import { beachSpec, buildBeach, beachY } from './Beach.js';
+import { buildSports } from './Sports.js';
 import { buildZoo } from './Zoo.js';
 import { buildCampus, buildSchool } from './Campus.js';
 import { buildAirport, airportSide } from './Airport.js';
@@ -166,6 +167,19 @@ export function generateCity(cfg, opts = {}) {
         break;
       }
     });
+  }
+
+  // --- 2a. A neighbourhood sports block (basketball + soccer) where no key place stands
+  let sportsBlock = null;
+  if (cfg.sports !== false) {
+    const srng = mulberry32((cfg.seed || 1) * 31 + 7);
+    const sd = [...districts].sort((a, c) => a.rentMul - c.rentMul)[1] || districts[0];
+    const cands = blocks.filter((b) => b.district === sd && b.kind === 'build' && !b.lots.some((l) => l.place) && b.i > 0 && b.j > 0 && b.i < N - 1 && b.j < N - 1);
+    sportsBlock = cands.length ? cands[Math.floor(srng() * cands.length)] : null;
+    if (sportsBlock) {
+      sportsBlock.kind = 'sports';
+      sportsBlock.lots = [];
+    }
   }
 
   // --- 2b. Neighbourhood businesses on the remaining street-facing lots ---------
@@ -354,6 +368,7 @@ export function generateCity(cfg, opts = {}) {
   buildProps(ctx);
   decorateParks(ctx);
   if (beach) buildBeach(ctx, beach);
+  if (sportsBlock) buildSports(ctx, sportsBlock);
   buildFoodCarts(ctx);
   if (zooBlock) buildZoo(ctx, zooBlock);
   if (bridge) buildBridge(ctx, bridge);
@@ -384,7 +399,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, parkedCars: ctx.parkedCars || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, sports: ctx.sports || null, parkedCars: ctx.parkedCars || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */

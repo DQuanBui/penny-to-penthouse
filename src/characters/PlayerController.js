@@ -115,7 +115,7 @@ export class PlayerController {
       wantJump = input.pressed('Space') && !this.swimming;
     }
     const len = Math.hypot(mx, mz);
-    if (len > 0 && this.emote) this.emote = null; // moving ends any action
+    if (len > 0 && this.emote && !this.emote.move) this.emote = null; // moving ends most actions
     let tx = 0;
     let tz = 0;
     if (len > 0) {
