@@ -18,7 +18,7 @@ const SVC_LABEL = { clothing: 'Fashion counter', electronics: 'Tech counter', ca
 const USE_LABEL = {
   sleep: 'Sleep', relax: 'Relax', computer: 'Use the computer', read: 'Read a book', eat: 'Open the fridge', cook: 'Cook a meal',
   shower: 'Take a shower', bath: 'Take a bath', wardrobe: 'Change outfit', tv: 'Watch TV', game: 'Play video games', music: 'Listen to music',
-  piano: 'Play the piano', workout: 'Work out', paint: 'Paint', service: 'Talk to staff', work: 'Start your shift', board: 'Board the train',
+  piano: 'Play the piano', workout: 'Work out', paint: 'Paint', service: 'Talk to staff', work: 'Start your shift', board: 'Board the train', sit: 'Sit down',
 };
 
 /** Footprint of an item after rotation (r = quarter turns). */

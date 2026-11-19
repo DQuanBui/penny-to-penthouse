@@ -29,9 +29,9 @@ export const FURNITURE = [
   F('desk_basic', 'Flat-Pack Desk', 'desk', 120, 1.5, 1, 0.75, 1, 'desk', { use: 'computer', q: 1.0, p: { top: '#d9c7a8', leg: '#8a8d92' } }),
   F('desk_wood', 'Solid Wood Desk', 'desk', 420, 1.5, 1, 0.75, 4, 'desk', { use: 'computer', q: 1.1, p: { top: '#7a5a3c', leg: '#5a4028', drawers: true } }),
   F('desk_exec', 'Executive Desk', 'desk', 1800, 2, 1, 0.75, 8, 'desk', { use: 'computer', q: 1.25, p: { top: '#2e2420', leg: '#1d1714', drawers: true, wide: true } }),
-  F('chair_basic', 'Folding Chair', 'desk', 40, 0.5, 0.5, 0.8, 0, 'chair', { p: { color: '#8a8d92' } }),
-  F('dining_chair', 'Dining Chair', 'kitchen', 60, 0.5, 0.5, 0.8, 1, 'chair', { p: { color: '#8a6a4a' } }),
-  F('office_chair', 'Office Chair', 'desk', 210, 0.5, 0.5, 0.9, 2, 'chair', { p: { color: '#2b2f38', office: true } }),
+  F('chair_basic', 'Folding Chair', 'desk', 40, 0.5, 0.5, 0.8, 0, 'chair', { use: 'sit', p: { color: '#8a8d92' } }),
+  F('dining_chair', 'Dining Chair', 'kitchen', 60, 0.5, 0.5, 0.8, 1, 'chair', { use: 'sit', p: { color: '#8a6a4a' } }),
+  F('office_chair', 'Office Chair', 'desk', 210, 0.5, 0.5, 0.9, 2, 'chair', { use: 'sit', p: { color: '#2b2f38', office: true } }),
   F('bookshelf', 'Bookshelf', 'desk', 260, 1, 0.5, 1.9, 4, 'bookshelf', { use: 'read', q: 1, p: { color: '#7a5a3c' } }),
   // ---- kitchen ----
   F('mini_fridge', 'Mini Fridge', 'kitchen', 150, 0.5, 0.5, 0.9, 0, 'fridge', { use: 'eat', q: 0.9, p: { color: '#e8e8e4', h: 0.85 } }),
@@ -45,7 +45,7 @@ export const FURNITURE = [
   F('table_small', 'Small Table', 'kitchen', 90, 1, 1, 0.75, 1, 'table', { p: { color: '#b98a5a' } }),
   F('dining_table', 'Dining Table', 'kitchen', 300, 2, 1, 0.75, 3, 'table', { p: { color: '#7a5a3c' } }),
   F('marble_table', 'Marble Dining Table', 'kitchen', 2400, 2.5, 1, 0.75, 8, 'table', { p: { color: '#f0eee9', leg: '#2a2420' } }),
-  F('bar_stool', 'Bar Stool', 'kitchen', 70, 0.5, 0.5, 0.75, 1, 'stool', { p: { color: '#2b2f38' } }),
+  F('bar_stool', 'Bar Stool', 'kitchen', 70, 0.5, 0.5, 0.75, 1, 'stool', { use: 'sit', p: { color: '#2b2f38' } }),
   // ---- bathroom ----
   F('shower_basic', 'Shower Stall', 'bathroom', 350, 1, 1, 2.1, 1, 'shower', { use: 'shower', q: 1.0, p: { color: '#dfe7ee' } }),
   F('shower_rain', 'Rain Shower', 'bathroom', 1600, 1.5, 1, 2.1, 5, 'shower', { use: 'shower', q: 1.25, p: { color: '#bfe0f2', lux: true } }),

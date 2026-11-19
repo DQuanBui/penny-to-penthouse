@@ -179,6 +179,8 @@ export class NPCManager {
       const busy = nightlife ? (hr >= 21 || hr < 2 ? 8 : 3) : hr >= 11 && hr < 14 ? 5 : 3;
       const n = Math.max(0, busy - guests.length);
       const floor = place.type === 'club' ? interior.layout.items.find((it) => it.id === 'dance_floor') : null;
+      const SEATS = { dining_chair: 0.47, chair_basic: 0.47, bar_stool: 0.76, sofa: 0.44, armchair: 0.44, loveseat: 0.44, subway_seat: 0.46, platform_bench: 0.46 };
+      const chairs = interior.layout.items.filter((it) => SEATS[it.id] != null).sort(() => rng() - 0.5);
       for (let k = 0; k < n; k++) {
         const look = roleAppearance(randomRole(rng), rng);
         const actor = this.makeActor(null, look);
@@ -186,6 +188,15 @@ export class NPCManager {
           // most of the club is on the dance floor
           actor.dance = true;
           add(actor, floor.x + (rng() - 0.5) * 4, floor.z + (rng() - 0.5) * 3, rng() * Math.PI * 2);
+          continue;
+        }
+        // most customers sit down when there is a free seat
+        const chair = rng() < 0.7 ? chairs.shift() : null;
+        if (chair) {
+          const a = (chair.r || 0) * (Math.PI / 2);
+          actor.sit = true;
+          add(actor, chair.x - Math.sin(a) * 0.04, chair.z - Math.cos(a) * 0.04, a);
+          actor.rig.group.position.y = SEATS[chair.id] - 0.48;
           continue;
         }
         const s = spots.shift();

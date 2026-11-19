@@ -21,6 +21,7 @@ export class PlayerController {
     this.talking = false;
     this.frozen = false; // true while UI owns the player (dialogs, mini-games)
     this.speedMul = 1;
+    this.sitLift = 0; // seat height above a standard chair
     this.riding = null; // { max, accel, v } while on a bicycle
     this.umbrella = false; // holding an umbrella (rain)
     this.rig = null;
@@ -46,6 +47,7 @@ export class PlayerController {
   sync() {
     if (!this.rig) return;
     this.rig.group.position.copy(this.pos);
+    if (this.sitting && this.sitLift) this.rig.group.position.y += this.sitLift;
     this.rig.group.rotation.y = this.heading;
   }
 

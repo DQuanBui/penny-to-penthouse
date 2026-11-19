@@ -101,10 +101,10 @@ export function animateRig(rig, dt, p) {
   let aLz = 0.07 + breathe * 0.008 + a.air * 0.5;
   let aRz = -0.07 - breathe * 0.008 - a.air * 0.5;
   // seated: hands on lap
-  aLx = lerp(aLx, -0.45, a.sit);
-  aRx = lerp(aRx, -0.45, a.sit);
-  fLx = lerp(fLx, -0.75, a.sit);
-  fRx = lerp(fRx, -0.75, a.sit);
+  aLx = lerp(aLx, -0.22, a.sit);
+  aRx = lerp(aRx, -0.22, a.sit);
+  fLx = lerp(fLx, -0.62, a.sit);
+  fRx = lerp(fRx, -0.62, a.sit);
   // hands on the handlebars
   aLx = lerp(aLx, -0.95, a.ride || 0);
   aRx = lerp(aRx, -0.95, a.ride || 0);

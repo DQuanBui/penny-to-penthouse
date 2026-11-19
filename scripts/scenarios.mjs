@@ -167,6 +167,77 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Sitting: on a park bench, on the sofa at home, on a dining chair in a café. */
+  async sit({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60;
+      const b = g.city.benchSpots.find((s) => !s.y) || g.city.benchSpots[0];
+      g.sitOn(b);
+      g.cam.snapBehind(b.ry + Math.PI + 0.9);
+      g.cam.pitch = 0.15;
+      g.cam.dist = 3.2;
+      window.__bench = b;
+    });
+    await wait(1500);
+    const s1 = await page.evaluate(() => ({ pos: [window.__game.player.pos.x - window.__bench.x, window.__game.player.pos.z - window.__bench.z].map((v) => v.toFixed(2)), heading: window.__game.player.heading.toFixed(2), ry: window.__bench.ry.toFixed(2) }));
+    console.log('bench', JSON.stringify(s1));
+    await shot('sit-bench');
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.player.sitting = false;
+      g.state.home.type = 'apartment';
+      g.state.home.layout = null;
+      g.enterPlace(g.homePlace(), true);
+    });
+    await wait(800);
+    const sofa = await page.evaluate(() => {
+      const g = window.__game;
+      const pt = g.interior.points.find((p) => p.use === 'relax');
+      if (!pt) return null;
+      g.player.teleport(pt.x, pt.z, 0);
+      return { item: pt.item.id };
+    });
+    console.log('sofa', JSON.stringify(sofa));
+    await page.waitForFunction(() => window.__game.interactable && /Relax/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await wait(1200);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading + Math.PI + 0.7);
+      g.cam.pitch = 0.35;
+      g.cam.dist = 4;
+    });
+    await wait(600);
+    await shot('sit-sofa');
+    console.log('sitting after relax', await page.evaluate(() => window.__game.player.sitting));
+    // a café table
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.standUp();
+      g.leaveInterior(true);
+      const cafe = g.city.places.find((p) => p.type === 'restaurant');
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 13 * 60;
+      g.placePlayerAt(cafe);
+      g.enterPlace(cafe, true);
+      const pt = g.interior.points.find((p) => p.use === 'sit');
+      g.player.teleport(pt.x, pt.z, 0);
+    });
+    await page.waitForFunction(() => window.__game.interactable && /Sit down/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await wait(600);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading + Math.PI + 0.8);
+      g.cam.pitch = 0.4;
+      g.cam.dist = 5;
+    });
+    await wait(800);
+    console.log('chair', JSON.stringify(await page.evaluate(() => ({ sitting: window.__game.player.sitting, lift: window.__game.player.sitLift, seatedNPCs: window.__game.npcs.indoor.filter((a) => a.sit).length }))));
+    await shot('sit-chair');
+  },
   /** Subway: down to the platform, the train pulls in, ride, come up elsewhere; Chicago's L is elevated. */
   async subway({ page, shot, wait }) {
     await startLife(page, wait);

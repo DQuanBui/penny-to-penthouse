@@ -844,13 +844,35 @@ export class Game {
   /** Sit down to rest and people-watch (fun and energy slowly recover). */
   sitOn(b) {
     this.player.sitting = true;
+    this.player.sitLift = 0;
     this.player.teleport(b.x + Math.sin(b.ry) * 0.06, b.z + Math.cos(b.ry) * 0.06, b.ry);
     this.hud.hint('bench', 'Resting on a bench slowly restores Fun and Energy. Move (W A S D) or press E to stand up.', 8);
+  }
+
+  /** Sit on a piece of furniture: the seat nearest you, facing out, at its height. */
+  sitOnItem(pt, seatH) {
+    const it = pt.item;
+    const def = pt.def;
+    const a = (it.r || 0) * (Math.PI / 2);
+    const fx = Math.sin(a);
+    const fz = Math.cos(a);
+    const rx = Math.cos(a);
+    const rz = -Math.sin(a);
+    const p = this.player.pos;
+    const along = (p.x - it.x) * rx + (p.z - it.z) * rz;
+    const half = Math.max(0, def.w / 2 - 0.45);
+    const off = Math.max(-half, Math.min(half, along));
+    const back = def.d > 0.8 ? 0.08 : 0.02; // sofas: sit back into the cushions
+    this.player.sitting = true;
+    this.player.sitLift = seatH - 0.48;
+    this.player.teleport(it.x + rx * off - fx * back, it.z + rz * off - fz * back, a);
+    this.hud.hint('sitdown', 'Move (W A S D) to get up again.', 5);
   }
 
   standUp() {
     const p = this.player;
     p.sitting = false;
+    p.sitLift = 0;
     p.teleport(p.pos.x + Math.sin(p.heading) * 0.75, p.pos.z + Math.cos(p.heading) * 0.75, p.heading);
   }
 

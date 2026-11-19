@@ -39,12 +39,20 @@ export async function runActivity(game, id, opts = {}) {
   return res;
 }
 
+/** Seat height of things you can sit on (sofas, chairs, stools, benches). */
+export const SEAT_H = { sofa: 0.44, armchair: 0.44, loveseat: 0.44, sectional: 0.44, designer_sofa: 0.44, beanbag: 0.3, dining_chair: 0.47, chair_basic: 0.47, office_chair: 0.5, bar_stool: 0.76, subway_seat: 0.46, platform_bench: 0.46 };
+
 /** Entry point: player used a furniture interaction point inside an interior. */
 export function useFurniture(game, point) {
   const { use, def, item } = point;
   const q = item.q ?? def.q ?? 1;
   const atHome = game.inside?.home;
   const simple = { shower: 'shower', bath: 'bath', cook: 'cook', tv: 'tv', game: 'game', relax: 'relax', music: 'music', piano: 'piano', paint: 'paint', read: 'read' };
+  // sit down properly on the seat (and stay seated until you move)
+  if (use === 'sit' || (use === 'relax' && SEAT_H[item.id] != null)) {
+    game.sitOnItem(point, SEAT_H[item.id] ?? 0.46);
+    if (use === 'sit') return;
+  }
   if (use === 'sleep') return openSleep(game, q);
   if (use === 'eat') return openFridge(game, q);
   if (use === 'computer') return openComputer(game, q);
