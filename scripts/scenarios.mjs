@@ -167,6 +167,57 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** World food and drink: pho, Korean BBQ, ramen, sushi, dumplings, tacos, boba... */
+  async food({ page, shot, wait }) {
+    await startLife(page, wait);
+    const counts = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.money.checking = 2000;
+      const out = {};
+      for (const p of g.city.places) if (p.minor) out[p.type] = (out[p.type] || 0) + 1;
+      return out;
+    });
+    console.log('places', JSON.stringify(counts));
+    for (const t of ['kbbq', 'dumplings', 'pho', 'sushi', 'boba', 'taqueria']) {
+      const r = await page.evaluate((type) => {
+        const g = window.__game;
+        const p = g.city.places.find((q) => q.type === type);
+        if (!p) return null;
+        g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 1440 + 19 * 60;
+        g.leaveInterior(true);
+        g.placePlayerAt(p);
+        g.enterPlace(p, true);
+        const L = g.inside.layout;
+        g.player.teleport(L.w / 2, L.d - 1.3, Math.PI);
+        g.cam.snapBehind(Math.PI + 0.4);
+        g.cam.pitch = 0.6;
+        return { type, name: p.name, counter: g.interior.points.some((q) => q.use === 'service') };
+      }, t);
+      console.log(t, JSON.stringify(r));
+      if (r && ['kbbq', 'dumplings', 'sushi'].includes(t)) {
+        await wait(1200);
+        await shot('food-' + t);
+      }
+    }
+    await page.evaluate(() => {
+      const g = window.__game;
+      const p = g.city.places.find((q) => q.type === 'pho');
+      g.leaveInterior(true);
+      g.placePlayerAt(p);
+      g.enterPlace(p, true);
+      const c = g.interior.points.find((q) => q.use === 'service');
+      g.player.teleport(c.x, c.z, Math.PI);
+      g.state.needs.hunger = 30;
+    });
+    await page.waitForFunction(() => window.__game.interactable && /counter/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog:has-text("Pho bo")');
+    await shot('food-menu');
+    await page.locator('.dialog .slot:has-text("Pho bo") button').click();
+    await wait(2000);
+    console.log('hunger after pho', await page.evaluate(() => Math.round(window.__game.state.needs.hunger)));
+  },
   /** Rain: umbrellas over the crowd, residents and you. */
   async rain({ page, shot, wait }) {
     await startLife(page, wait);

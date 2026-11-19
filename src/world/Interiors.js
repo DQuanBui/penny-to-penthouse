@@ -99,6 +99,23 @@ export function defaultHomeLayout(typeId) {
 export function commercialLayout(place) {
   const kind = PLACE_TYPES[place.type].interior;
   const L = (w, d, floor, wall, items) => ({ w, d, floor, wall, walls: [], items: withUids(items), doorX: w / 2 });
+  /** A themed restaurant: counter and open kitchen at the back, seating to suit. */
+  const eatery = (floor, wall, kind) => {
+    const items = [
+      { id: kind === 'bar' ? 'bar_counter' : 'shop_counter', x: 5.5, z: 1.6, r: 0 },
+      { id: 'kitchen_line', x: kind === 'bar' ? 9.6 : 9.2, z: 0.5, r: 0, use: '' },
+      { id: 'plant_floor', x: 0.5, z: 0.5, r: 0 },
+      { id: 'plant_floor', x: 10.5, z: 8.5, r: 0 },
+      { id: 'painting_l', x: 2.4, z: 0.3, r: 0 },
+    ];
+    if (kind === 'bar') items.push(...[3.6, 4.8, 6, 7.2].map((x) => ({ id: 'bar_stool', x, z: 2.6, r: 0 })), ...cafeTables(2.4, 5.6, 3, 1, 3));
+    else if (kind === 'grills') items.push(...[2.2, 5.5, 8.8].flatMap((x) => [5.2, 7.6].map((z) => ({ id: 'grill_table', x, z, r: 0 }))));
+    else if (kind === 'small') items.push(...cafeTables(2.4, 5.4, 3, 1, 3), { id: 'sofa', x: 10.4, z: 4.2, r: 3 });
+    else items.push(...cafeTables(2.2, 4.8, 3, 2, 3.1, 2.3));
+    if (kind === 'lanterns') for (const x of [2.2, 5.5, 8.8]) items.push({ id: 'lantern', x, z: 6, r: 0 });
+    if (kind === 'plants') items.push({ id: 'plant_tree', x: 10.4, z: 0.7, r: 0 }, { id: 'plant_tree', x: 0.6, z: 8.3, r: 0 });
+    return L(11, 9, floor, wall, items);
+  };
   const cafeTables = (x0, z0, nx, nz, sx = 2.6, sz = 2.4) => {
     const out = [];
     for (let a = 0; a < nx; a++)
@@ -165,6 +182,30 @@ export function commercialLayout(place) {
         { id: 'armchair', x: 11.2, z: 6.8, r: 3 },
         { id: 'plant_floor', x: 0.6, z: 8.4, r: 0 },
       ]);
+    case 'eat_pho':
+      return eatery('tile', '#f3e3c3', 'lanterns');
+    case 'eat_kbbq':
+      return eatery('wood', '#3a2a24', 'grills');
+    case 'eat_ramen':
+      return eatery('wood', '#4a3426', 'bar');
+    case 'eat_sushi':
+      return eatery('wood', '#efe6d2', 'bar');
+    case 'eat_dumplings':
+      return eatery('tile', '#8a2a24', 'lanterns');
+    case 'eat_taqueria':
+      return eatery('tile', '#f0b04a', 'tables');
+    case 'eat_thai':
+      return eatery('wood', '#e9d6b0', 'plants');
+    case 'eat_indian':
+      return eatery('wood', '#c4683a', 'tables');
+    case 'eat_halal':
+      return eatery('tile', '#ece4d0', 'tables');
+    case 'eat_boba':
+      return eatery('tile', '#f6e3ec', 'small');
+    case 'eat_icecream':
+      return eatery('tile', '#e2f2f4', 'small');
+    case 'eat_wine':
+      return eatery('wood', '#4a2228', 'bar');
     case 'bikeshop':
       return L(11, 8, 'concrete', '#e9ece6', [
         { id: 'shop_counter', x: 8.8, z: 6.4, r: 3 },

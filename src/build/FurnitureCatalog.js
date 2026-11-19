@@ -388,6 +388,23 @@ const SHAPES = {
     for (const x of [-0.9, 0.9]) for (const z of [-1.35, 1.35]) S.cyl(0.34, 0.34, 0.24, x, 0.34, z, '#15171c', 14, 0, Math.PI / 2);
     S.glow(new THREE.BoxGeometry(1.5, 0.1, 0.04).translate(0, 0.62, 2.16), '#fff3c8', 0.8);
   },
+  grillTable(S, f) {
+    S.box(f.w - 0.2, 0.06, f.d - 0.4, 0, 0.74, 0, '#5a3a2a');
+    S.box(0.5, 0.72, 0.5, 0, 0.36, 0, '#2b2d33');
+    S.cyl(0.26, 0.26, 0.05, 0, 0.79, 0, '#1d1f24', 18);
+    S.glow(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 16).translate(0, 0.82, 0), '#ff6a2a', 0.9);
+    S.cyl(0.06, 0.06, 1.3, 0, 1.65, 0, '#9aa2ad', 10);
+    S.cyl(0.24, 0.12, 0.25, 0, 1.05, 0, '#9aa2ad', 14);
+    for (const z of [-0.6, 0.6]) for (const x of [-0.45, 0.45]) S.box(0.36, 0.45, 0.36, x, 0.23, z, '#3a2a24');
+  },
+  lantern(S) {
+    for (const [x, c] of [[-0.25, '#d81e1e'], [0.25, '#e9a33a']]) {
+      S.add(new THREE.SphereGeometry(0.18, 12, 8).scale(1, 1.2, 1).translate(x, 2.35, 0), c);
+      S.cyl(0.08, 0.08, 0.04, x, 2.58, 0, '#d8b25a', 10);
+      S.cyl(0.08, 0.08, 0.04, x, 2.12, 0, '#d8b25a', 10);
+      S.cyl(0.006, 0.006, 0.4, x, 2.8, 0, '#1d1f24', 4);
+    }
+  },
   bikeDisplay(S, f) {
     const cols = ['#c53a3a', '#27406b', '#18a999'];
     for (let k = 0; k < 3; k++) {

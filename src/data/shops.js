@@ -136,6 +136,128 @@ export const SHOP_TYPES = {
       { id: 'tournament', name: 'Join the Friday tournament', icon: '🏆', price: 20, minutes: 90, needs: { fun: 34, social: 14 }, line: 'Knocked out in the semis, but you made friends.' },
     ],
   },
+  pho: {
+    label: 'Vietnamese', icon: '🍜', color: '#d9a35a', cat: 'food', hours: [10, 22], interior: 'eat_pho', weight: 1.3,
+    look: { front: 'shopfront', brand: '#b3261e', trim: '#ffd84a', awning: 'slant', extras: ['bladeLogo', 'planters'] },
+    names: ['Pho Saigon House', 'Little Hanoi', 'Lotus Pho', 'Pho 99', 'Banh Mi Corner', 'Mekong Kitchen'],
+    menu: [
+      { id: 'pho', name: 'Pho bo — beef noodle soup', icon: '🍜', price: 13, minutes: 35, needs: { hunger: 50, energy: 6 }, line: 'Steaming broth, herbs, lime and a squeeze of sriracha. Perfect.' },
+      { id: 'banhmi', name: 'Banh mi sandwich', icon: '🥖', price: 8, minutes: 15, needs: { hunger: 32 }, line: 'Crunchy baguette, pickled carrots and a kick of chili.' },
+      { id: 'cafe', name: 'Vietnamese iced coffee', icon: '☕', price: 5, minutes: 10, needs: { energy: 20 }, line: 'Strong, sweet and very cold.' },
+      { id: 'rolls', name: 'Fresh spring rolls', icon: '🥢', price: 7, minutes: 15, needs: { hunger: 18, fun: 3 }, line: 'Rice paper, shrimp and peanut sauce.' },
+    ],
+  },
+  kbbq: {
+    label: 'Korean BBQ', icon: '🥩', color: '#c53a3a', cat: 'food', hours: [11, 24], interior: 'eat_kbbq', weight: 1.2,
+    look: { front: 'shopfront', brand: '#1d1f24', trim: '#e9c04c', awning: 'none', extras: ['neonSign', 'planters'] },
+    names: ['Seoul Garden BBQ', 'Gangnam Grill', 'Hanok House', 'K-Town Charcoal', 'Bulgogi Brothers', 'Kimchi & Coal'],
+    menu: [
+      { id: 'bbq', name: 'BBQ set for the table, grilled in front of you', icon: '🥩', price: 48, minutes: 90, needs: { hunger: 65, social: 16, fun: 14 }, line: 'Sizzling bulgogi, banchan everywhere, someone orders another round.' },
+      { id: 'bibim', name: 'Bibimbap in a hot stone bowl', icon: '🍚', price: 16, minutes: 30, needs: { hunger: 45 }, line: 'Crispy rice at the bottom is the best part.' },
+      { id: 'chicken', name: 'Korean fried chicken and soju', icon: '🍗', price: 26, minutes: 60, needs: { hunger: 35, fun: 14, social: 10 }, line: 'Double-fried, sticky and spicy.' },
+      { id: 'stew', name: 'Kimchi stew', icon: '🍲', price: 14, minutes: 25, needs: { hunger: 40, health: 3 }, line: 'Bubbling, sour and warming.' },
+    ],
+  },
+  ramen: {
+    label: 'Ramen Bar', icon: '🍥', color: '#e07b39', cat: 'food', hours: [11, 26], interior: 'eat_ramen', weight: 1.1,
+    look: { front: 'shopfront', brand: '#2a1e1a', trim: '#f2e2b0', awning: 'flat', extras: ['bladeLogo', 'chalkboard'] },
+    names: ['Ichiban Ramen', 'Tonkotsu Lane', 'Midnight Noodle', 'Ramen Kaze', 'Shoyu Street'],
+    menu: [
+      { id: 'tonkotsu', name: 'Tonkotsu ramen', icon: '🍜', price: 16, minutes: 30, needs: { hunger: 55, energy: 5 }, line: 'Creamy pork broth, soft egg, slurp loudly — it is polite.' },
+      { id: 'gyoza', name: 'Pan-fried gyoza', icon: '🥟', price: 8, minutes: 15, needs: { hunger: 20 }, line: 'Crispy bottoms, juicy inside.' },
+      { id: 'matcha', name: 'Iced matcha latte', icon: '🍵', price: 5, minutes: 10, needs: { energy: 10, fun: 3 }, line: 'Grassy, creamy and very green.' },
+    ],
+  },
+  sushi: {
+    label: 'Sushi Bar', icon: '🍣', color: '#e86a6a', cat: 'food', hours: [12, 23], interior: 'eat_sushi', weight: 1,
+    look: { front: 'shopfront', brand: '#f2ece0', trim: '#1d1f24', awning: 'none', extras: ['planters'] },
+    names: ['Sakura Sushi', 'Koi Sushi Bar', 'Omakase Kai', 'Umi Sushi', 'Tora Hand Rolls'],
+    menu: [
+      { id: 'platter', name: 'Sushi platter', icon: '🍣', price: 24, minutes: 35, needs: { hunger: 45, fun: 6 }, line: 'Salmon, tuna, yellowtail and a spicy roll.' },
+      { id: 'omakase', name: 'Chef’s omakase at the counter', icon: '🎌', price: 95, minutes: 90, needs: { hunger: 55, fun: 25, social: 8 }, line: 'Fourteen pieces, each one better than the last. The chef nods at you.' },
+      { id: 'miso', name: 'Miso soup and edamame', icon: '🥢', price: 6, minutes: 10, needs: { hunger: 12, health: 2 }, line: 'Warm and salty.' },
+    ],
+  },
+  dumplings: {
+    label: 'Dumpling House', icon: '🥟', color: '#b3261e', cat: 'food', hours: [10, 22], interior: 'eat_dumplings', weight: 1.2,
+    look: { front: 'shopfront', brand: '#9a1b1b', trim: '#f2c230', awning: 'slant', extras: ['bladeLogo'] },
+    names: ['Golden Dumpling', 'Jade Garden', 'Lucky Dragon Dim Sum', 'Shanghai Soup Dumplings', 'Red Lantern Noodles', 'Bamboo Steamer'],
+    menu: [
+      { id: 'xlb', name: 'Soup dumplings', icon: '🥟', price: 11, minutes: 25, needs: { hunger: 35, fun: 4 }, line: 'Bite, sip, burn your tongue, repeat.' },
+      { id: 'dimsum', name: 'Dim sum brunch with the trolleys', icon: '🫖', price: 28, minutes: 70, needs: { hunger: 55, social: 12, fun: 8 }, line: 'Pork buns, shrimp dumplings, endless tea.' },
+      { id: 'duck', name: 'Peking duck for the table', icon: '🦆', price: 38, minutes: 60, needs: { hunger: 60, social: 10 }, line: 'Crispy skin, thin pancakes, hoisin.' },
+      { id: 'soup', name: 'Hot and sour soup', icon: '🍲', price: 7, minutes: 15, needs: { hunger: 20 }, line: 'Peppery and comforting.' },
+    ],
+  },
+  taqueria: {
+    label: 'Taqueria', icon: '🌮', color: '#f2a03c', cat: 'food', hours: [10, 25], interior: 'eat_taqueria', weight: 1.4,
+    look: { front: 'shopfront', brand: '#2f8f6a', trim: '#f2c230', awning: 'slant', extras: ['chalkboard', 'stringLights'] },
+    names: ['Taqueria El Sol', 'Tacos La Esquina', 'Casa Azul', 'Al Pastor King', 'La Lupita', 'Burrito Barn'],
+    menu: [
+      { id: 'tacos', name: 'Three tacos al pastor', icon: '🌮', price: 10, minutes: 15, needs: { hunger: 38, fun: 5 }, line: 'Pineapple, cilantro, onion, a squeeze of lime.' },
+      { id: 'burrito', name: 'Giant burrito', icon: '🌯', price: 12, minutes: 20, needs: { hunger: 55 }, line: 'You will not need dinner.' },
+      { id: 'horchata', name: 'Horchata', icon: '🥛', price: 4, minutes: 5, needs: { fun: 3, energy: 4 }, line: 'Cinnamon rice milk, sweet and cold.' },
+      { id: 'marg', name: 'Margarita on the rocks', icon: '🍹', price: 12, minutes: 30, needs: { fun: 12, social: 6 }, line: 'Salt rim, lime, sunshine in a glass.' },
+    ],
+  },
+  thai: {
+    label: 'Thai', icon: '🍛', color: '#e9a33a', cat: 'food', hours: [11, 22], interior: 'eat_thai', weight: 1.1,
+    look: { front: 'shopfront', brand: '#5a2a7a', trim: '#f2c230', awning: 'flat', extras: ['planters'] },
+    names: ['Bangkok Street', 'Thai Orchid', 'Lemongrass Kitchen', 'Siam Spice', 'Basil & Lime'],
+    menu: [
+      { id: 'padthai', name: 'Pad thai', icon: '🍜', price: 14, minutes: 25, needs: { hunger: 48 }, line: 'Tamarind, peanuts, a wedge of lime.' },
+      { id: 'curry', name: 'Green curry with jasmine rice', icon: '🍛', price: 15, minutes: 25, needs: { hunger: 50, health: 2 }, line: 'Coconutty and properly spicy.' },
+      { id: 'tea', name: 'Thai iced tea', icon: '🧋', price: 5, minutes: 5, needs: { energy: 10, fun: 3 }, line: 'Bright orange and very sweet.' },
+    ],
+  },
+  indian: {
+    label: 'Indian', icon: '🥘', color: '#c45a2a', cat: 'food', hours: [11, 23], interior: 'eat_indian', weight: 1.1,
+    look: { front: 'shopfront', brand: '#7a1f3a', trim: '#f2c230', awning: 'slant', extras: ['bladeLogo', 'planters'] },
+    names: ['Taj Spice', 'Curry Leaf', 'Bombay Express', 'Masala House', 'Saffron Table'],
+    menu: [
+      { id: 'butter', name: 'Butter chicken with garlic naan', icon: '🍛', price: 17, minutes: 35, needs: { hunger: 55, fun: 4 }, line: 'Rich, creamy, and the naan is still blistered from the oven.' },
+      { id: 'samosa', name: 'Samosas and chutney', icon: '🥟', price: 7, minutes: 10, needs: { hunger: 22 }, line: 'Crisp pastry, spiced potato.' },
+      { id: 'lassi', name: 'Mango lassi', icon: '🥭', price: 5, minutes: 5, needs: { energy: 6, fun: 4 }, line: 'Thick, cold and tropical.' },
+    ],
+  },
+  halal: {
+    label: 'Halal & Falafel', icon: '🥙', color: '#3f8f4a', cat: 'food', hours: [9, 27], interior: 'eat_halal', weight: 1.2,
+    look: { front: 'shopfront', brand: '#1f5f36', trim: '#f4f1ea', awning: 'flat', extras: ['chalkboard'] },
+    names: ['Falafel Palace', 'Halal Bros', 'Mediterranean Grill', 'Shawarma Spot', 'Cedar & Olive'],
+    menu: [
+      { id: 'platter', name: 'Chicken over rice with white sauce', icon: '🍚', price: 10, minutes: 15, needs: { hunger: 50 }, line: 'The late-night classic. Extra white sauce, a little hot sauce.' },
+      { id: 'falafel', name: 'Falafel wrap', icon: '🥙', price: 8, minutes: 10, needs: { hunger: 35, health: 2 }, line: 'Crunchy, herby, tahini dripping down your wrist.' },
+      { id: 'tea', name: 'Fresh mint tea', icon: '🍵', price: 3, minutes: 5, needs: { energy: 4, fun: 2 }, line: 'Sweet and fragrant.' },
+    ],
+  },
+  boba: {
+    label: 'Bubble Tea', icon: '🧋', color: '#c98b6a', cat: 'food', hours: [11, 23], interior: 'eat_boba', weight: 1.3,
+    look: { front: 'shopfront', brand: '#f2c4d6', trim: '#5a3a2a', awning: 'none', extras: ['planters', 'screens'] },
+    names: ['Boba Bliss', 'Tapioca Time', 'Pearl Tea House', 'Moon Tea', 'Sip & Pop'],
+    menu: [
+      { id: 'brown', name: 'Brown sugar milk tea with boba', icon: '🧋', price: 6.5, minutes: 10, needs: { energy: 8, fun: 6 }, line: 'Tiger stripes of syrup, chewy pearls.' },
+      { id: 'taro', name: 'Taro smoothie', icon: '🥤', price: 7, minutes: 10, needs: { fun: 6, hunger: 8 }, line: 'Purple, creamy and nutty.' },
+      { id: 'fruit', name: 'Passion fruit green tea', icon: '🍹', price: 6, minutes: 10, needs: { energy: 6, fun: 4 }, line: 'Tart, fresh, popping boba on top.' },
+    ],
+  },
+  icecream: {
+    label: 'Ice Cream', icon: '🍦', color: '#f2a6c4', cat: 'food', hours: [11, 23], interior: 'eat_icecream', weight: 1,
+    look: { front: 'shopfront', brand: '#f6d6e4', trim: '#c53a6a', awning: 'slant', extras: ['patio'] },
+    names: ['Scoops', 'Sweet Swirl', 'Polar Parlor', 'Gelato Bella', 'Sprinkles & Co.'],
+    menu: [
+      { id: 'cone', name: 'Two scoops in a waffle cone', icon: '🍦', price: 6, minutes: 10, needs: { fun: 10, hunger: 8 }, line: 'Pistachio and salted caramel.' },
+      { id: 'sundae', name: 'Hot fudge sundae', icon: '🍨', price: 9, minutes: 15, needs: { fun: 14, hunger: 12 }, line: 'Whipped cream, a cherry on top.' },
+    ],
+  },
+  winebar: {
+    label: 'Wine Bar', icon: '🍷', color: '#7a1f3a', cat: 'night', hours: [17, 25], interior: 'eat_wine', weight: 0.9,
+    look: { front: 'shopfront', brand: '#3a1420', trim: '#d8b25a', awning: 'flat', extras: ['planters', 'stringLights'] },
+    names: ['Vino Vino', 'The Cork Room', 'Barrel & Vine', 'Le Petit Verre', 'Decanter'],
+    menu: [
+      { id: 'glass', name: 'Glass of red', icon: '🍷', price: 14, minutes: 40, needs: { fun: 10, social: 6 }, line: 'Swirl, sniff, pretend you know what "notes of leather" means.' },
+      { id: 'board', name: 'Cheese and charcuterie board', icon: '🧀', price: 24, minutes: 45, needs: { hunger: 30, social: 8, fun: 6 }, line: 'Fig jam, three cheeses, a crusty baguette.' },
+    ],
+  },
   bikeshop: {
     label: 'Bike Shop', icon: '🚲', color: '#18a999', cat: 'shop', hours: [9, 20], interior: 'bikeshop', weight: 1.1,
     look: { front: 'shopfront', brand: '#14615a', trim: '#f2f2ee', awning: 'flat', extras: ['bikeRack', 'planters'] },
@@ -188,8 +310,8 @@ export function opensAt(type) {
 /** Which kinds of business suit a district style (weights multiply). */
 export const STYLE_MIX = {
   skyscraper: { deli: 1.6, pharmacy: 1.4, pub: 1, club: 0.8, diner: 1.2 },
-  midrise: { pizza: 1.3, pub: 1.2, laundromat: 1.2 },
-  brownstone: { bakery: 1.6, bookstore: 1.6, florist: 1.5, pub: 1.2, pizza: 1.2 },
+  midrise: { pizza: 1.3, pub: 1.2, laundromat: 1.2, dumplings: 1.4, kbbq: 1.4, taqueria: 1.3, halal: 1.3 },
+  brownstone: { bakery: 1.6, bookstore: 1.6, florist: 1.5, pub: 1.2, pizza: 1.2, pho: 1.4, ramen: 1.3, winebar: 1.5 },
   warehouse: { club: 2.5, pub: 1.6, arcade: 1.8, pizza: 1 },
   beach: { pub: 1.6, club: 1.4, salon: 1.4, diner: 1.2 },
   campus: { pizza: 1.6, bookstore: 1.8, arcade: 1.3, cinema: 1.4 },
