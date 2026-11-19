@@ -434,6 +434,102 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Live street events: a crash with police and an ambulance; a purse snatcher to chase. */
+  async live({ page, shot, wait }) {
+    await startLife(page, wait);
+    const acc = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 15 * 60;
+      const ev = g.liveEvents.trigger('accident');
+      if (!ev) return null;
+      const s = ev.spot;
+      // on the sidewalk opposite-ish, looking at the wreck
+      const x = s.x + s.nx * 3.4 + Math.sin(s.ry) * 11;
+      const z = s.z + s.nz * 3.4 + Math.cos(s.ry) * 11;
+      const ry = Math.atan2(s.x - x, s.z - z);
+      g.player.teleport(x, z, ry);
+      g.cam.snapBehind(ry);
+      g.cam.pitch = 0.28;
+      g.cam.dist = 5;
+      return { x: s.x.toFixed(0), z: s.z.toFixed(0), people: ev.people.length };
+    });
+    console.log('accident', JSON.stringify(acc));
+    if (!acc) throw new Error('no accident spot');
+    await wait(2500);
+    await shot('live-crash');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const ev = g.liveEvents.ev;
+      g.player.teleport(ev.x + ev.spot.nx * 3, ev.z + ev.spot.nz * 3, 0);
+    });
+    await page.waitForFunction(() => /911/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    // fast-forward the response
+    await page.evaluate(() => (window.__game.liveEvents.ev.t = 60));
+    await page.waitForFunction(() => window.__game.liveEvents.ev?.amb, null, { timeout: 20000 });
+    await page.evaluate(() => {
+      const g = window.__game;
+      const ev = g.liveEvents.ev;
+      const s = ev.spot;
+      const x = s.x + s.nx * 3.4 - Math.sin(s.ry) * 16;
+      const z = s.z + s.nz * 3.4 - Math.cos(s.ry) * 16;
+      const ry = Math.atan2(s.x - x, s.z - z);
+      g.player.teleport(x, z, ry);
+      g.cam.snapBehind(ry);
+      g.cam.pitch = 0.3;
+      g.cam.dist = 5;
+      g.player.emote = null;
+    });
+    await wait(2500);
+    await shot('live-response');
+    // the thief
+    const th = await page.evaluate(() => {
+      const g = window.__game;
+      const ev = g.liveEvents.trigger('thief');
+      if (!ev) return null;
+      ev.thief.x = ev.victim.x + 0.5;
+      ev.thief.z = ev.victim.z + 0.3;
+      return { x: ev.x.toFixed(0), z: ev.z.toFixed(0) };
+    });
+    console.log('thief', JSON.stringify(th));
+    if (!th) throw new Error('no thief spot');
+    await page.waitForFunction(() => window.__game.liveEvents.ev?.phase === 'run', null, { timeout: 20000 });
+    await wait(1500);
+    await page.evaluate(() => {
+      const g = window.__game;
+      const t = g.liveEvents.ev.thief;
+      const ry = t.ry;
+      g.player.teleport(t.x - Math.sin(ry) * 5, t.z - Math.cos(ry) * 5, ry);
+      g.cam.snapBehind(ry);
+      g.cam.dist = 5;
+    });
+    await wait(600);
+    await shot('live-chase');
+    // catch: get right up to them
+    await page.evaluate(() => {
+      const g = window.__game;
+      const t = g.liveEvents.ev.thief;
+      g.player.teleport(t.x - Math.sin(t.ry) * 1, t.z - Math.cos(t.ry) * 1, t.ry);
+    });
+    await page.waitForFunction(() => window.__game.liveEvents.ev?.phase === 'caught', null, { timeout: 10000 });
+    await page.evaluate(() => {
+      const g = window.__game;
+      const b = g.liveEvents.ev.bag.position;
+      g.player.teleport(b.x, b.z + 0.5, 0);
+    });
+    await page.waitForFunction(() => window.__game.liveEvents.ev?.hasBag, null, { timeout: 10000 });
+    const cash0 = await page.evaluate(() => window.__game.state.finance?.checking ?? 0);
+    await page.evaluate(() => {
+      const g = window.__game;
+      const v = g.liveEvents.ev.victim;
+      g.player.teleport(v.x + 1, v.z, -Math.PI / 2);
+    });
+    await page.waitForFunction(() => window.__game.liveEvents.ev?.phase === 'returned', null, { timeout: 15000 });
+    console.log('returned', await page.evaluate(() => window.__game.state.stats.thievesCaught));
+  },
   /** Ducks and swans on the harbor; feed them from the railing. */
   async ducks({ page, shot, wait }) {
     await startLife(page, wait);

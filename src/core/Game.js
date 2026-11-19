@@ -47,6 +47,7 @@ import { SubwayLife, isRail, railKind } from '../world/Subway.js';
 import { TimesSquareLife } from '../world/TimesSquare.js';
 import { BeachLife } from '../world/Beach.js';
 import { DuckLife } from '../world/Ducks.js';
+import { LiveEvents } from '../world/LiveEvents.js';
 import { makeBike, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -138,6 +139,7 @@ export class Game {
     this.timesSquare = new TimesSquareLife(this);
     this.beachLife = new BeachLife(this);
     this.ducks = new DuckLife(this);
+    this.liveEvents = new LiveEvents(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -288,6 +290,7 @@ export class Game {
     this.timesSquare.setCity(this.city);
     this.beachLife.setCity(this.city);
     this.ducks.setCity(this.city);
+    this.liveEvents.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -322,6 +325,7 @@ export class Game {
     let hit = false;
     if (y < 1.5) {
       for (const o of this.vehicles.parkedOBBs()) if (pushOutOBB(pos, r, o)) hit = true;
+      for (const o of this.liveEvents.obbs()) if (pushOutOBB(pos, r, o)) hit = true;
       if (this.traffic.pushOut(pos, r)) hit = true;
     }
     // pedestrians: soft circles
@@ -957,6 +961,8 @@ export class Game {
       if (beach) return beach;
       const ducks = this.ducks.interactable(p);
       if (ducks) return ducks;
+      const live = this.liveEvents.interactable(p);
+      if (live) return live;
       const ts = this.city.timesSquare;
       if (ts && (ts.front.x - p.x) ** 2 + (ts.front.z - p.z) ** 2 < 4 * 4) return { label: '🔴 Sit on the red steps and watch the lights', action: () => this.sitOn(ts.seats[18 + Math.floor(Math.random() * 12)]) };
       const br = this.city.bridge;
@@ -1125,6 +1131,7 @@ export class Game {
     this.timesSquare.update(dt, this.player.pos, !inside);
     this.beachLife.update(dt, this.player.pos, !inside);
     this.ducks.update(dt, this.player.pos, !inside);
+    this.liveEvents.update(dt, this.player.pos, !!inside);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);
     if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {

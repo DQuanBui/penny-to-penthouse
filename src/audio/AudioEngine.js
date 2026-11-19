@@ -189,6 +189,15 @@ export class AudioEngine {
         this.tone(d, { f: 90, f2: 40, dur: 0.25, gain: 0.35 });
         this.burst(d, { f: 900, dur: 0.18, gain: 0.18 });
         break;
+      case 'crash':
+        this.tone(d, { f: 110, f2: 40, dur: 0.4, gain: 0.4 });
+        this.burst(d, { type: 'lowpass', f: 1800, f2: 200, dur: 0.7, gain: 0.35 });
+        for (let i = 0; i < 6; i++) this.burst(d, { type: 'highpass', f: 4000 + Math.random() * 3000, t: 0.08 + i * 0.05, dur: 0.06, gain: 0.08 });
+        break;
+      case 'siren':
+        // two-tone wail, fading as it pulls up
+        for (let i = 0; i < 6; i++) this.tone(d, { type: 'triangle', f: i % 2 ? 960 : 720, t: i * 0.42, dur: 0.4, gain: 0.08 * (1 - i / 8) });
+        break;
       case 'splash':
         this.burst(d, { type: 'lowpass', f: 2200, f2: 300, dur: 0.6, gain: 0.3 });
         this.burst(d, { type: 'bandpass', f: 900, q: 0.8, t: 0.05, dur: 0.3, gain: 0.12 });
