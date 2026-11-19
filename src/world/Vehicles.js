@@ -7,12 +7,14 @@ import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { loadAssetManifest } from '../core/Assets.js';
 import { clamp, damp, dampAngle } from '../core/utils.js';
 import { obbOverlap } from './Collision.js';
-import { carGeometry, carMaterial } from './CarModel.js';
+import { vehicleGeometry, carMaterial, glassMaterial, BODY_DIMS } from './CarModel.js';
 
 export const LANE_IN = 1.75; // driving lanes (AI traffic)
 export const LANE_OUT = 5.25; // kerb lanes (parking)
 
 export { carGeometry } from './CarModel.js';
+const geoCache = {};
+let glassMat = null;
 
 const glb = new Map();
 let glbLoaded = false;
@@ -30,8 +32,6 @@ export async function loadVehicleModels() {
     }
   }
 }
-
-let sharedGeo = null;
 let sharedMat = null;
 export function buildCarMesh(modelId, color) {
   const def = VEHICLE_BY_ID[modelId];
@@ -48,13 +48,17 @@ export function buildCarMesh(modelId, color) {
     group.add(model);
     return group;
   }
-  sharedGeo ||= carGeometry();
-  // a one-instance InstancedMesh so only the paint takes the colour
-  const mesh = new THREE.InstancedMesh(sharedGeo, (sharedMat ||= carMaterial({ roughness: 0.25, metalness: 0.5 })), 1);
-  mesh.setColorAt(0, new THREE.Color(color));
-  mesh.scale.set(def.size[0], def.size[1], def.size[2]);
-  mesh.castShadow = true;
-  group.add(mesh);
+  const type = def.body || 'sedan';
+  const geo = (geoCache[type] ||= vehicleGeometry(type));
+  // a one-instance InstancedMesh so only the paint takes the colour; glass is see-through
+  const body = new THREE.InstancedMesh(geo.body, (sharedMat ||= carMaterial({ roughness: 0.25, metalness: 0.5 })), 1);
+  body.setColorAt(0, new THREE.Color(color));
+  body.castShadow = true;
+  const glass = new THREE.Mesh(geo.glass, (glassMat ||= glassMaterial()));
+  const shell = new THREE.Group();
+  shell.add(body, glass);
+  shell.scale.set(def.size[0], def.size[1], def.size[2]);
+  group.add(shell);
   return group;
 }
 
@@ -137,11 +141,12 @@ export class VehicleManager {
   /** Collision box of a car mesh at a pose (reuses `out`). */
   obbOf(car, x, z, ry, out = {}) {
     const sz = car.def.size;
+    const dm = BODY_DIMS[car.def.body] || BODY_DIMS.sedan;
     out.x = x;
     out.z = z;
     out.ry = ry;
-    out.hw = 0.92 * sz[0];
-    out.hl = 2.17 * sz[2];
+    out.hw = dm.hw * sz[0];
+    out.hl = dm.hl * sz[2];
     return out;
   }
 

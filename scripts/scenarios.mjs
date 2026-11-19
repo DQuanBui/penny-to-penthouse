@@ -167,6 +167,77 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** Vehicle variety: every body style side by side, mixed traffic, a supercar of your own. */
+  async cars({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(async () => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60;
+      const { vehicleGeometry, carMaterial, glassMaterial, BODIES } = await import('/src/world/CarModel.js');
+      const p = g.player.pos;
+      const h = g.player.heading;
+      const fx = Math.sin(h);
+      const fz = Math.cos(h);
+      const mat = carMaterial({ signals: true });
+      const gmat = glassMaterial();
+      const colors = ['#c53a3a', '#f4f4f2', '#27406b', '#3fbf5a', '#e9c04c', '#1d1f24', '#8a8d92', '#e07b39', '#f2c230', '#f4f4f2'];
+      window.__lineup = Object.keys(BODIES).map((t, k) => ({ t, ...vehicleGeometry(t), color: colors[k % colors.length] }));
+      const group = new (g.playerRig.group.constructor)();
+      window.__lineGroup = group;
+      g.scene.add(group);
+      window.__lineup.forEach((c, k) => {
+        const IM = g.traffic.meshes[0].body.constructor;
+        const bodyMesh = new IM(c.body, mat, 1);
+        bodyMesh.setColorAt(0, new (g._winColor.constructor)(c.color));
+        const glassMesh = new (g.traffic.meshes[0].glass.constructor)(c.glass, gmat, 1);
+        const off = (k - (window.__lineup.length - 1) / 2) * 2.6;
+        const x = p.x + fx * 9 + fz * off;
+        const z = p.z + fz * 9 - fx * off;
+        for (const m of [bodyMesh, glassMesh]) {
+          const M = new (g.traffic._m.constructor)();
+          M.makeRotationY(h + Math.PI / 2);
+          M.setPosition(x, 0.0, z);
+          m.setMatrixAt(0, M);
+          group.add(m);
+        }
+      });
+      g.cam.snapBehind(h);
+      g.cam.pitch = 0.12;
+      g.cam.dist = 6;
+    });
+    await wait(2000);
+    await shot('cars-lineup');
+    await page.evaluate(() => window.__lineGroup.removeFromParent());
+    const mix = await page.evaluate(() => {
+      const t = window.__game.traffic;
+      const out = {};
+      for (const M of t.meshes) out[M.type] = M.body.count;
+      return { mix: out, sirens: [...t.siren].filter(Boolean).length };
+    });
+    console.log('traffic', JSON.stringify(mix));
+    await wait(5000);
+    await shot('cars-street');
+    // buy the supercar and take it for a spin
+    const own = await page.evaluate(() => {
+      const g = window.__game;
+      g.state.money.checking = 500000;
+      const v = { id: 'v_test', model: 'furia', color: '#3fbf5a', value: 340000, condition: 1, bought: 0 };
+      g.state.vehicles.push(v);
+      g.vehicles.sync();
+      const car = g.vehicles.cars.get('v_test');
+      g.vehicles.enter(car);
+      return !!g.vehicles.driving;
+    });
+    console.log('driving supercar', own);
+    await page.keyboard.down('KeyW');
+    await wait(3000);
+    await page.keyboard.down('KeyA');
+    await wait(1200);
+    await shot('cars-supercar');
+    await page.keyboard.up('KeyA');
+    await page.keyboard.up('KeyW');
+  },
   /** Airport visuals: terminal front, airfield with a landing plane. */
   async airfield({ page, shot, wait }) {
     await startLife(page, wait);

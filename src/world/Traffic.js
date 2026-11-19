@@ -3,7 +3,7 @@
 // player and the player's car. One InstancedMesh; state in typed arrays.
 import * as THREE from 'three';
 import { LANE_IN } from './Vehicles.js';
-import { carGeometry, busGeometry, carMaterial } from './CarModel.js';
+import { vehicleGeometry, busGeometry, carMaterial, glassMaterial } from './CarModel.js';
 import { crowdDensity } from '../characters/Crowd.js';
 import { CLOTH_COLORS } from '../characters/Customization.js';
 import { mulberry32, damp, clamp } from '../core/utils.js';
@@ -13,6 +13,10 @@ const COUNTS = { low: 8, medium: 16, high: 26 };
 const BUSES = { low: 1, medium: 3, high: 4 };
 const CAR_HL = 2.17;
 const BUS_HL = 5.75;
+// what you see on the streets: mostly sedans, compacts and SUVs, plus taxis,
+// pickups, sport sedans, delivery trucks, the odd supercar and police patrols
+const TYPE_MIX = { sedan: 24, compact: 17, suv: 16, sport: 8, pickup: 7, taxi: 10, box: 5, coupe: 4, supercar: 2, police: 3 };
+const TYPE_COLOR = { taxi: ['#f2c230'], police: ['#f4f4f2'], supercar: ['#e9c04c', '#c53a3a', '#3fbf5a', '#f07a1a', '#1d1f24', '#5a4fd0'] };
 const CAR_COLORS = ['#f4f4f2', '#1d1f24', '#8a8d92', '#b0463c', '#27406b', '#d9c7a8', '#3f5f4a', '#e9c04c', ...CLOTH_COLORS.slice(8, 11)];
 
 export class Traffic {
@@ -30,12 +34,17 @@ export class Traffic {
   }
 
   dispose() {
-    for (const k of ['inst', 'busInst']) {
-      if (!this[k]) continue;
-      this.scene.remove(this[k]);
-      this[k].geometry.dispose();
-      this[k].material.dispose();
-      this[k] = null;
+    for (const M of this.meshes || []) {
+      for (const m of [M.body, M.glass]) {
+        this.scene.remove(m);
+        m.geometry.dispose();
+      }
+    }
+    this.meshes = [];
+    if (this.busInst) {
+      this.scene.remove(this.busInst);
+      this.busInst.geometry.dispose();
+      this.busInst = null;
     }
     this.n = 0;
   }
@@ -81,15 +90,52 @@ export class Traffic {
     this.pitch = new Float32Array(n);
     this.prevRy = new Float32Array(n);
     this.prevSp = new Float32Array(n);
-    const geo = carGeometry();
-    this.signal = new THREE.InstancedBufferAttribute(new Float32Array(n), 1);
-    geo.setAttribute('aSignal', this.signal);
-    this.inst = new THREE.InstancedMesh(geo, carMaterial({ signals: true }), n);
-    this.inst.castShadow = true;
-    this.inst.frustumCulled = false;
-    for (let i = 0; i < n; i++) this.inst.setColorAt(i, this._c.set(CAR_COLORS[Math.floor(this.rng() * CAR_COLORS.length)]));
-    this.inst.instanceColor.needsUpdate = true;
-    this.scene.add(this.inst);
+    // each car slot gets a body style; one instanced body + glass mesh per style
+    this.sig = new Float32Array(n); // indicator / siren state per slot
+    this.siren = new Uint8Array(n);
+    this.slotMesh = new Int16Array(n).fill(-1);
+    this.slotIdx = new Int16Array(n);
+    const mix = { ...TYPE_MIX, taxi: TYPE_MIX.taxi * (city.cfg.taxiMul ?? 1) };
+    const total = Object.values(mix).reduce((a, b) => a + b, 0);
+    const groups = {};
+    for (let i = 0; i < this.bus0; i++) {
+      let r = this.rng() * total;
+      let type = 'sedan';
+      for (const [t, w] of Object.entries(mix)) {
+        r -= w;
+        if (r <= 0) {
+          type = t;
+          break;
+        }
+      }
+      (groups[type] ||= []).push(i);
+      this.siren[i] = type === 'police' && this.rng() < 0.4 ? 1 : 0;
+    }
+    this.carMat ||= carMaterial({ signals: true });
+    this.glassMat ||= glassMaterial();
+    this.meshes = [];
+    for (const [type, slots] of Object.entries(groups)) {
+      const { body, glass, dims } = vehicleGeometry(type);
+      const sig = new THREE.InstancedBufferAttribute(new Float32Array(slots.length), 1);
+      body.setAttribute('aSignal', sig);
+      const bm = new THREE.InstancedMesh(body, this.carMat, slots.length);
+      bm.castShadow = true;
+      bm.frustumCulled = false;
+      const gm = new THREE.InstancedMesh(glass, this.glassMat, slots.length);
+      gm.frustumCulled = false;
+      const pal = TYPE_COLOR[type] || CAR_COLORS;
+      slots.forEach((i, k) => {
+        this.slotMesh[i] = this.meshes.length;
+        this.slotIdx[i] = k;
+        this.hl[i] = dims.hl;
+        this.hw[i] = dims.hw;
+        bm.setColorAt(k, this._c.set(pal[Math.floor(this.rng() * pal.length)]));
+      });
+      bm.instanceColor.needsUpdate = true;
+      this.scene.add(bm, gm);
+      this.meshes.push({ type, body: bm, glass: gm, sig });
+    }
+    this.typeOf = (i) => (this.slotMesh[i] >= 0 ? this.meshes[this.slotMesh[i]].type : 'bus');
     // street segments with a bus stop on the kerb side, keyed "fromI,fromJ,toI,toJ"
     this.stopSegs = new Set();
     const rc = (k) => city.roadCenter(k);
@@ -150,7 +196,8 @@ export class Traffic {
       this.x[i] = p.x;
       this.z[i] = p.z;
       this.ry[i] = Math.atan2(this.hx[i], this.hz[i]);
-      this.max[i] = i >= this.bus0 ? 7 + this.rng() : 8.5 + this.rng() * 4;
+      const ty = this.typeOf(i);
+      this.max[i] = i >= this.bus0 ? 7 + this.rng() : ty === 'box' ? 7.5 + this.rng() : ty === 'supercar' || ty === 'coupe' ? 11 + this.rng() * 4 : this.siren[i] ? 12 + this.rng() * 2 : 8.5 + this.rng() * 4;
       this.dwell[i] = 0;
       this.lastStop[i] = -1;
       this.prevRy[i] = this.ry[i];
@@ -284,8 +331,8 @@ export class Traffic {
    * @param px,pz     player (or player's car) position: cars stop for it
    */
   update(dt, elapsed, hour, px, pz, crowd, visible = true, densityMul = 1) {
-    if (!this.inst) return;
-    this.inst.visible = visible;
+    if (!this.meshes?.length && !this.busInst) return;
+    for (const M of this.meshes) M.body.visible = M.glass.visible = visible;
     if (this.busInst) this.busInst.visible = visible;
     if (!visible) return;
     const c = this.city;
@@ -329,7 +376,7 @@ export class Traffic {
         const tx = u * (bx - ax) + t * (cx2 - bx);
         const tz = u * (bz - az) + t * (cz2 - bz);
         if (tx * tx + tz * tz > 1e-6) this.ry[i] = Math.atan2(tx, tz);
-        this.signal.setX(i, t < 0.65 ? this.signal.getX(i) : 0);
+        this.sig[i] = t < 0.65 && this.sig[i] !== 2 ? this.sig[i] : this.siren[i] ? 2 : 0;
         if (t >= 1) {
           this.turnT[i] = 0;
           this.ry[i] = Math.atan2(this.hx[i], this.hz[i]);
@@ -348,7 +395,7 @@ export class Traffic {
         // ease off before turning, and signal for the last 35 m
         const side = this.turnSide(i);
         if (side !== 0 && toStop < 30) target = Math.min(target, (i >= this.bus0 ? 3.2 : 4.2) + Math.max(0, toStop) * 0.42);
-        this.signal.setX(i, side !== 0 && toStop < 35 ? side : 0);
+        this.sig[i] = side !== 0 && toStop < 35 ? side : this.siren[i] ? 2 : 0;
         // obstacles ahead in my lane: other cars, the player, pedestrians
         const look = 5 + this.speed[i] * 0.9;
         const nose = this.hl[i] - CAR_HL; // extra length of a bus in front of its centre
@@ -432,7 +479,6 @@ export class Traffic {
       this.prevRy[i] = this.ry[i];
       this.prevSp[i] = this.speed[i];
     }
-    this.signal.needsUpdate = true;
     this._first = false;
 
     const m = this._m;
@@ -444,11 +490,19 @@ export class Traffic {
       }
       if (i >= this.bus0) {
         this.busInst.setMatrixAt(i - this.bus0, m);
-        m.makeScale(0, 0, 0);
+        continue;
       }
-      this.inst.setMatrixAt(i, m);
+      const M = this.meshes[this.slotMesh[i]];
+      const k = this.slotIdx[i];
+      M.body.setMatrixAt(k, m);
+      M.glass.setMatrixAt(k, m);
+      M.sig.setX(k, this.sig[i]);
     }
-    this.inst.instanceMatrix.needsUpdate = true;
+    for (const M of this.meshes) {
+      M.body.instanceMatrix.needsUpdate = true;
+      M.glass.instanceMatrix.needsUpdate = true;
+      M.sig.needsUpdate = true;
+    }
     if (this.busInst) {
       this.busInst.visible = visible;
       this.busInst.instanceMatrix.needsUpdate = true;

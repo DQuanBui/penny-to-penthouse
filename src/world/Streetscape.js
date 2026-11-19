@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { InstanceBatch, FACADE } from './Buildings.js';
 import { LANE_OUT } from './Vehicles.js';
-import { carGeometry, carMaterial } from './CarModel.js';
+import { vehicleGeometry, carMaterial, BODY_DIMS } from './CarModel.js';
 import { pick } from '../core/utils.js';
 
 const CAR_COLORS = ['#f4f4f2', '#1d1f24', '#8a8d92', '#b0463c', '#27406b', '#d9c7a8', '#3f5f4a', '#5a6270', '#a8adb4', '#7a2230', '#2f4f6f', '#c9b16b'];
@@ -56,7 +56,9 @@ export function buildStreetscape(ctx) {
   };
 
   // ---- parked cars -----------------------------------------------------------
-  const cars = new InstanceBatch(carGeometry({ low: true }), carMaterial(), { castShadow: true });
+  const parkedMat = carMaterial();
+  const PARKED = ['sedan', 'sedan', 'compact', 'compact', 'suv', 'suv', 'sport', 'pickup', 'coupe', 'taxi'];
+  const carBatches = Object.fromEntries([...new Set(PARKED)].map((t) => [t, new InstanceBatch(vehicleGeometry(t, { low: true }).body, parkedMat, { castShadow: true })]));
   ctx.parkedCars = [];
   for (const b of blocks) {
     // [side, kerb-lane position, heading, along-axis]
@@ -73,9 +75,12 @@ export function buildStreetscape(ctx) {
         if (rng() > 0.42) continue;
         const x = axis === 'z' ? t : lane;
         const z = axis === 'z' ? lane : t;
-        cars.add(x, 0, z, { ry, color: pick(rng, CAR_COLORS), sx: 0.95 + rng() * 0.1 });
-        const hw = axis === 'z' ? 2.15 : 0.9;
-        const hd = axis === 'z' ? 0.9 : 2.15;
+        const type = pick(rng, PARKED);
+        if (type === 'pickup' && rng() < 0.5) continue; // long ones need the room
+        carBatches[type].add(x, 0, z, { ry, color: type === 'taxi' ? '#f2c230' : pick(rng, CAR_COLORS) });
+        const dm = BODY_DIMS[type];
+        const hw = axis === 'z' ? dm.hl : dm.hw;
+        const hd = axis === 'z' ? dm.hw : dm.hl;
         colliders.add(x - hw, z - hd, x + hw, z + hd, 1.5);
         ctx.parkedCars.push({ x, z, ry });
       }
@@ -191,7 +196,7 @@ export function buildStreetscape(ctx) {
     }
   }
 
-  for (const m of [cars.build(), hydrants.build(), bins.build(), news.build(), mail.build(), shelterFrame.build(), ads.build(), awnings.build(), signs.build()]) if (m) group.add(m);
+  for (const m of [...Object.values(carBatches).map((b) => b.build()), hydrants.build(), bins.build(), news.build(), mail.build(), shelterFrame.build(), ads.build(), awnings.build(), signs.build()]) if (m) group.add(m);
   const g = shelterGlass.build();
   if (g) {
     g.renderOrder = 3;
