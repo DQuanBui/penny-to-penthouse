@@ -167,6 +167,98 @@ export const scenarios = {
     console.log('stood up', await page.evaluate(() => !window.__game.player.sitting));
   },
   /** Dogs on leashes, pigeons that scatter, birds overhead, ducks in a park. */
+  /** The bridge: walk out from the promenade, sit on a bench, take in the view. */
+  async bridge({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 17 * 60;
+      const b = g.city.bridge;
+      // on the promenade beside the bridge, looking out along it
+      const out = Math.atan2(b.ox, b.oz);
+      const sx = b.ox ? b.ox * (b.start - 6) : b.along - 18;
+      const sz = b.ox ? b.along - 18 : b.oz * (b.start - 6);
+      g.player.teleport(sx, sz, out + 0.6);
+      g.cam.snapBehind(out + 0.55);
+      g.cam.pitch = 0.0;
+      g.cam.dist = 6;
+      return { name: b.name, side: b.side, style: b.style };
+    });
+    console.log('bridge', JSON.stringify(info));
+    await wait(2500);
+    await shot('bridge-from-shore');
+    // walk on: start at the foot of the ramp and walk forward
+    await page.evaluate(() => {
+      const g = window.__game;
+      const b = g.city.bridge;
+      const out = Math.atan2(b.ox, b.oz);
+      const x = b.ox ? b.ox * (b.start - 2) : b.along;
+      const z = b.ox ? b.along : b.oz * (b.start - 2);
+      g.player.teleport(x, z, out);
+      g.cam.snapBehind(out);
+      g.cam.pitch = 0.1;
+    });
+    await page.keyboard.down('KeyW');
+    await wait(6000);
+    await page.keyboard.up('KeyW');
+    const walked = await page.evaluate(() => {
+      const g = window.__game;
+      const b = g.city.bridge;
+      const o = b.ox ? g.player.pos.x * b.ox : g.player.pos.z * b.oz;
+      return { pastShore: (o - b.start).toFixed(1), y: g.player.pos.y.toFixed(2) };
+    });
+    console.log('walked onto the bridge', JSON.stringify(walked));
+    // midspan between the towers
+    await page.evaluate(() => {
+      const g = window.__game;
+      const b = g.city.bridge;
+      const out = Math.atan2(b.ox, b.oz);
+      g.player.teleport(b.mid.x, b.mid.z, out + Math.PI);
+      g.cam.snapBehind(out + Math.PI + 0.2);
+      g.cam.pitch = 0.05;
+      g.cam.dist = 6;
+    });
+    await wait(1500);
+    const mid = await page.evaluate(() => ({ y: window.__game.player.pos.y.toFixed(2) }));
+    console.log('midspan', JSON.stringify(mid));
+    await shot('bridge-midspan');
+    // the lookout
+    await page.evaluate(() => {
+      const g = window.__game;
+      const b = g.city.bridge;
+      g.player.teleport(b.lookout.x, b.lookout.z, Math.atan2(b.ox, b.oz));
+    });
+    await page.waitForFunction(() => window.__game.interactable && /view/.test(window.__game.interactable.label), null, { timeout: 8000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await wait(1500);
+    console.log('view', await page.evaluate(() => window.__game.state.stats.bridgeViews));
+    // a bench on the bridge
+    const bench = await page.evaluate(() => {
+      const g = window.__game;
+      const b = g.city.bridge;
+      const spot = g.city.benchSpots.find((s) => Math.hypot(s.x - b.mid.x, s.z - b.mid.z) < 200 && s.y > 1);
+      if (!spot) return null;
+      g.sitOn(spot);
+      return { y: g.player.pos.y.toFixed(2), sitting: g.player.sitting };
+    });
+    console.log('bench', JSON.stringify(bench));
+    // night
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.player.sitting = false;
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 22 * 60;
+      const b = g.city.bridge;
+      const out = Math.atan2(b.ox, b.oz);
+      const sx = b.ox ? b.ox * (b.start - 6) : b.along - 30;
+      const sz = b.ox ? b.along - 30 : b.oz * (b.start - 6);
+      g.player.teleport(sx, sz, out + 0.6);
+      g.cam.snapBehind(out + 0.5);
+      g.cam.pitch = 0.0;
+    });
+    await wait(2500);
+    await shot('bridge-night');
+  },
   /** World food and drink: pho, Korean BBQ, ramen, sushi, dumplings, tacos, boba... */
   async food({ page, shot, wait }) {
     await startLife(page, wait);

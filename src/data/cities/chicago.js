@@ -22,6 +22,8 @@ export default {
   school: 'Prairie Avenue School',
   airport: 'Lakefront International Airport',
   hotel: 'The Lakeview Grand',
+  bridge: 'Lakefront Bridge',
+  bridgeStyle: 'steel',
   waterfront: ['east'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

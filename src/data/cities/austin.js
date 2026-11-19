@@ -22,6 +22,8 @@ export default {
   school: 'Bluebonnet Elementary',
   airport: 'Bluebonnet International Airport',
   hotel: 'The Capitol Lodge',
+  bridge: 'Lakeside Bridge',
+  bridgeStyle: 'stone',
   waterfront: ['south'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

@@ -42,6 +42,7 @@ import { PetFollower, ShelterDogs } from '../world/Pet.js';
 import { ZooLife } from '../world/Zoo.js';
 import { CampusLife } from '../world/Campus.js';
 import { AirTraffic } from '../world/Airport.js';
+import { BridgeLife, onWalkway } from '../world/Bridge.js';
 import { makeBike, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openService } from '../ui/Shops.js';
@@ -125,6 +126,7 @@ export class Game {
     this.zooLife = new ZooLife(this);
     this.campusLife = new CampusLife(this);
     this.airTraffic = new AirTraffic(this);
+    this.bridgeLife = new BridgeLife(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -271,6 +273,7 @@ export class Game {
     this.zooLife.setCity(this.city);
     this.campusLife.setCity(this.city);
     this.airTraffic.setCity(this.city);
+    this.bridgeLife.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -751,6 +754,19 @@ export class Game {
     this.pet.heel(this.player);
   }
 
+  /** The bridge lookout: the skyline, the water, the boats... */
+  enjoyView(br) {
+    const sim = this.sim;
+    const night = this.sky.night > 0.5;
+    this.fade(() => {
+      sim.advance(25, { noCollapse: true });
+      sim.state.needs.fun = Math.min(100, sim.state.needs.fun + 14);
+      sim.state.needs.social = Math.min(100, sim.state.needs.social + 3);
+      sim.state.stats.bridgeViews = (sim.state.stats.bridgeViews || 0) + 1;
+    });
+    this.events.emit('toast', { icon: '🌉', title: br.name, text: night ? 'The skyline glitters across the water. The cables glow like strings of pearls.' : 'Wind off the water, gulls overhead, the whole skyline laid out in front of you.', kind: 'good', long: true });
+  }
+
   // ---- bicycles ----------------------------------------------------------------------
   /** Hop on a bike: 'share' (rented at a dock) or your own model. */
   mountBike(kind) {
@@ -885,6 +901,8 @@ export class Game {
       if (street) return street;
       const zoo = this.zooLife.interactable(p);
       if (zoo) return zoo;
+      const br = this.city.bridge;
+      if (br && (br.lookout.x - p.x) ** 2 + (br.lookout.z - p.z) ** 2 < 3.5 * 3.5) return { label: '🌉 Lean on the railing and take in the view', action: () => this.enjoyView(br) };
       const bench = this.nearestBench(p);
       if (bench) return { label: 'Sit on the bench', action: () => this.sitOn(bench) };
     }
@@ -1043,6 +1061,7 @@ export class Game {
     this.zooLife.update(dt, this.player.pos, !inside);
     this.campusLife.update(dt, this.player.pos, !inside);
     this.airTraffic.update(dt, this.player.pos, !inside);
+    this.bridgeLife.update(dt, this.player.pos, !inside);
     this.npcs.update(dt, this.player.pos, !!inside);
     if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {
       const w = inside ? this.interior.world : this.city;

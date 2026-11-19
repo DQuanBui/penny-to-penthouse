@@ -22,6 +22,8 @@ export default {
   school: 'Palm Grove Elementary',
   airport: 'Bayside International Airport',
   hotel: 'Ocean Breeze Resort',
+  bridge: 'Biscayne Bay Bridge',
+  bridgeStyle: 'steel',
   waterfront: ['east', 'south'],
   waterName: 'the Bay',
   promenade: 'beach',

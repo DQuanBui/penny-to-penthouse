@@ -23,6 +23,8 @@ export default {
   school: 'P.S. 47 Riverside School',
   airport: 'Hudson International Airport',
   hotel: 'The Hudson Grand',
+  bridge: 'Old Harbor Bridge',
+  bridgeStyle: 'stone',
   waterfront: ['south', 'west'],
   waterName: 'the Harbor',
   promenade: 'boardwalk',

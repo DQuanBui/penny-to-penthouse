@@ -87,6 +87,9 @@ export class ColliderWorld {
       }
     }
     const B = this.bounds;
+    if (this.corridors) {
+      for (const c of this.corridors) if (pos.x > c.minX && pos.x < c.maxX && pos.z > c.minZ && pos.z < c.maxZ) return hit;
+    }
     if (pos.x < B.minX + radius) pos.x = B.minX + radius;
     if (pos.x > B.maxX - radius) pos.x = B.maxX - radius;
     if (pos.z < B.minZ + radius) pos.z = B.minZ + radius;

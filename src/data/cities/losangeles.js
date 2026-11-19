@@ -23,6 +23,8 @@ export default {
   school: 'Sunset Hills Elementary',
   airport: 'Pacific Gateway Airport',
   hotel: 'Hotel Palisade',
+  bridge: 'Pacific Point Bridge',
+  bridgeStyle: 'steel',
   waterfront: ['west'],
   waterName: 'the Pacific',
   promenade: 'beach',

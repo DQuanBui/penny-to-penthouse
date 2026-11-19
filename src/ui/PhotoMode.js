@@ -4,6 +4,7 @@
 import { h, btn } from './dom.js';
 import { hourOf } from '../core/Clock.js';
 import { fmtNum } from '../core/utils.js';
+import { onWalkway } from '../world/Bridge.js';
 
 export class PhotoMode {
   constructor(game) {
@@ -67,6 +68,11 @@ export class PhotoMode {
           break;
         }
       }
+    }
+    if (!g.inside && g.city.bridge && onWalkway(g.city.bridge, p.x, p.z) >= 0) {
+      mult += 0.5;
+      tags.push('🌉 ' + g.city.bridge.name);
+      bits.push('on the ' + g.city.bridge.name);
     }
     if (!g.inside && g.zooLife?.inside(p)) {
       mult += 0.4;

@@ -60,8 +60,16 @@ export function buildRoads(ctx) {
       if (!beach) {
         const e = sign * (half + PROM - 0.3);
         // top rail + posts
-        rail.add(horiz ? 0 : e, K.CURB + 1.05, horiz ? e : 0, { sx: horiz ? len : 0.12, sy: 0.1, sz: horiz ? 0.12 : len });
+        // top rail + posts (with a gap where the bridge walkway starts)
+        const br = ctx.bridgeSpec && ctx.bridgeSpec.side === side ? ctx.bridgeSpec.along : null;
+        const segs = br == null ? [[-len / 2, len / 2]] : [[-len / 2, br - 4], [br + 4, len / 2]];
+        for (const [a0, a1] of segs) {
+          const l = a1 - a0;
+          const m = (a0 + a1) / 2;
+          rail.add(horiz ? m : e, K.CURB + 1.05, horiz ? e : m, { sx: horiz ? l : 0.12, sy: 0.1, sz: horiz ? 0.12 : l });
+        }
         for (let p = -len / 2; p <= len / 2; p += 4) {
+          if (br != null && Math.abs(p - br) < 4) continue;
           rail.add(horiz ? p : e, K.CURB + 0.5, horiz ? e : p, { sx: 0.12, sy: 1.0, sz: 0.12 });
         }
       }
