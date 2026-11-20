@@ -55,13 +55,17 @@ const ENCLOSURES = [
   { id: 'monkeys', u: 64, v: 63, ground: '#6a8a4a', label: 'Monkeys', icon: '🐒', species: [['monkey', 5]], fact: 'Some monkeys use stones as tools to crack open nuts.' },
   { id: 'kangaroos', u: -64, v: 93, ground: '#b9a06a', label: 'Kangaroos', icon: '🦘', species: [['kangaroo', 4]], fact: 'Kangaroos cannot walk backwards. One hop can cover eight metres.' },
   { id: 'penguins', u: -24, v: 93, ground: '#e4edf2', label: 'Penguins', icon: '🐧', species: [['penguin', 7]], fact: 'Penguins can drink sea water: a gland above their eyes filters out the salt.' },
+  { id: 'pandas', u: -64, v: 123, ground: '#7a9a4a', label: 'Giant Pandas', icon: '🐼', species: [['panda', 2]], fact: 'A giant panda eats up to 38 kg of bamboo a day — for about 14 hours.' },
+  { id: 'gorillas', u: -24, v: 123, ground: '#6a7a4a', label: 'Gorillas', icon: '🦍', species: [['gorilla', 3]], fact: 'Gorillas share about 98% of our DNA and can learn sign language.' },
+  { id: 'crocodiles', u: 24, v: 123, ground: '#a89a6a', label: 'Crocodiles', icon: '🐊', species: [['crocodile', 3]], fact: 'Crocodiles have been around for over 200 million years — since the dinosaurs.' },
+  { id: 'aviary', u: 64, v: 123, ground: '#6f9a4a', label: 'Tropical Aviary', icon: '🦜', species: [['parrot', 10]], fact: 'Some parrots live more than 80 years and can learn hundreds of words.' },
   { id: 'flamingos', u: 64, v: 93, ground: '#9ab27a', label: 'Flamingo Lagoon', icon: '🦩', species: [['flamingo', 7]], fact: 'Flamingos are pink because of the shrimp and algae they eat.' },
 ];
 const EU = 17; // enclosure half-size along the edge
 const EV = 11; // and outward
 const FU = 89; // fence half-width
 const FV0 = 3; // fence: front line (gate) and back line, measured out from the road edge
-const FV1 = 111;
+const FV1 = 141;
 
 // ---- animals: a group with legs on pivots so they can walk ------------------------------
 function leg(group, x, y, z, len, r, color) {
@@ -82,7 +86,7 @@ function part(group, geo, color, x, y, z) {
 }
 
 const SPECIES = {
-  giraffe: { speed: 0.9, scale: 1, build(g) {
+  giraffe: { eyes: [0.12, 4.28, 1.62], speed: 0.9, scale: 1, build(g) {
     const tan = '#d9a750';
     part(g, sp(1, 0.55, 0.55, 0.95), tan, 0, 2.15, 0);
     const neck = part(g, cy(0.16, 0.24, 2.2, 10), tan, 0, 3.15, 0.75);
@@ -96,7 +100,7 @@ const SPECIES = {
     }
     return { legs: [[-0.28, 1.75, 0.6], [0.28, 1.75, 0.6], [-0.28, 1.75, -0.6], [0.28, 1.75, -0.6]].map(([x, y, z]) => leg(g, x, y, z, 1.75, 0.07, tan)) };
   } },
-  zebra: { speed: 1.2, scale: 1, build(g) {
+  zebra: { eyes: [0.1, 1.9, 1.34], speed: 1.2, scale: 1, build(g) {
     // striped body: alternating slices
     for (let i = 0; i < 9; i++) part(g, cy(0.36, 0.36, 0.15, 12).rotateX(Math.PI / 2), i % 2 ? '#1d1d1f' : '#f4f2ec', 0, 1.15, -0.6 + i * 0.15);
     const neck = part(g, cy(0.14, 0.2, 0.75, 10), '#f4f2ec', 0, 1.55, 0.75);
@@ -106,7 +110,7 @@ const SPECIES = {
     part(g, bx(0.21, 0.12, 0.16), '#1d1d1f', 0, 1.72, 1.36);
     return { legs: [[-0.18, 0.9, 0.5], [0.18, 0.9, 0.5], [-0.18, 0.9, -0.5], [0.18, 0.9, -0.5]].map(([x, y, z], k) => leg(g, x, y, z, 0.9, 0.06, k % 2 ? '#f4f2ec' : '#2b2b2e')) };
   } },
-  elephant: { speed: 0.6, scale: 1, build(g) {
+  elephant: { eyes: [0.36, 2.62, 1.86], speed: 0.6, scale: 1, build(g) {
     const grey = '#8d8e93';
     part(g, sp(1, 1.0, 1.0, 1.45), grey, 0, 2.0, 0);
     part(g, sp(1, 0.62, 0.66, 0.6), grey, 0, 2.45, 1.45);
@@ -116,7 +120,7 @@ const SPECIES = {
     for (const s of [-1, 1]) part(g, new THREE.ConeGeometry(0.06, 0.55, 8).rotateX(1.9), '#f4f0e2', s * 0.25, 1.95, 1.95);
     return { legs: [[-0.55, 1.4, 0.8], [0.55, 1.4, 0.8], [-0.55, 1.4, -0.8], [0.55, 1.4, -0.8]].map(([x, y, z]) => leg(g, x, y, z, 1.4, 0.28, grey)) };
   } },
-  lion: { speed: 0.8, scale: 1, build(g, k) {
+  lion: { eyes: [0.12, 1.3, 1.16], speed: 0.8, scale: 1, build(g, k) {
     const tan = '#c99a52';
     part(g, sp(1, 0.38, 0.38, 0.85), tan, 0, 0.95, 0);
     part(g, sp(0.3), tan, 0, 1.2, 0.9);
@@ -125,7 +129,7 @@ const SPECIES = {
     part(g, cy(0.04, 0.03, 0.9, 6), tan, 0, 0.95, -1.15).rotation.x = -0.9;
     return { legs: [[-0.2, 0.7, 0.5], [0.2, 0.7, 0.5], [-0.2, 0.7, -0.5], [0.2, 0.7, -0.5]].map(([x, y, z]) => leg(g, x, y, z, 0.7, 0.09, tan)) };
   } },
-  penguin: { speed: 0.45, scale: 1, waddle: true, build(g) {
+  penguin: { eyes: [0.06, 0.87, 0.13], speed: 0.45, scale: 1, waddle: true, build(g) {
     part(g, sp(1, 0.22, 0.36, 0.22), '#1d1f24', 0, 0.42, 0);
     part(g, sp(1, 0.17, 0.3, 0.12), '#f6f6f2', 0, 0.4, 0.11);
     part(g, sp(0.13), '#1d1f24', 0, 0.82, 0.02);
@@ -133,7 +137,7 @@ const SPECIES = {
     for (const s of [-1, 1]) part(g, bx(0.04, 0.3, 0.14), '#1d1f24', s * 0.22, 0.45, 0).rotation.z = s * 0.25;
     return { legs: [[-0.08, 0.1, 0.04], [0.08, 0.1, 0.04]].map(([x, y, z]) => leg(g, x, y, z, 0.1, 0.05, '#e8a33a')) };
   } },
-  flamingo: { speed: 0.3, scale: 1, build(g) {
+  flamingo: { eyes: [0.05, 1.81, 0.37], speed: 0.3, scale: 1, build(g) {
     const pink = '#f08aa8';
     part(g, sp(1, 0.2, 0.18, 0.34), pink, 0, 1.05, 0);
     const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 1.1, 0.25), new THREE.Vector3(0, 1.45, 0.38), new THREE.Vector3(0, 1.6, 0.18), new THREE.Vector3(0, 1.75, 0.3)]);
@@ -142,7 +146,7 @@ const SPECIES = {
     part(g, new THREE.ConeGeometry(0.03, 0.14, 6).rotateX(2.2), '#1d1f24', 0, 1.72, 0.42);
     return { legs: [leg(g, 0, 0.95, 0, 0.95, 0.018, '#e86a8a')] };
   } },
-  tiger: { speed: 0.9, scale: 1, build(g) {
+  tiger: { eyes: [0.11, 1.22, 1.18], speed: 0.9, scale: 1, build(g) {
     const org = '#e0852a';
     part(g, sp(1, 0.36, 0.36, 0.9), org, 0, 0.92, 0);
     part(g, sp(0.29), org, 0, 1.12, 0.92);
@@ -153,7 +157,7 @@ const SPECIES = {
     part(g, cy(0.04, 0.03, 0.95, 6), org, 0, 0.95, -1.2).rotation.x = -0.9;
     return { legs: [[-0.2, 0.68, 0.5], [0.2, 0.68, 0.5], [-0.2, 0.68, -0.5], [0.2, 0.68, -0.5]].map(([x, y, z]) => leg(g, x, y, z, 0.68, 0.09, org)) };
   } },
-  bear: { speed: 0.55, scale: 1, build(g) {
+  bear: { eyes: [0.13, 1.5, 1.34], speed: 0.55, scale: 1, build(g) {
     const br = '#6b4a2e';
     part(g, sp(1, 0.6, 0.62, 1.0), br, 0, 1.05, 0);
     part(g, sp(1, 0.5, 0.5, 0.45), shade(br, 1.05), 0, 1.35, 0.55);
@@ -162,7 +166,7 @@ const SPECIES = {
     for (const s of [-1, 1]) part(g, sp(0.1), br, s * 0.22, 1.7, 0.98);
     return { legs: [[-0.32, 0.7, 0.5], [0.32, 0.7, 0.5], [-0.32, 0.7, -0.5], [0.32, 0.7, -0.5]].map(([x, y, z]) => leg(g, x, y, z, 0.7, 0.16, br)) };
   } },
-  hippo: { speed: 0.4, scale: 1, build(g) {
+  hippo: { eyes: [0.25, 1.27, 1.42], speed: 0.4, scale: 1, build(g) {
     const gr = '#8a7a88';
     part(g, sp(1, 0.85, 0.65, 1.35), gr, 0, 0.85, 0);
     part(g, bx(0.9, 0.6, 0.85), gr, 0, 0.92, 1.45);
@@ -173,7 +177,7 @@ const SPECIES = {
     }
     return { legs: [[-0.45, 0.45, 0.7], [0.45, 0.45, 0.7], [-0.45, 0.45, -0.7], [0.45, 0.45, -0.7]].map(([x, y, z]) => leg(g, x, y, z, 0.45, 0.2, gr)) };
   } },
-  rhino: { speed: 0.5, scale: 1, build(g) {
+  rhino: { eyes: [0.26, 1.16, 1.62], speed: 0.5, scale: 1, build(g) {
     const gr = '#8a8a86';
     part(g, sp(1, 0.68, 0.7, 1.25), gr, 0, 1.15, 0);
     part(g, bx(0.55, 0.55, 0.9), gr, 0, 1.05, 1.45);
@@ -182,7 +186,7 @@ const SPECIES = {
     for (const s of [-1, 1]) part(g, new THREE.ConeGeometry(0.07, 0.2, 6), gr, s * 0.2, 1.42, 1.1);
     return { legs: [[-0.38, 0.65, 0.65], [0.38, 0.65, 0.65], [-0.38, 0.65, -0.65], [0.38, 0.65, -0.65]].map(([x, y, z]) => leg(g, x, y, z, 0.65, 0.17, gr)) };
   } },
-  monkey: { speed: 1.1, scale: 1, build(g) {
+  monkey: { eyes: [0.05, 0.96, 0.27], speed: 1.1, scale: 1, build(g) {
     const br = '#7a5232';
     part(g, sp(1, 0.2, 0.26, 0.24), br, 0, 0.62, 0);
     part(g, sp(0.17), br, 0, 0.92, 0.12);
@@ -192,7 +196,7 @@ const SPECIES = {
     part(g, new THREE.TubeGeometry(tail, 10, 0.025, 5), br, 0, 0, 0);
     return { legs: [[-0.1, 0.42, 0.08], [0.1, 0.42, 0.08], [-0.1, 0.42, -0.08], [0.1, 0.42, -0.08]].map(([x, y, z]) => leg(g, x, y, z, 0.42, 0.04, br)) };
   } },
-  kangaroo: { speed: 1.4, scale: 1, hop: true, build(g) {
+  kangaroo: { eyes: [0.07, 1.6, 0.36], speed: 1.4, scale: 1, hop: true, build(g) {
     const tan = '#b88a5a';
     const body = part(g, sp(1, 0.28, 0.45, 0.32), tan, 0, 1.0, 0);
     body.rotation.x = 0.35;
@@ -201,6 +205,47 @@ const SPECIES = {
     part(g, cy(0.03, 0.1, 0.9, 6), tan, 0, 0.55, -0.45).rotation.x = -1.0;
     for (const s of [-1, 1]) part(g, bx(0.09, 0.08, 0.38), shade(tan, 0.9), s * 0.13, 0.05, 0.12);
     return { legs: [[-0.13, 0.7, 0], [0.13, 0.7, 0]].map(([x, y, z]) => leg(g, x, y, z, 0.62, 0.08, tan)) };
+  } },
+  panda: { speed: 0.45, scale: 1, eyes: [0.12, 1.45, 1.3], build(g) {
+    const w = '#f4f2ec';
+    const k = '#1d1d20';
+    part(g, sp(1, 0.58, 0.6, 0.95), w, 0, 1.0, 0);
+    part(g, sp(1, 0.6, 0.42, 0.5), k, 0, 1.12, 0.3); // the black shoulder band
+    part(g, sp(0.34), w, 0, 1.38, 1.0);
+    for (const s of [-1, 1]) {
+      part(g, sp(0.1), k, s * 0.22, 1.68, 0.95);
+      part(g, sp(1, 0.08, 0.1, 0.05), k, s * 0.12, 1.43, 1.28); // eye patches
+    }
+    part(g, sp(1, 0.12, 0.1, 0.12), w, 0, 1.28, 1.3);
+    part(g, sp(0.04), k, 0, 1.31, 1.42);
+    return { legs: [[-0.3, 0.68, 0.5], [0.3, 0.68, 0.5], [-0.3, 0.68, -0.5], [0.3, 0.68, -0.5]].map(([x, y, z]) => leg(g, x, y, z, 0.68, 0.16, k)) };
+  } },
+  gorilla: { speed: 0.5, scale: 1, eyes: [0.09, 1.55, 0.88], build(g) {
+    const c = '#2e2c2c';
+    const body = part(g, sp(1, 0.5, 0.62, 0.55), c, 0, 1.15, 0.05);
+    body.rotation.x = 0.45;
+    part(g, sp(1, 0.42, 0.36, 0.4), '#5a5452', 0, 1.15, 0.45); // silver chest
+    part(g, sp(0.25), c, 0, 1.55, 0.68);
+    part(g, sp(1, 0.17, 0.12, 0.1), '#4a4442', 0, 1.47, 0.86);
+    return { legs: [[-0.42, 1.25, 0.5], [0.42, 1.25, 0.5], [-0.22, 0.62, -0.28], [0.22, 0.62, -0.28]].map(([x, y, z], i) => leg(g, x, y, z, i < 2 ? 1.25 : 0.62, i < 2 ? 0.13 : 0.15, c)) };
+  } },
+  crocodile: { speed: 0.3, scale: 1, eyes: [0.12, 0.42, 1.25], build(g) {
+    const c = '#4a6a3a';
+    part(g, sp(1, 0.38, 0.2, 1.1), c, 0, 0.3, 0);
+    part(g, bx(0.32, 0.16, 0.9), c, 0, 0.28, 1.4);
+    part(g, bx(0.28, 0.06, 0.85), '#e8e0c8', 0, 0.2, 1.42);
+    part(g, new THREE.ConeGeometry(0.22, 1.8, 6).rotateX(-Math.PI / 2).scale(1, 0.55, 1), c, 0, 0.3, -1.85);
+    for (let i = 0; i < 8; i++) part(g, new THREE.ConeGeometry(0.04, 0.1, 4), shade(c, 0.8), 0, 0.5, -0.8 + i * 0.25);
+    return { legs: [[-0.32, 0.2, 0.55], [0.32, 0.2, 0.55], [-0.32, 0.2, -0.55], [0.32, 0.2, -0.55]].map(([x, y, z]) => leg(g, x, y, z, 0.2, 0.08, c)) };
+  } },
+  parrot: { speed: 0, scale: 1, perch: true, eyes: [0.035, 0.32, 0.08], build(g, k) {
+    const c = ['#d81e2e', '#2f7fd8', '#3fbf3a', '#f2c230'][k % 4];
+    part(g, sp(1, 0.09, 0.14, 0.09), c, 0, 0.22, 0);
+    part(g, sp(0.07), c, 0, 0.36, 0.03);
+    part(g, new THREE.ConeGeometry(0.025, 0.06, 6).rotateX(2.4), '#f2e8c8', 0, 0.33, 0.1);
+    for (const s of [-1, 1]) part(g, sp(1, 0.03, 0.11, 0.07), shade(c, 0.75), s * 0.08, 0.22, -0.01);
+    part(g, bx(0.05, 0.22, 0.02), shade(c, 0.85), 0, 0.06, -0.08).rotation.x = 0.3;
+    return { legs: [] };
   } },
 };
 function shade(hex, f) {
@@ -301,6 +346,28 @@ export function buildZoo(ctx, spec) {
     } else if (id === 'kangaroos') [tree(-10, -4), tree(9, 6), rock(4, -6, 1)];
     else if (id === 'penguins') [pool(3, 2, 14, 10, '#3f9fd0'), rock(-10, -5, 1.3, '#f2f6f8'), rock(-9, 5, 1.0, '#f2f6f8')];
     else if (id === 'flamingos') [pool(0, 1, 24, 14, '#5fb0c8'), tree(-13, -7, 0.9)];
+    else if (id === 'pandas') {
+      // bamboo groves and a wooden platform
+      for (const [du, dv] of [[-10, -5], [-12, 4], [9, -6], [11, 5]]) for (let i = 0; i < 7; i++) put(cy(0.06, 0.07, 3.4 + (i % 3) * 0.6, 6).translate((i % 3) * 0.35 - 0.35, 1.8, Math.floor(i / 3) * 0.35), '#7aa83a', e.u + du, e.v + dv);
+      put(bx(5, 0.3, 4).translate(0, 0.9, 0), '#8a6a4a', e.u, e.v);
+      for (const [x, z2] of [[-2.2, -1.7], [2.2, -1.7], [-2.2, 1.7], [2.2, 1.7]]) put(cy(0.1, 0.1, 0.9, 6).translate(x, 0.45, z2), '#6b4a2a', e.u, e.v);
+    } else if (id === 'gorillas') [tree(-10, -5, 1.3), tree(10, 4, 1.2), rock(2, -5, 1.8), rock(-4, 5, 1.3), put(bx(6, 0.25, 0.25).translate(0, 3.2, 0), '#7a5a3c', e.u + 6, e.v - 2)];
+    else if (id === 'crocodiles') [pool(3, 1, 22, 14, '#4f7a5a'), pad(e.u - 15, e.v - 9, e.u - 7, e.v + 9, '#c8b07a', Y + 0.06), rock(-12, 0, 1.0)];
+    else if (id === 'aviary') {
+      // a net dome over the habitat, with branching perches
+      for (const [du, dv] of [[-8, -4], [0, 3], [8, -3], [-4, 6]]) {
+        put(cy(0.12, 0.18, 4.5, 6).translate(0, 2.25, 0), '#6b4a2a', e.u + du, e.v + dv);
+        put(cy(0.05, 0.05, 3, 5).rotateZ(Math.PI / 2).translate(0, 3.6, 0), '#6b4a2a', e.u + du, e.v + dv);
+        put(cy(0.05, 0.05, 2.4, 5).rotateX(Math.PI / 2).translate(0, 2.7, 0), '#6b4a2a', e.u + du, e.v + dv);
+        put(sp(1.5, 1, 0.6, 1).translate(0, 4.6, 0), '#4f8a3f', e.u + du, e.v + dv);
+      }
+      const [dx, dz] = at(e.u, e.v);
+      const net = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#2a3a2a', wireframe: true, transparent: true, opacity: 0.55 }));
+      net.scale.set(EU * 1.15, 7.5, EV * 1.35);
+      net.position.set(dx, Y, dz);
+      group.add(net);
+      e.perches = [[-8, -4], [0, 3], [8, -3], [-4, 6]].flatMap(([du, dv]) => [-1.3, 0, 1.3].map((o) => at(e.u + du + o, e.v + dv)));
+    }
     // the sign on the path side (toward the gate)
     const [sgx, sgz] = at(e.u + 6, e.v - EV - 1.4);
     bag.add(bx(0.08, 1.2, 0.08), '#3a3f48', sgx, Y + 0.6, sgz);
@@ -401,16 +468,31 @@ export function buildZoo(ctx, spec) {
   const [fx0, fz0] = at(-FU, FV0);
   const [fx1, fz1] = at(FU, FV1);
   const [ox, oz] = at(0, FV0 - 1.6);
+  const [gox, goz] = at(4.4, FV0 + 1.4);
+  const [glx, glz] = at(4.4, FV0 - 2);
   ctx.zoo = {
     name, cx, cz, place, enclosures: ENCLOSURES.map((e) => ({ ...e })), kiosk: { x: kx, z: kz },
     rect: [Math.min(fx0, fx1), Math.min(fz0, fz1), Math.max(fx0, fx1), Math.max(fz0, fz1)], outside: { x: ox, z: oz },
+    gate: { x: gox, z: goz, ry: Math.atan2(glx - gox, glz - goz) },
   };
   return ctx.zoo;
 }
 
 /** Animals, visitors, the ticket and things to do inside the zoo. */
 // one shared material for every animal body, and one per leg colour
-const ANIMAL_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 });
+const ramp = (() => {
+  const t = new THREE.DataTexture(new Uint8Array([110, 110, 110, 255, 190, 190, 190, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.needsUpdate = true;
+  return t;
+})();
+const ANIMAL_MAT = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: ramp });
+const INK = new THREE.MeshBasicMaterial({ color: '#1d1418', side: THREE.BackSide });
+INK.onBeforeCompile = (sh) => {
+  sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', 'vec3 transformed = vec3( position ) + normal * 0.022;');
+};
+INK.customProgramCacheKey = () => 'animal-ink';
 const LEG_MATS = new Map();
 /** Merge an animal's body parts into a single mesh (legs stay on their pivots, for walking). */
 function mergeAnimal(g) {
@@ -421,7 +503,7 @@ function mergeAnimal(g) {
       for (const m of o.children) {
         if (!m.isMesh) continue;
         const hex = m.material.color.getHex();
-        if (!LEG_MATS.has(hex)) LEG_MATS.set(hex, new THREE.MeshStandardMaterial({ color: hex, roughness: 0.9 }));
+        if (!LEG_MATS.has(hex)) LEG_MATS.set(hex, new THREE.MeshToonMaterial({ color: hex, gradientMap: ramp }));
         m.material.dispose();
         m.material = LEG_MATS.get(hex);
       }
@@ -445,6 +527,7 @@ function mergeAnimal(g) {
   const body = new THREE.Mesh(mergeGeometries(geos), ANIMAL_MAT);
   body.castShadow = true;
   g.add(body);
+  body.add(new THREE.Mesh(body.geometry, INK));
 }
 
 export class ZooLife {
@@ -465,6 +548,7 @@ export class ZooLife {
     const rng = mulberry32(31337);
     const Y = city.K.CURB;
     for (const e of this.data.enclosures) {
+      this.perches = e.perches || null;
       for (const [kind, n] of e.species) {
         for (let k = 0; k < n; k++) this.spawn(kind, e.rect, rng, Y, k);
       }
@@ -474,12 +558,27 @@ export class ZooLife {
   spawn(kind, rect, rng, Y, k) {
     const g = new THREE.Group();
     const parts = SPECIES[kind].build(g, k);
+    const ey = SPECIES[kind].eyes;
+    if (ey) {
+      const r = Math.max(0.025, ey[0] * 0.28);
+      for (const s of [-1, 1]) {
+        part(g, sp(r, 1, 1.15, 0.6), '#fbfaf7', s * ey[0], ey[1], ey[2]);
+        part(g, sp(r * 0.62, 1, 1.15, 0.6), '#121014', s * ey[0], ey[1], ey[2] + r * 0.35);
+        part(g, sp(r * 0.22, 1, 1, 0.6), '#ffffff', s * ey[0] - r * 0.2, ey[1] + r * 0.3, ey[2] + r * 0.55);
+      }
+    }
     mergeAnimal(g);
     const pad = 2;
     const a = { kind, g, legs: parts.legs, rect: [rect[0] + pad, rect[1] + pad, rect[2] - pad, rect[3] - pad], x: 0, z: 0, ry: rng() * 6.28, tx: 0, tz: 0, wait: rng() * 4, phase: rng() * 6, moving: false, Y };
     a.x = a.rect[0] + rng() * (a.rect[2] - a.rect[0]);
     a.z = a.rect[1] + rng() * (a.rect[3] - a.rect[1]);
-    g.position.set(a.x, Y, a.z);
+    if (SPECIES[kind].perch && this.perches?.length) {
+      const [px, pz] = this.perches[k % this.perches.length];
+      a.x = px;
+      a.z = pz;
+      a.Y = Y + 3.66 + (k % 3 === 1 ? -0.9 : 0);
+    }
+    g.position.set(a.x, a.Y, a.z);
     this.group.add(g);
     this.animals.push(a);
   }
@@ -492,6 +591,12 @@ export class ZooLife {
     this.group.clear();
     for (const v of this.visitors) v.rig.dispose();
     this.visitors = [];
+    if (this.staff) {
+      this.staff.officer.dispose();
+      for (const k of this.staff.keepers) k.rig.dispose();
+    }
+    this.staff = null;
+    this.feedingAt = null;
     this.animals = [];
   }
 
@@ -521,7 +626,7 @@ export class ZooLife {
     this.prevInside = false;
     if (!this._warned || performance.now() - this._warned > 4000) {
       this._warned = performance.now();
-      this.game.events.emit('toast', { icon: '🎟️', title: this.open() ? 'Ticket needed' : 'The zoo is closed', text: this.open() ? 'Buy a ticket at the booth by the gate.' : `Open ${ZOO_HOURS[0]} AM – ${ZOO_HOURS[1] - 12} PM.`, kind: 'info' });
+      this.game.events.emit('toast', { icon: '👮', title: this.open() ? '"Ticket, please!"' : 'The zoo is closed', text: this.open() ? 'Buy a ticket at the booth by the gate.' : `Open ${ZOO_HOURS[0]} AM – ${ZOO_HOURS[1] - 12} PM.`, kind: 'info' });
     }
     return true;
   }
@@ -531,8 +636,23 @@ export class ZooLife {
     const d2 = (playerPos.x - this.data.cx) ** 2 + (playerPos.z - this.data.cz) ** 2;
     this.group.visible = visible && d2 < 280 * 280;
     if (!this.group.visible || d2 > 200 * 200) return;
+    const t = performance.now() / 1000;
     for (const a of this.animals) {
       const sp = SPECIES[a.kind];
+      if (sp.perch) {
+        // birds on their perches: bob, turn, flutter
+        a.g.position.y = a.Y + Math.abs(Math.sin(t * 2 + a.phase)) * 0.04;
+        a.g.rotation.y = a.ry + Math.sin(t * 0.7 + a.phase) * 0.9;
+        continue;
+      }
+      // feeding time: animals gather round their keeper
+      const kp = this.feedingAt?.(a);
+      if (kp && !a.moving) {
+        a.tx = kp.x + Math.sin(a.phase) * 1.6;
+        a.tz = kp.z + Math.cos(a.phase) * 1.6;
+        a.moving = Math.hypot(a.tx - a.x, a.tz - a.z) > 0.6;
+        a.wait = 1;
+      }
       if (!a.moving) {
         a.wait -= dt;
         if (a.wait <= 0) {
@@ -564,6 +684,69 @@ export class ZooLife {
       a.g.rotation.z = sp.waddle && a.moving ? Math.sin(a.phase) * 0.15 : 0;
     }
     this.updateVisitors(dt, playerPos);
+    this.updateStaff(dt);
+  }
+
+  /** The gate officer and the keepers: each keeper walks into a habitat with a bucket at feeding time. */
+  updateStaff(dt) {
+    const d = this.data;
+    if (!this.staff) {
+      const rng = mulberry32(4242);
+      const look = (role) => ({ ...roleAppearance(role, rng), top: 'uniform', topColor: '#6b7a4a', badgeColor: '#e9c04c', patchColor: '#3f6e4a', bottom: role === 'officer' ? 'slacks' : 'shorts', bottomColor: '#5a5a3a', shoes: 'boots', shoeColor: '#3a2f28', hat: role === 'officer' ? 'policecap' : 'sunhat', hatColor: role === 'officer' ? '#3f4a2a' : '#c9b98a', carry: role === 'officer' ? 'none' : 'bucket', carryColor: '#9aa2ad' });
+      const officer = createRig(look('officer'));
+      officer.group.position.set(d.gate.x, this.city.K.CURB, d.gate.z);
+      officer.group.rotation.y = d.gate.ry;
+      this.group.add(officer.group);
+      this.staff = { officer, keepers: [] };
+      const habitats = d.enclosures.filter((e) => !e.perches);
+      for (let i = 0; i < 5; i++) {
+        const rig = createRig(look('keeper'));
+        this.group.add(rig.group);
+        const e = habitats[(i * 3) % habitats.length];
+        this.staff.keepers.push({ rig, e, x: e.views[0][0], z: e.views[0][1], phase: 'walk', t: rng() * 8, target: null, habitats, k: i });
+      }
+      // animals in a habitat with a keeper inside come over to eat
+      this.feedingAt = (a) => {
+        for (const kp of this.staff.keepers) if (kp.phase === 'feed' && a.rect[0] - 2 < kp.x && kp.x < a.rect[2] + 2 && a.rect[1] - 2 < kp.z && kp.z < a.rect[3] + 2) return kp;
+        return null;
+      };
+    }
+    const Y = this.city.K.CURB;
+    const off = this.staff.officer;
+    animateRig(off, dt, { speed: 0, grounded: true, talking: !this.hasTicket() && this.prevInside === false && Math.sin(performance.now() / 900) > 0.6 });
+    for (const kp of this.staff.keepers) {
+      kp.t -= dt;
+      const e = kp.e;
+      const cxE = (e.rect[0] + e.rect[2]) / 2;
+      const czE = (e.rect[1] + e.rect[3]) / 2;
+      if (kp.phase === 'feed') {
+        animateRig(kp.rig, dt, { speed: 0, grounded: true, floor: true });
+        if (kp.t <= 0) {
+          kp.phase = 'walk';
+          kp.e = kp.habitats[(kp.habitats.indexOf(e) + 4 + kp.k) % kp.habitats.length];
+          kp.t = 0;
+        }
+      } else {
+        // walk to the middle of the habitat (keepers can go in), then feed for a while
+        const tx = cxE + Math.sin(kp.k * 1.7) * 3;
+        const tz = czE + Math.cos(kp.k * 1.7) * 2;
+        const dx = tx - kp.x;
+        const dz = tz - kp.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 0.4) {
+          kp.phase = 'feed';
+          kp.t = 25 + Math.random() * 20;
+        } else {
+          const step = Math.min(dist, 1.4 * dt * (dist > 20 ? 8 : 1)); // hurry along the paths when far
+          kp.x += (dx / dist) * step;
+          kp.z += (dz / dist) * step;
+          kp.ry = Math.atan2(dx, dz);
+        }
+        animateRig(kp.rig, dt, { speed: 1.4, grounded: true });
+      }
+      kp.rig.group.position.set(kp.x, Y, kp.z);
+      if (kp.ry != null) kp.rig.group.rotation.y = kp.ry;
+    }
   }
 
   /** A few visitors at the enclosure walls during opening hours. */
@@ -638,7 +821,7 @@ export class ZooLife {
       title: `🦁 ${place.name}`,
       body: h(
         'div.menu-col',
-        h('div.muted', `Giraffes, zebras, elephants, lions, tigers, bears, hippos, rhinos, monkeys, kangaroos, penguins and flamingos. Open ${ZOO_HOURS[0]} AM – ${ZOO_HOURS[1] - 12} PM daily.`),
+        h('div.muted', `Giraffes, zebras, elephants, lions, tigers, bears, hippos, rhinos, monkeys, kangaroos, penguins, flamingos, pandas, gorillas, crocodiles and parrots. Open ${ZOO_HOURS[0]} AM – ${ZOO_HOURS[1] - 12} PM daily.`),
         has
           ? h('div.good', '🎟️ You have a ticket for today. Walk through the gate!')
           : !this.open()

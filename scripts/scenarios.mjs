@@ -1786,7 +1786,7 @@ export const scenarios = {
     await page.waitForFunction(() => window.__game.zooLife.hasTicket(), null, { timeout: 5000 });
     console.log('with ticket: inside =', await walkIn(9000));
     // the habitats
-    for (const id of ['savanna', 'hippos', 'monkeys', 'tigers', 'kangaroos', 'bears']) {
+    for (const id of ['savanna', 'pandas', 'gorillas', 'aviary', 'crocodiles', 'tigers']) {
       await page.evaluate((eid) => {
         const g = window.__game;
         const e = g.city.zoo.enclosures.find((q) => q.id === eid);
@@ -1805,6 +1805,7 @@ export const scenarios = {
     await page.evaluate(() => window.__game.interactable.action());
     await wait(1500);
     console.log('watched', await page.evaluate(() => window.__game.state.stats.zooAnimals));
+    console.log('staff', await page.evaluate(() => { const st = window.__game.zooLife.staff; return st ? st.keepers.map((k) => k.phase + ':' + k.e.id).join(' ') : 'none'; }));
   },
   /** Neighbourhood businesses: named storefronts, hours, interiors, menus, barber, map filters. */
   async shops({ page, shot, wait }) {

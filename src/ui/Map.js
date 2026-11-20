@@ -23,7 +23,7 @@ export class CityMap {
     this.city = city;
     this.waypoint = null;
     const K = city.K;
-    const pad = Math.max(K.PROM + (city.beach ? 66 : 30), city.zoo?.rect ? 130 : 0);
+    const pad = Math.max(K.PROM + (city.beach ? 66 : 30), city.zoo?.rect ? 160 : 0);
     this.extent = city.half + pad;
     const size = Math.ceil(this.extent * 2 * PX);
     const cv = (this.image = document.createElement('canvas'));

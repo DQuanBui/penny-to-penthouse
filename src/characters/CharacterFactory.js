@@ -690,6 +690,11 @@ function addCarry(P, a, H) {
       P.add(bx(0.37, 0.04, 0.27).translate(0, 1.36, -B.td - 0.16), 'chest', shade(c, 0.75));
       for (const m of [-1, 1]) P.add(bx(0.03, 0.3, 0.012).translate(m * 0.09, 1.28, B.td * 0.9), 'chest', '#1a1b1f');
       break;
+    case 'bucket':
+      P.add(new THREE.CylinderGeometry(0.1, 0.08, 0.2, 12, 1, true).translate(w[0], w[1] - 0.24, w[2]), 'handR', c);
+      P.add(new THREE.CircleGeometry(0.08, 12).rotateX(Math.PI / 2).translate(w[0], w[1] - 0.34, w[2]), 'handR', shade(c, 0.7));
+      P.add(new THREE.TorusGeometry(0.1, 0.006, 4, 12, Math.PI).translate(w[0], w[1] - 0.14, w[2]), 'handR', '#5a5d62');
+      break;
     case 'cane': {
       const len = w[1] - 0.02;
       P.add(new THREE.CylinderGeometry(0.011, 0.011, len, 6).translate(w[0] + 0.03, w[1] - len / 2 - 0.02, w[2] + 0.06), 'handR', c);
