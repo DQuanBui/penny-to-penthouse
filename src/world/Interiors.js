@@ -903,10 +903,30 @@ export class Interior {
     // lift pad between storeys (two-floor homes are stairs-free)
     this.lift = null;
     if ((layout.floors || 1) > 1 && opts.home) {
-      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.04, 24), new THREE.MeshStandardMaterial({ color: '#ffb347', emissive: '#ff9a3a', emissiveIntensity: 0.7, roughness: 0.4 }));
-      pad.position.set(w - 0.8, 0.02, d - 0.8);
-      root.add(pad);
-      this.lift = { x: w - 0.8, z: d - 0.8 };
+      // a spiral staircase in the corner: a pole, wedge treads winding up, a handrail
+      const cx = w - 0.95;
+      const cz = d - 0.95;
+      const wood = new THREE.MeshStandardMaterial({ color: '#7a5a3c', roughness: 0.6 });
+      const steel = new THREE.MeshStandardMaterial({ color: '#2b2d33', metalness: 0.6, roughness: 0.35 });
+      const treads = [];
+      const rail = [];
+      const n = 14;
+      for (let k = 0; k < n; k++) {
+        const a0 = (k / n) * Math.PI * 1.75;
+        const y = ((k + 1) / n) * H - (level ? H : 0);
+        if (y < -0.05 || y > H) continue;
+        treads.push(new THREE.CylinderGeometry(0.85, 0.85, 0.05, 8, 1, false, a0, (Math.PI * 1.75) / n + 0.05).translate(0, y, 0));
+        rail.push(new THREE.CylinderGeometry(0.015, 0.015, 0.85, 5).translate(Math.sin(a0 + 0.1) * 0.82, y + 0.42, Math.cos(a0 + 0.1) * 0.82));
+      }
+      const st = new THREE.Group();
+      if (treads.length) st.add(new THREE.Mesh(mergeGeometries(treads), wood));
+      st.add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, H, 10).translate(0, H / 2, 0), steel));
+      if (rail.length) st.add(new THREE.Mesh(mergeGeometries(rail), steel));
+      st.position.set(cx, 0, cz);
+      st.traverse((o) => o.isMesh && (o.castShadow = true));
+      root.add(st);
+      colliders.add(cx - 0.6, cz - 0.6, cx + 0.6, cz + 0.6, 3);
+      this.lift = { x: cx, z: cz };
     }
 
     // door on the south wall (ground floor only)
@@ -1107,7 +1127,7 @@ export class Interior {
       }
     }
     if (best) return best;
-    if (this.lift && Math.hypot(this.lift.x - pos.x, this.lift.z - pos.z) < 1.2) return { lift: true, label: this.level ? 'Go downstairs' : 'Go upstairs' };
+    if (this.lift && Math.hypot(this.lift.x - pos.x, this.lift.z - pos.z) < 1.75) return { lift: true, label: this.level ? '🪜 Go downstairs' : '🪜 Go upstairs' };
     if (this.door && Math.hypot(this.door.x - pos.x, this.door.z + 0.5 - pos.z) < 1.5) return { exit: true, label: 'Leave' };
     return null;
   }

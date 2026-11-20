@@ -434,6 +434,33 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Two-storey homes: the spiral staircase between floors. */
+  async homestairs({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.home.type = 'townhouse';
+      g.state.home.layout = null;
+      g.enterPlace(g.city.places.find((p) => p.type === 'home' && p.id === 'home_' + g.state.home.districtId), true);
+    });
+    await page.waitForFunction(() => window.__game.inside?.home, null, { timeout: 15000 });
+    await page.evaluate(() => {
+      const g = window.__game;
+      const L = g.inside.layout;
+      g.player.teleport(L.w - 1.95, L.d - 1.95, Math.PI * 0.25);
+      g.cam.snapBehind(Math.PI * 0.25 + 0.4);
+      g.cam.pitch = 0.35;
+      g.cam.dist = 5;
+    });
+    await page.waitForFunction(() => /upstairs/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await wait(1200);
+    await shot('home-stairs');
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForFunction(() => window.__game.inside?.level === 1, null, { timeout: 15000 });
+    await wait(1500);
+    await shot('home-upstairs');
+    console.log('upstairs', await page.evaluate(() => window.__game.inside.level));
+  },
   /** Street performers: breakdancers, a living statue, a magician, a balloon seller. */
   async shows({ page, shot, wait }) {
     await startLife(page, wait);
