@@ -434,6 +434,60 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Scooters and motorbikes in traffic; buy one and ride it (G). */
+  async motos({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 13 * 60;
+      const t = g.traffic;
+      const kinds = {};
+      for (const m of t.meshes) kinds[m.type] = m.body.count;
+      // stand by a scooter or motorbike in traffic
+      const mi = t.meshes.findIndex((m) => m.type === 'motorbike' || m.type === 'scooter');
+      let i = -1;
+      for (let k = 0; k < t.n; k++) if (t.alive[k] && t.slotMesh[k] === mi) i = k;
+      if (i >= 0) {
+        const hx = Math.sin(t.ry[i]);
+        const hz = Math.cos(t.ry[i]);
+        g.player.teleport(t.x[i] + hx * 6 + hz * 3, t.z[i] + hz * 6 - hx * 3, 0);
+        const face = Math.atan2(t.x[i] - g.player.pos.x, t.z[i] - g.player.pos.z);
+        g.cam.snapBehind(face);
+        g.cam.pitch = 0.12;
+        g.cam.dist = 3.5;
+        t.speed[i] = 0;
+      }
+      return { kinds, found: i >= 0 };
+    });
+    console.log('traffic', JSON.stringify(info));
+    await wait(800);
+    await shot('moto-traffic');
+    // your own motorbike
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.state.bike = { model: 'motorbike' };
+      g.player.teleport(g.player.pos.x + 3, g.player.pos.z, Math.PI / 2);
+    });
+    await page.keyboard.down('KeyG');
+    await page.waitForFunction(() => window.__game.player.riding?.moto, null, { timeout: 10000 });
+    await page.keyboard.up('KeyG');
+    await page.keyboard.down('KeyW');
+    await wait(3000);
+    await page.keyboard.up('KeyW');
+    const r = await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading + 0.9);
+      g.cam.pitch = 0.15;
+      g.cam.dist = 4;
+      return { moto: g.player.riding?.moto, v: g.player.riding?.v.toFixed(1), helmet: !!g.helmetMesh };
+    });
+    console.log('riding', JSON.stringify(r));
+    await wait(800);
+    await shot('moto-ride');
+  },
   /** Render cost (draw calls, triangles) at a few busy places. */
   async perf({ page, wait }) {
     await startLife(page, wait);

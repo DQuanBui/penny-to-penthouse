@@ -49,7 +49,7 @@ import { BeachLife } from '../world/Beach.js';
 import { DuckLife } from '../world/Ducks.js';
 import { LiveEvents } from '../world/LiveEvents.js';
 import { SportsLife } from '../world/Sports.js';
-import { makeBike, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
+import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
 import { openService } from '../ui/Shops.js';
@@ -804,11 +804,13 @@ export class Game {
     if (this.player.riding || this.inside || this.vehicles.driving) return;
     const def = kind === 'share' ? { ...SHARE, color: SHARE_COLOR, name: 'CityCycle' } : OWN_BIKES[kind] || OWN_BIKES.cruiser;
     this.player.sitting = false;
-    this.player.riding = { max: def.max, accel: def.accel, v: 0, kind, effort: def.effort ?? 1 };
-    this.bikeMesh = makeBike(def.color);
+    this.player.riding = { max: def.max, accel: def.accel, v: 0, kind, effort: def.effort ?? 1, moto: def.moto || null };
+    this.bikeMesh = def.moto ? makeMoto(def.moto, def.color) : makeBike(def.color);
     this.playerRig.group.add(this.bikeMesh);
-    this.audio?.play('click');
-    this.hud.hint('bike', 'On the bike: W pedal · S brake · A/D steer. Press G (or E) to get off.', 9);
+    if (def.moto && this.playerRig.bones?.head) this.playerRig.bones.head.add((this.helmetMesh = helmet(def.color)));
+    this.audio?.play(def.moto ? 'bump' : 'click');
+    if (def.moto) this.hud.hint('moto', 'On your ' + def.name.toLowerCase() + ': W throttle · S brake · A/D steer. Press G (or E) to get off. Watch the traffic!', 9);
+    else this.hud.hint('bike', 'On the bike: W pedal · S brake · A/D steer. Press G (or E) to get off.', 9);
   }
 
   /** Get off the bike. A rented one is charged by time when docked. */
@@ -818,6 +820,8 @@ export class Game {
     this.player.riding = null;
     this.bikeMesh?.removeFromParent();
     this.bikeMesh = null;
+    this.helmetMesh?.removeFromParent();
+    this.helmetMesh = null;
     const st = this.state;
     if (R.kind === 'share' && st.flags.bikeShare) {
       const pi = this.sim.city.priceIndex || 1;

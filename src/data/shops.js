@@ -155,6 +155,8 @@ export const SHOP_TYPES = {
       { id: 'testdrive', name: 'Take a test drive', icon: '🏎️', price: 0, minutes: 30, needs: { fun: 16 }, line: 'The salesperson grips the door handle as you take the corner.' },
       { id: 'sitin', name: 'Sit in the new models', icon: '💺', price: 0, minutes: 20, needs: { fun: 6 }, line: 'New car smell. You adjust the mirrors like you own it.' },
       { id: 'buycar', name: 'Talk to sales about buying a car', icon: '🔑', price: 0, minutes: 0, needs: {}, line: '', special: 'dealer' },
+      { id: 'scooter', name: 'Buy a scooter (ride with G)', icon: '🛵', price: 2400, minutes: 20, needs: { fun: 14 }, line: 'Zippy, thrifty and easy to park. Press G outside to ride.', special: 'bike', bike: 'scooter' },
+      { id: 'motorbike', name: 'Buy a sport motorbike (ride with G)', icon: '🏍️', price: 9800, minutes: 20, needs: { fun: 22 }, line: 'It growls. You grin. Press G outside to ride.', special: 'bike', bike: 'motorbike' },
     ],
   },
   library: {

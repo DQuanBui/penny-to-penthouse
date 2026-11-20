@@ -95,7 +95,7 @@ export class PlayerController {
     this.grounded = true;
     if (this.rig) {
       this.sync();
-      animateRig(this.rig, dt, { speed: R.v, grounded: true, riding: true });
+      animateRig(this.rig, dt, { speed: R.v, grounded: true, riding: true, moto: !!R.moto });
     }
   }
 

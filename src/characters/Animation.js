@@ -24,7 +24,8 @@ export function animateRig(rig, dt, p) {
   a.sit = damp(a.sit, p.sitting ? 1 : 0, 7, dt);
   a.floor = damp(a.floor || 0, p.floor ? 1 : 0, 7, dt);
   a.ride = damp(a.ride || 0, p.riding ? 1 : 0, 8, dt);
-  if (p.riding) a.pedal = (a.pedal || 0) + speed * dt * 2.4;
+  if (p.riding && !p.moto) a.pedal = (a.pedal || 0) + speed * dt * 2.4;
+  else if (p.moto) a.pedal = Math.PI / 2; // feet resting on the pegs
   a.talk = damp(a.talk, p.talking ? 1 : 0, 6, dt);
   a.wave = damp(a.wave, p.waving ? 1 : 0, 8, dt);
   a.shake = damp(a.shake || 0, p.shaking ? 1 : 0, 8, dt);

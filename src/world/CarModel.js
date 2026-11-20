@@ -64,6 +64,11 @@ BODIES.taxi = { ...BODIES.sedan, extra: 'taxi' };
 BODIES.police = { ...BODIES.sedan, extra: 'police' };
 // emergency trucks on the box-truck chassis
 BODIES.firetruck = { ...BODIES.box, L: 3.9, extra: 'fire' };
+// two wheels: scooters and sport bikes (with a rider), and riderless ones for you
+BODIES.scooter = { L: 0.95, W: 0.75, moto: 'scooter' };
+BODIES.motorbike = { L: 1.08, W: 0.8, moto: 'sport' };
+BODIES.scooter_solo = { ...BODIES.scooter, solo: true };
+BODIES.motorbike_solo = { ...BODIES.motorbike, solo: true };
 BODIES.ambulance = { ...BODIES.box, extra: 'ambulance' };
 
 /** Collision half-sizes per style (hw half width, hl half length). */
@@ -79,7 +84,8 @@ export function vehicleGeometry(type = 'sedan', { low = false } = {}) {
   const key = type + (low ? ':low' : '');
   if (!cache.has(key)) {
     LOW = low;
-    cache.set(key, buildBody(BODIES[type] || BODIES.sedan, low));
+    const B = BODIES[type] || BODIES.sedan;
+    cache.set(key, B.moto ? buildMoto(B, low) : buildBody(B, low));
     LOW = false;
   }
   const c = cache.get(key);
@@ -260,6 +266,62 @@ function buildBody(B, low) {
   const glass = low ? null : mergeGeometries(glassParts);
   parts = [];
   return { body, glass };
+}
+
+
+/** A scooter or a sport motorbike (front faces +Z), with a rider unless B.solo. */
+function buildMoto(B, low) {
+  parts = [];
+  const PAINT = '#ffffff';
+  const sport = B.moto === 'sport';
+  const wr = sport ? 0.31 : 0.24;
+  const wz = sport ? 0.7 : 0.6;
+  const seg = low ? 10 : 16;
+  for (const z of [-wz, wz]) {
+    add(new THREE.CylinderGeometry(wr, wr, sport ? 0.17 : 0.12, seg).rotateZ(Math.PI / 2).translate(0, wr, z), '#16171a');
+    add(new THREE.CylinderGeometry(wr * 0.55, wr * 0.55, (sport ? 0.17 : 0.12) + 0.01, 10).rotateZ(Math.PI / 2).translate(0, wr, z), '#a9afb7');
+  }
+  if (sport) {
+    add(new THREE.BoxGeometry(0.34, 0.3, 0.46).translate(0, 0.5, 0.02), '#3a3d44'); // engine
+    add(new THREE.BoxGeometry(0.36, 0.22, 0.5).translate(0, 0.86, 0.14), PAINT, 1); // tank
+    add(new THREE.BoxGeometry(0.44, 0.38, 0.34).translate(0, 0.8, 0.56), PAINT, 1); // fairing
+    add(new THREE.BoxGeometry(0.3, 0.16, 0.06).rotateX(-0.6).translate(0, 1.05, 0.64), '#2a3a4a'); // windscreen
+    add(new THREE.BoxGeometry(0.3, 0.08, 0.5).translate(0, 0.9, -0.33), '#1d1f24'); // seat
+    add(new THREE.BoxGeometry(0.26, 0.14, 0.34).translate(0, 0.94, -0.64), PAINT, 1); // tail
+    add(new THREE.CylinderGeometry(0.05, 0.06, 0.6, 8).rotateX(Math.PI / 2).translate(0.2, 0.42, -0.45), '#b9bdc3'); // exhaust
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.62, 6).rotateX(-0.45).translate(0, 0.62, 0.66), '#b9bdc3'); // fork
+    add(new THREE.CylinderGeometry(0.016, 0.016, 0.62, 6).rotateZ(Math.PI / 2).translate(0, 0.98, 0.5), '#2b2d33'); // bars
+    add(new THREE.BoxGeometry(0.16, 0.08, 0.04).translate(0, 0.82, 0.74), '#fff6dc', 0, 1);
+    add(new THREE.BoxGeometry(0.14, 0.05, 0.04).translate(0, 0.94, -0.82), '#d81e1e', 0, 1);
+  } else {
+    add(new THREE.BoxGeometry(0.36, 0.07, 0.72).translate(0, 0.3, 0.02), '#2b2d33'); // floorboard
+    add(new THREE.BoxGeometry(0.42, 0.38, 0.62).translate(0, 0.52, -0.36), PAINT, 1); // rear body
+    add(new THREE.BoxGeometry(0.34, 0.1, 0.56).translate(0, 0.76, -0.3), '#1d1f24'); // seat
+    add(new THREE.BoxGeometry(0.44, 0.72, 0.1).rotateX(-0.2).translate(0, 0.62, 0.42), PAINT, 1); // leg shield
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 6).rotateX(-0.25).translate(0, 0.86, 0.5), '#b9bdc3'); // column
+    add(new THREE.CylinderGeometry(0.016, 0.016, 0.62, 6).rotateZ(Math.PI / 2).translate(0, 1.08, 0.46), '#2b2d33'); // bars
+    add(new THREE.BoxGeometry(0.2, 0.14, 0.12).translate(0, 1.04, 0.52), PAINT, 1); // headset
+    add(new THREE.BoxGeometry(0.12, 0.08, 0.04).translate(0, 1.02, 0.59), '#fff6dc', 0, 1);
+    add(new THREE.BoxGeometry(0.16, 0.05, 0.04).translate(0, 0.62, -0.68), '#d81e1e', 0, 1);
+    add(new THREE.SphereGeometry(0.26, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.9, 0.5, 1.2).translate(0, 0.38, wz), PAINT, 1); // front mudguard
+  }
+  if (!B.solo) {
+    // the rider: jacket, jeans, a helmet in the bike's colour
+    const lean = sport ? 0.55 : 0.12;
+    const hipY = sport ? 0.98 : 0.86;
+    const hz = sport ? -0.28 : -0.22;
+    add(new THREE.CapsuleGeometry(0.15, 0.32, 4, 10).rotateX(lean).translate(0, hipY + 0.28, hz + Math.sin(lean) * 0.25), '#2b3448');
+    add(new THREE.SphereGeometry(0.15, 12, 9).translate(0, hipY + 0.62 - lean * 0.12, hz + Math.sin(lean) * 0.5 + 0.02), PAINT, 1);
+    add(new THREE.BoxGeometry(0.2, 0.07, 0.03).translate(0, hipY + 0.6 - lean * 0.12, hz + Math.sin(lean) * 0.5 + 0.17), '#1d1f24');
+    for (const s of [-1, 1]) {
+      add(new THREE.CapsuleGeometry(0.05, 0.42, 4, 8).rotateX(-1.1 + lean * 0.4).translate(s * 0.2, hipY + 0.36, hz + 0.32), '#2b3448');
+      add(new THREE.CapsuleGeometry(0.065, 0.36, 4, 8).rotateX(-1.4).translate(s * 0.13, hipY, hz + 0.18), '#27406b');
+      add(new THREE.CapsuleGeometry(0.055, 0.34, 4, 8).rotateX(sport ? 0.5 : 0.1).translate(s * 0.15, hipY - 0.32, hz + 0.32), '#27406b');
+    }
+  }
+  const body = mergeGeometries(parts);
+  parts = [];
+  return { body, glass: null };
 }
 
 let busCached = null;

@@ -2,6 +2,7 @@
 // docks with their parked bikes, and cyclists riding in the bike lanes (one
 // instanced mesh whose riders pedal in the vertex shader).
 import * as THREE from 'three';
+import { vehicleGeometry, carMaterial } from './CarModel.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { worldUniforms } from './Buildings.js';
 
@@ -11,6 +12,8 @@ export const OWN_BIKES = {
   cruiser: { name: 'City cruiser', max: 6.5, accel: 2.6, color: '#27406b', effort: 1 },
   road: { name: 'Road bike', max: 8, accel: 3.2, color: '#c53a3a', effort: 1.2 },
   ebike: { name: 'E-bike', max: 9.5, accel: 4.2, color: '#1d1f24', effort: 0.2 },
+  scooter: { name: 'Scooter', max: 13, accel: 5.5, color: '#e9c04c', effort: 0, moto: 'scooter' },
+  motorbike: { name: 'Sport motorbike', max: 21, accel: 8, color: '#c53a3a', effort: 0, moto: 'motorbike' },
 };
 
 const tube = (a, b, r = 0.022) => {
@@ -78,6 +81,29 @@ export function makeBike(color) {
     g.add(w);
     return w;
   });
+  return g;
+}
+
+/** A rideable scooter or motorbike (no rider: you are the rider). */
+export function makeMoto(kind, color) {
+  const g = new THREE.Group();
+  const m = new THREE.InstancedMesh(vehicleGeometry(kind + '_solo').body, carMaterial(), 1);
+  m.setMatrixAt(0, new THREE.Matrix4());
+  m.setColorAt(0, new THREE.Color(color));
+  m.castShadow = true;
+  g.add(m);
+  g.userData.wheels = [];
+  return g;
+}
+
+/** A helmet for whoever is riding (sits on the head bone). */
+export function helmet(color) {
+  const g = new THREE.Group();
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(0.158, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), new THREE.MeshToonMaterial({ color }));
+  shell.scale.set(1, 1.02, 1.08);
+  const visor = new THREE.Mesh(new THREE.SphereGeometry(0.162, 14, 8, Math.PI * 0.18, Math.PI * 0.64, Math.PI * 0.32, Math.PI * 0.22), new THREE.MeshStandardMaterial({ color: '#1d2a3a', roughness: 0.1, metalness: 0.4 }));
+  g.add(shell, visor);
+  g.position.set(0, 0.13, 0.005);
   return g;
 }
 
