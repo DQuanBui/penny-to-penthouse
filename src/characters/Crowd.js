@@ -20,7 +20,7 @@ import { mulberry32 } from '../core/utils.js';
 
 const COUNTS = { low: [80, 8], medium: [170, 16], high: [240, 24] }; // [agents, rigs]
 const _zero = new THREE.Matrix4().makeScale(0, 0, 0);
-const RIG_ROLES = ['business', 'student', 'police', 'elderly', 'tourist', 'shopper', 'construction', 'parent', 'rich', 'delivery', 'firefighter', 'jogger', 'nurse', 'poor', 'skater', 'sanitation', 'teacher', 'paramedic', 'musician', 'chef', 'doctor', 'mail', 'business', 'student'];
+const RIG_ROLES = ['business', 'student', 'police', 'elderly', 'tourist', 'shopper', 'construction', 'parent', 'rich', 'delivery', 'firefighter', 'jogger', 'nurse', 'poor', 'skater', 'sanitation', 'teacher', 'paramedic', 'musician', 'chef', 'doctor', 'mail', 'business', 'student', 'kid', 'cosplayer', 'hipster', 'athlete', 'goth', 'artist', 'kid'];
 const INSET = 2.6; // walking line: distance from the kerb
 const NEAR = 40; // full rigs inside this radius
 const FAR = 105; // agents further away respawn closer to the player
@@ -340,7 +340,7 @@ export class Crowd {
     this.role[i] = ROLE_IDS.indexOf(role);
     this.dress(i, roleAppearance(role, this.rng));
     const jogger = role === 'jogger';
-    this.speed[i] = jogger ? 2.6 + this.rng() * 0.6 : role === 'business' ? 1.35 + this.rng() * 0.35 : role === 'tourist' ? 0.85 + this.rng() * 0.3 : role === 'elderly' ? 0.65 + this.rng() * 0.2 : role === 'parent' ? 0.9 + this.rng() * 0.2 : 1.05 + this.rng() * 0.55;
+    this.speed[i] = jogger ? 2.6 + this.rng() * 0.6 : role === 'business' ? 1.35 + this.rng() * 0.35 : role === 'tourist' ? 0.85 + this.rng() * 0.3 : role === 'elderly' ? 0.65 + this.rng() * 0.2 : role === 'parent' ? 0.9 + this.rng() * 0.2 : role === 'kid' ? 1.15 + this.rng() * 0.5 : 1.05 + this.rng() * 0.55;
     this.pause[i] = 0;
     this.off[i] = 0;
     this.tOff[i] = 0;

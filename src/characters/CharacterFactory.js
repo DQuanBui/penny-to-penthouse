@@ -646,6 +646,9 @@ function addHat(P, a, H) {
     P.add(new THREE.CylinderGeometry(hx * 1.06, hx * 1.06, 0.06, 18).scale(1, 1, zs).translate(0, HY + hy * 0.62, 0), 'head', '#f8f8f6');
     P.add(new THREE.CylinderGeometry(hx * 1.2, hx * 1.04, 0.12, 18).scale(1, 1, zs).translate(0, HY + hy * 0.62 + 0.09, 0), 'head', '#f8f8f6');
     P.add(sph(1, hx * 1.28, 0.055, hz * 1.28, 16).translate(0, HY + hy * 0.62 + 0.155, 0), 'head', '#f8f8f6');
+  } else if (a.hat === 'beret') {
+    P.add(new THREE.CylinderGeometry(hx * 1.18, hx * 1.05, 0.05, 20).scale(1, 1, zs).rotateZ(-0.22).translate(0.02, HY + hy * 0.88, -0.01), 'head', c);
+    P.add(sph(0.012).translate(0.02, HY + hy * 0.88 + 0.03, 0), 'head', shade(c, 0.8));
   } else if (a.hat === 'firehelmet') {
     P.add(new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, 0.5 * Math.PI).scale(hx * 1.24, hy * 1.12, hz * 1.24).translate(0, HY + 0.02, 0), 'head', c);
     // long brim, sweeping down at the back
