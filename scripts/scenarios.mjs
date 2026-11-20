@@ -434,6 +434,83 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Render cost (draw calls, triangles) at a few busy places. */
+  async perf({ page, wait }) {
+    await startLife(page, wait);
+    const spots = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      const c = g.city;
+      const out = [['home', g.player.pos.x, g.player.pos.z]];
+      if (c.timesSquare) out.push(['times', c.timesSquare.x, c.timesSquare.z + 22]);
+      if (c.beach) {
+        const [x, z] = c.beach.at(c.beach.ac, 5);
+        out.push(['beach', x, z]);
+      }
+      const md = c.districts.find((d) => d.id === 'midtown');
+      if (md) out.push(['midtown', md.cx + 7, md.cz + 2]);
+      if (c.zoo) out.push(['zoo', c.zoo.cx, c.zoo.cz]);
+      return out;
+    });
+    console.log('chunks', JSON.stringify(await page.evaluate(() => window.__game.city.chunkStats)));
+    for (const [name, x, z] of spots) {
+      await page.evaluate(([x2, z2]) => {
+        const g = window.__game;
+        g.player.teleport(x2, z2, 0);
+        g.cam.snapBehind(0.4);
+        g.cam.pitch = 0.2;
+      }, [x, z]);
+      await wait(2500);
+      const info = await page.evaluate(async () => {
+        const info = window.__game.renderer.info;
+        info.autoReset = false;
+        await new Promise((r) => requestAnimationFrame(() => r()));
+        info.reset();
+        await new Promise((r) => requestAnimationFrame(() => r()));
+        const out = { calls: info.render.calls, tris: Math.round(info.render.triangles / 1000) + 'k', geos: info.memory.geometries, tex: info.memory.textures };
+        info.autoReset = true;
+        return out;
+      });
+      console.log('perf', name, JSON.stringify(info));
+      if (process.env.HEAVY && name === 'home') {
+        const top = await page.evaluate(() => {
+          const g = window.__game;
+          const rows = [];
+          g.city.group.traverse((o) => {
+            if (!o.isMesh || !o.geometry) return;
+            const geo = o.geometry;
+            const t = (geo.index ? geo.index.count : geo.attributes.position.count) / 3 * (o.isInstancedMesh ? o.count : 1);
+            geo.computeBoundingSphere();
+            const m = Array.isArray(o.material) ? o.material[0] : o.material;
+            rows.push([Math.round(t / 1000), o.isInstancedMesh ? 'inst' + o.count : 'mesh', m.type + (m.vertexColors ? ':vc' : '') + (m.map ? ':map' : '') + ':' + (m.color ? m.color.getHexString() : ''), Math.round(geo.boundingSphere.radius), Object.keys(geo.attributes).join(',')]);
+          });
+          return rows.sort((x, y) => y[0] - x[0]).slice(0, 16).map((r) => r.join('  '));
+        });
+        console.log(top.join(String.fromCharCode(10)));
+      }
+      if (process.env.BREAKDOWN) {
+        const top = await page.evaluate(() => {
+          const g = window.__game;
+          const rows = [];
+          g.scene.traverseVisible((o) => {
+            if (!o.isMesh || !o.geometry) return;
+            const geo = o.geometry;
+            const t = (geo.index ? geo.index.count : geo.attributes.position.count) / 3;
+            const n = o.isInstancedMesh ? o.count : 1;
+            let p = o;
+            let path = o.name || o.type;
+            while (p.parent && p.parent !== g.scene) { p = p.parent; path = (p.name || p.type) + '/' + path; }
+            rows.push([path.slice(-60), Math.round(t * n), n, o.castShadow ? 'S' : '']);
+          });
+          const agg = {};
+          for (const [k, t, n, sh] of rows) { const key = k + ' ' + sh; agg[key] = agg[key] || [0, 0]; agg[key][0] += t; agg[key][1] += 1; }
+          return Object.entries(agg).sort((x, y) => y[1][0] - x[1][0]).slice(0, 14).map(([k, [t, c]]) => k + '  tris=' + Math.round(t / 1000) + 'k meshes=' + c);
+        });
+        console.log(top.join(String.fromCharCode(10)));
+      }
+    }
+  },
   /** Emergency services: firehouses, precincts, fire engines and ambulances in traffic. */
   async emergency({ page, shot, wait }) {
     await startLife(page, wait);

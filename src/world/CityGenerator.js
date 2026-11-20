@@ -18,6 +18,7 @@ import { buildFoodCarts } from './FoodCarts.js';
 import { beachSpec, buildBeach, beachY } from './Beach.js';
 import { buildSports } from './Sports.js';
 import { buildFacadeDetails } from './Facades.js';
+import { chunkCity } from './Chunks.js';
 import { buildZoo } from './Zoo.js';
 import { buildCampus, buildSchool } from './Campus.js';
 import { buildAirport, airportSide } from './Airport.js';
@@ -413,6 +414,7 @@ export function generateCity(cfg, opts = {}) {
   ctx.facadeStats = buildFacadeDetails(ctx);
   decoratePlaces(ctx);
   const fronts = buildStorefronts(ctx);
+  ctx.chunkStats = chunkCity(ctx); // tile the static city so the camera and shadows draw only what they see
 
   // --- 6. Queries ---------------------------------------------------------------
   const inBlockAxis = (v) => {
@@ -443,7 +445,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, facadeStats: ctx.facadeStats, sports: ctx.sports || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, facadeStats: ctx.facadeStats, chunkStats: ctx.chunkStats, sports: ctx.sports || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */

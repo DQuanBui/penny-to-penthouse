@@ -409,6 +409,44 @@ export function buildZoo(ctx, spec) {
 }
 
 /** Animals, visitors, the ticket and things to do inside the zoo. */
+// one shared material for every animal body, and one per leg colour
+const ANIMAL_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 });
+const LEG_MATS = new Map();
+/** Merge an animal's body parts into a single mesh (legs stay on their pivots, for walking). */
+function mergeAnimal(g) {
+  const geos = [];
+  for (const o of [...g.children]) {
+    if (!o.isMesh) {
+      // a leg pivot: share materials by colour
+      for (const m of o.children) {
+        if (!m.isMesh) continue;
+        const hex = m.material.color.getHex();
+        if (!LEG_MATS.has(hex)) LEG_MATS.set(hex, new THREE.MeshStandardMaterial({ color: hex, roughness: 0.9 }));
+        m.material.dispose();
+        m.material = LEG_MATS.get(hex);
+      }
+      continue;
+    }
+    o.updateMatrix();
+    let geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    geo.applyMatrix4(o.matrix);
+    for (const k of Object.keys(geo.attributes)) if (k !== 'position' && k !== 'normal') geo.deleteAttribute(k);
+    const c = o.material.color;
+    const n = geo.attributes.position.count;
+    const col = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) col.set([c.r, c.g, c.b], i * 3);
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geos.push(geo);
+    g.remove(o);
+    o.geometry.dispose();
+    o.material.dispose();
+  }
+  if (!geos.length) return;
+  const body = new THREE.Mesh(mergeGeometries(geos), ANIMAL_MAT);
+  body.castShadow = true;
+  g.add(body);
+}
+
 export class ZooLife {
   constructor(game) {
     this.game = game;
@@ -436,6 +474,7 @@ export class ZooLife {
   spawn(kind, rect, rng, Y, k) {
     const g = new THREE.Group();
     const parts = SPECIES[kind].build(g, k);
+    mergeAnimal(g);
     const pad = 2;
     const a = { kind, g, legs: parts.legs, rect: [rect[0] + pad, rect[1] + pad, rect[2] - pad, rect[3] - pad], x: 0, z: 0, ry: rng() * 6.28, tx: 0, tz: 0, wait: rng() * 4, phase: rng() * 6, moving: false, Y };
     a.x = a.rect[0] + rng() * (a.rect[2] - a.rect[0]);
