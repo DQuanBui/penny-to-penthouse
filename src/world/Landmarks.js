@@ -3,7 +3,7 @@
 // can reuse them freely.
 import * as THREE from 'three';
 import { FACADE } from './Buildings.js';
-import { timesSquare } from './TimesSquare.js';
+import { timesSquare, adTextures } from './TimesSquare.js';
 
 const std = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, ...o });
 
@@ -45,6 +45,58 @@ export function buildLandmarks(ctx) {
 }
 
 const BUILDERS = {
+  /** A ballpark: tiered stands in an L, the diamond, light towers and a video scoreboard. */
+  ballpark(T) {
+    const { b } = T;
+    const wall = '#b9b2a6';
+    // the outer walls on all four streets (a gate gap on the south side)
+    T.box(0, -23.5, 48, 2, 13, wall, FACADE.MASONRY);
+    T.box(-23.5, 0, 2, 45, 13, wall, FACADE.MASONRY);
+    T.box(23.5, 0, 2, 45, 7, wall, FACADE.MASONRY);
+    T.box(-14.5, 23.5, 19, 2, 13, wall, FACADE.MASONRY);
+    T.box(14.5, 23.5, 19, 2, 13, wall, FACADE.MASONRY);
+    // the field: grass, an infield square (a diamond seen from home plate), bases, the mound
+    const grassMat = std('#4f8f3f', { roughness: 1 });
+    T.mesh(new THREE.PlaneGeometry(44, 44).rotateX(-Math.PI / 2), grassMat, 0, 0.03, 0, false).receiveShadow = true;
+    const s = 12;
+    const H = [-9, 9];
+    const mid = [H[0] + s / 2, H[1] - s / 2];
+    const dirt = std('#b98a5a', { roughness: 1 });
+    T.mesh(new THREE.PlaneGeometry(s + 2, s + 2).rotateX(-Math.PI / 2), dirt, mid[0], 0.04, mid[1], false).receiveShadow = true;
+    T.mesh(new THREE.PlaneGeometry(s - 4, s - 4).rotateX(-Math.PI / 2), grassMat, mid[0], 0.05, mid[1], false);
+    T.mesh(new THREE.CylinderGeometry(1.2, 1.5, 0.25, 16), dirt, mid[0], 0.12, mid[1], false);
+    const white = std('#f4f4f2');
+    for (const [x, z] of [[0, 0], [s, 0], [s, -s], [0, -s]]) T.mesh(new THREE.BoxGeometry(0.5, 0.08, 0.5), white, H[0] + x, 0.08, H[1] + z, false);
+    // foul lines out to the walls
+    T.mesh(new THREE.BoxGeometry(31, 0.02, 0.12), white, H[0] + 15.5, 0.06, H[1], false);
+    T.mesh(new THREE.BoxGeometry(0.12, 0.02, 31), white, H[0], 0.06, H[1] - 15.5, false);
+    // stands rising in tiers behind home plate (the west and south sides)
+    const seats = [std('#3264b0', { roughness: 0.7 }), std('#26508f', { roughness: 0.7 }), std('#9aa2ad', { roughness: 0.8 })];
+    for (let r = 0; r < 6; r++) {
+      const h = 1.2 + r * 1.6;
+      const seat = seats[r === 3 ? 2 : r % 2]; // a concourse walkway part way up
+      T.mesh(new THREE.BoxGeometry(1.7, h, 44), seat, -12.2 - r * 1.6, h / 2, 0);
+      T.mesh(new THREE.BoxGeometry(44, h, 1.7), seat, 0, h / 2, 12.2 + r * 1.6);
+    }
+    T.solid(-17.5, 0, 10, 45, 12);
+    T.solid(0, 17.5, 45, 10, 12);
+    // light towers and the video scoreboard over the outfield
+    const steel = std('#5a6068', { metalness: 0.6, roughness: 0.4 });
+    const lamp = new THREE.MeshBasicMaterial({ color: '#fff6d8', toneMapped: false });
+    for (const [x, z] of [[-21, -21], [21, -21], [21, 21], [-21, 21]]) {
+      T.mesh(new THREE.CylinderGeometry(0.35, 0.5, 30, 8), steel, x, 15, z);
+      const panel = T.mesh(new THREE.BoxGeometry(5, 3, 0.4), steel, x, 31, z);
+      panel.lookAt(b.cx, 0, b.cz);
+      const glow = T.mesh(new THREE.BoxGeometry(4.6, 2.6, 0.1), lamp, x * 0.985, 31, z * 0.985, false);
+      glow.lookAt(b.cx, 0, b.cz);
+    }
+    const yaw = Math.atan2(-15, 21) + Math.PI; // facing home plate
+    const board = T.mesh(new THREE.BoxGeometry(14, 7, 1), steel, 15, 15, -20);
+    board.rotation.y = yaw;
+    const scr = T.mesh(new THREE.PlaneGeometry(13, 6), new THREE.MeshBasicMaterial({ map: adTextures()[2], toneMapped: false }), 15 - Math.sin(yaw) * 0.52, 15, -20 - Math.cos(yaw) * 0.52, false);
+    scr.rotation.y = yaw + Math.PI;
+    for (const x of [-4, 4]) T.mesh(new THREE.BoxGeometry(0.6, 12, 0.6), steel, 15 + x * Math.cos(yaw), 6, -20 - x * Math.sin(yaw));
+  },
   /** Times Square: billboard towers, tickers, the red steps. */
   times_square: timesSquare,
   /** Art-deco stepped tower with a needle. */

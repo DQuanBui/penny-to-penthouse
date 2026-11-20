@@ -53,19 +53,26 @@ export function generateCity(cfg, opts = {}) {
   const bridge = bridgeSpec(cfg, { N, half, roadCenter, K });
   const beach = beachSpec(cfg, { half, K });
 
+  // districts tile the map row by row from the north-west: cfg.districtGrid = [columns, rows]
+  const [DC, DR] = cfg.districtGrid || [2, 2];
   const districts = cfg.districts.map((d, q) => {
-    const qi = q % 2;
-    const qj = q >> 1;
-    const span = (N / 2) * K.PITCH;
+    const qi = q % DC;
+    const qj = Math.floor(q / DC);
     return {
       ...d,
       index: q,
       styleDef: DISTRICT_STYLES[d.style] || DISTRICT_STYLES.midrise,
-      cx: -half + K.ROAD / 2 + span * (qi + 0.5),
-      cz: -half + K.ROAD / 2 + span * (qj + 0.5),
+      cx: -half + K.ROAD / 2 + ((N * K.PITCH) / DC) * (qi + 0.5),
+      cz: -half + K.ROAD / 2 + ((N * K.PITCH) / DR) * (qj + 0.5),
     };
   });
-  const districtAt = (x, z) => districts[(z < 0 ? 0 : 2) + (x < 0 ? 0 : 1)];
+  const colOf = (i) => Math.min(DC - 1, Math.floor((i * DC) / N));
+  const rowOf = (j) => Math.min(DR - 1, Math.floor((j * DR) / N));
+  const districtAt = (x, z) => {
+    const i = Math.max(0, Math.min(N - 1, Math.floor((x + half - K.ROAD) / K.PITCH)));
+    const j = Math.max(0, Math.min(N - 1, Math.floor((z + half - K.ROAD) / K.PITCH)));
+    return districts[rowOf(j) * DC + colOf(i)] || districts[0];
+  };
 
   // --- 1. Blocks and lots ----------------------------------------------------
   const blocks = [];
@@ -73,7 +80,7 @@ export function generateCity(cfg, opts = {}) {
     for (let i = 0; i < N; i++) {
       const x0 = blockMin(i);
       const z0 = blockMin(j);
-      const d = districts[(j < N / 2 ? 0 : 2) + (i < N / 2 ? 0 : 1)];
+      const d = districts[rowOf(j) * DC + colOf(i)] || districts[0];
       const b = { i, j, x0, z0, x1: x0 + K.BLOCK, z1: z0 + K.BLOCK, cx: x0 + K.BLOCK / 2, cz: z0 + K.BLOCK / 2, district: d, style: d.styleDef, kind: 'build', lots: [] };
       if (rng() < (b.style.parkChance ?? 0.05)) b.kind = 'park';
       blocks.push(b);

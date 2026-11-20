@@ -1,5 +1,6 @@
 // New York — highest pay and rent; finance and media capital.
-// Districts fill the four quadrants in this order: NW, NE, SW, SE.
+// Districts tile a 2 x 3 grid from the north-west, row by row:
+//   Harlem | The Bronx  /  Midtown | Queens  /  Lower Manhattan | Brooklyn
 export default {
   id: 'newyork',
   name: 'New York',
@@ -7,6 +8,8 @@ export default {
   tagline: 'If you can make it here…',
   vibe: 'Fast, crowded, electric. The highest ceilings and the highest rent.',
   seed: 1012,
+  grid: 15, // blocks per side (larger than the other cities)
+  districtGrid: [2, 3],
   rentIndex: 1.55,
   salaryIndex: 1.3,
   priceIndex: 1.25,
@@ -31,6 +34,8 @@ export default {
   beach: { name: 'Brighton Sands Beach', side: 'south', at: 0.74, length: 200 },
   music: { root: 57, scale: 'minor', bpm: 78 },
   districts: [
+    { id: 'harlem', name: 'Harlem', style: 'brownstone', rentMul: 0.9, heightMul: 0.95 },
+    { id: 'bronx', name: 'The Bronx', style: 'midrise', rentMul: 0.7, heightMul: 0.85 },
     { id: 'midtown', name: 'Midtown', style: 'skyscraper', rentMul: 1.35, heightMul: 1.15 },
     { id: 'queens', name: 'Queens', style: 'midrise', rentMul: 0.8, heightMul: 0.8 },
     { id: 'lower_manhattan', name: 'Lower Manhattan', style: 'skyscraper', rentMul: 1.25, heightMul: 1.0 },
@@ -41,6 +46,7 @@ export default {
     { type: 'times_square', name: 'Times Square', district: 'midtown' },
     { type: 'glass_obelisk', name: 'Liberty Tower', district: 'lower_manhattan' },
     { type: 'arch_bridge', name: 'Harbor Bridge', district: 'brooklyn' },
+    { type: 'ballpark', name: 'Borough Field', district: 'bronx' },
   ],
   places: [
     { type: 'office_tech', name: 'Byteway Tech', district: 'midtown' },
@@ -62,6 +68,10 @@ export default {
     { type: 'dealer', name: 'Apex Motors', district: 'queens' },
     { type: 'mall', name: 'Liberty Galleria', district: 'midtown' },
     { type: 'shelter', name: 'Brooklyn Paws Rescue', district: 'brooklyn' },
+    { type: 'restaurant', name: 'Lenox Soul Kitchen', district: 'harlem' },
+    { type: 'bar', name: 'Uptown Blue Note Club', district: 'harlem' },
+    { type: 'grocery', name: 'FreshCart Market Bronx', district: 'bronx' },
+    { type: 'gym', name: 'Iron Borough Boxing', district: 'bronx' },
     { type: 'artmuseum', name: 'The Halcyon Museum of Art', district: 'midtown' },
     { type: 'historymuseum', name: 'Museum of Natural Wonders', district: 'midtown' },
     { type: 'library', name: 'Grand Hall Public Library', district: 'midtown' },

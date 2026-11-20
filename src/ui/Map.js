@@ -61,9 +61,9 @@ export class CityMap {
     g.fillRect(X(Math.max(lx0, -this.extent)), X(Math.max(lz0, -this.extent)), (Math.min(lx1, city.half) - Math.max(lx0, -city.half) + (w.west ? 0 : pad) + (w.east ? 0 : pad)) * PX, 0);
     g.fillRect(X(w.west ? -city.half : -this.extent), X(w.north ? -city.half : -this.extent), ((w.east ? city.half : this.extent) - (w.west ? -city.half : -this.extent)) * PX, ((w.south ? city.half : this.extent) - (w.north ? -city.half : -this.extent)) * PX);
     // blocks
-    const tint = ['#4a5876', '#5a6a58', '#6a5a74', '#74604e'];
+    const tint = ['#4a5876', '#5a6a58', '#6a5a74', '#74604e', '#5a6e78', '#6e5a5a'];
     for (const b of city.blocks) {
-      g.fillStyle = b.kind === 'park' ? '#3f7a4a' : b.kind === 'zoo' ? '#5f8a3a' : b.kind === 'campus' ? '#8a8a6a' : b.kind === 'airport' ? '#5a6a7a' : b.kind === 'school' ? '#8a6a5a' : b.kind === 'landmark' ? '#8a7a5a' : b.kind === 'sports' ? '#3f7a8a' : tint[b.district.index % 4];
+      g.fillStyle = b.kind === 'park' ? '#3f7a4a' : b.kind === 'zoo' ? '#5f8a3a' : b.kind === 'campus' ? '#8a8a6a' : b.kind === 'airport' ? '#5a6a7a' : b.kind === 'school' ? '#8a6a5a' : b.kind === 'landmark' ? '#8a7a5a' : b.kind === 'sports' ? '#3f7a8a' : tint[b.district.index % tint.length];
       g.beginPath();
       g.roundRect(X(b.x0), X(b.z0), K.BLOCK * PX, K.BLOCK * PX, 6);
       g.fill();

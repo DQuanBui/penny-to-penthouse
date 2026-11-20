@@ -434,6 +434,49 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** New York's six boroughs/districts, Harlem and the Bronx, the ballpark. */
+  async boroughs({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 15 * 60;
+      const c = g.city;
+      const ds = c.districts.map((d) => ({ id: d.id, blocks: c.blocks.filter((b) => b.district === d).length, homes: c.places.filter((p) => p.type === 'home' && p.district === d).length, station: c.places.some((p) => p.station && p.district === d), at: c.districtAt(d.cx, d.cz).id }));
+      const zoo = c.blocks.find((b) => b.kind === 'zoo');
+      return { N: c.N, ds, zoo: zoo && zoo.district.id };
+    });
+    console.log('districts', JSON.stringify(info));
+    for (const id of ['harlem', 'bronx']) {
+      await page.evaluate((d0) => {
+        const g = window.__game;
+        const d = g.city.districts.find((q) => q.id === d0);
+        g.player.teleport(d.cx + 7, d.cz + 2, Math.PI / 2);
+        g.cam.snapBehind(Math.PI / 2 + 0.3);
+        g.cam.pitch = 0.22;
+        g.cam.dist = 7;
+      }, id);
+      await wait(3000);
+      await shot('borough-' + id);
+    }
+    const bp = await page.evaluate(() => {
+      const g = window.__game;
+      const lm = g.city.landmarks.find((l) => l.type === 'ballpark');
+      if (!lm) return null;
+      // in the outfield, looking back at home plate and the stands
+      const face = Math.atan2(-1, 1);
+      g.player.teleport(lm.x + 12, lm.z - 12, face);
+      g.cam.snapBehind(face);
+      g.cam.pitch = 0.3;
+      g.cam.dist = 9;
+      return { name: lm.name, district: lm.district?.id };
+    });
+    console.log('ballpark', JSON.stringify(bp));
+    await wait(3000);
+    await shot('borough-ballpark');
+  },
   /** Building details: fire escapes, rooftop billboards, warning lights, roof gardens. */
   async facades({ page, shot, wait }) {
     await startLife(page, wait);
