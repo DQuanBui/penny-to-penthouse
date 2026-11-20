@@ -434,6 +434,59 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Stairs inside bigger places: walk up to the second floor and back down. */
+  async upstairs({ page, shot, wait }) {
+    await startLife(page, wait);
+    const type = process.env.PLACE || 'mall';
+    await page.evaluate((t) => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.state.time.total = 13 * 60;
+      g.enterPlace(g.city.places.find((p) => p.type === t || PLACE_INTERIOR_MATCH(p, t)), true);
+      function PLACE_INTERIOR_MATCH() {
+        return false;
+      }
+    }, type);
+    await page.waitForFunction(() => window.__game.inside?.layout?.stairs, null, { timeout: 15000 });
+    const S = await page.evaluate(() => {
+      const g = window.__game;
+      const S = g.inside.layout.stairs;
+      // at the foot of the stairs, facing up the flight
+      g.player.teleport((S.x0 + S.x1) / 2, S.zBot + 0.6, Math.PI);
+      g.cam.snapBehind(Math.PI);
+      g.cam.pitch = 0.3;
+      g.cam.dist = 6;
+      return S;
+    });
+    console.log('stairs', JSON.stringify(S));
+    await page.evaluate(() => window.__game.cam.snapBehind(Math.PI + 0.7));
+    await wait(1500);
+    await shot('upstairs-foot');
+    await page.evaluate(() => window.__game.cam.snapBehind(Math.PI));
+    await page.keyboard.down('KeyW');
+    await page.waitForFunction(() => window.__game.inside?.level === 1, null, { timeout: 60000 });
+    await page.keyboard.up('KeyW');
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(Math.PI + 2.6);
+      g.cam.pitch = 0.42;
+      g.cam.dist = 7;
+    });
+    await wait(1500);
+    console.log('upstairs', await page.evaluate(() => ({ level: window.__game.inside.level, items: window.__game.interior.levelItems.length, npcs: window.__game.npcs.indoor.length })));
+    await shot('upstairs-top');
+    // and back down through the opening
+    await page.evaluate(() => {
+      const g = window.__game;
+      const S = g.inside.layout.stairs;
+      g.player.teleport((S.x0 + S.x1) / 2, S.zTop + 0.3, 0);
+      g.cam.snapBehind(0);
+    });
+    await page.keyboard.down('KeyW');
+    await page.waitForFunction(() => window.__game.inside?.level === 0, null, { timeout: 60000 });
+    await page.keyboard.up('KeyW');
+    console.log('back down', await page.evaluate(() => window.__game.player.pos.y.toFixed(2)));
+  },
   /** The skate park: quarter pipes, funbox, local skaters; rent a board and skate. */
   async skate({ page, shot, wait }) {
     await startLife(page, wait);

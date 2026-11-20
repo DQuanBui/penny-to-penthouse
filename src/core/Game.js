@@ -520,6 +520,24 @@ export class Game {
     this.cam.setWorld(this.interior.world);
   }
 
+/** Walked to the top (or bottom) of a staircase: arrive on the other floor and keep going. */
+  useStairs(to) {
+    const L = this.inside.layout;
+    const S = L.stairs;
+    this.inside.level = to;
+    this.refreshInterior();
+    const xc = (S.x0 + S.x1) / 2;
+    if (to === 1) {
+      this.player.teleport(xc, S.zTop - 0.55, Math.PI);
+      this.cam.snapBehind(Math.PI);
+    } else {
+      // partway down the flight, still walking down
+      this.player.teleport(xc, S.zBot - (S.zBot - S.zTop) * 0.45, 0);
+      this.cam.snapBehind(0);
+    }
+    this.hud.hint('stairs', to ? 'Upstairs! Walk back down through the opening to go down.' : 'Back on the ground floor.', 4);
+  }
+
   /** Two-storey homes: ride the lift pad to the other floor. */
   switchFloor() {
     this.fade(() => {
@@ -1164,6 +1182,13 @@ export class Game {
     this.ducks.update(dt, this.player.pos, !inside);
     this.liveEvents.update(dt, this.player.pos, !!inside);
     this.sirenCheck(dt, inside);
+    // stairs inside bigger places
+    const SL = inside && !inside.home ? inside.layout?.stairs : null;
+    if (SL && !this.fading) {
+      const lv = inside.level || 0;
+      if (lv === 0 && this.player.pos.y > 1.3) this.useStairs(1);
+      else if (lv === 1 && this.player.pos.y < -1.3) this.useStairs(0);
+    }
     this.sports.update(dt, this.player.pos, !inside);
     this.skate.update(dt, this.player.pos, !inside);
     if (inside) this.subway.update(dt);

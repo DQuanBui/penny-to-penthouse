@@ -3,6 +3,7 @@
 // Homes store their layout in the save (build mode edits it); shops, offices
 // and so on use the templates below.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ColliderWorld } from './Collision.js';
 import { Tex } from './Textures.js';
 import { buildFurniture } from '../build/FurnitureCatalog.js';
@@ -96,8 +97,95 @@ export function defaultHomeLayout(typeId) {
 }
 
 /** Template layout for a commercial place. */
+/** Places big enough for an upstairs: what is up there (room w x d is the ground floor's). */
+const UPSTAIRS = {
+  mall: (w) => [
+    { id: 'shop_counter', x: 4, z: 1.6, r: 0, svc: 'furniture' },
+    { id: 'shop_shelf', x: 1.6, z: 0.3, r: 0 },
+    { id: 'shop_shelf', x: 6.4, z: 0.3, r: 0 },
+    { id: 'bar_counter', x: 11, z: 1.6, r: 0, svc: 'cafe' },
+    ...[4, 8, 12].flatMap((x) => [6.5, 9.5].flatMap((z) => [{ id: 'table_small', x, z, r: 0 }, { id: 'dining_chair', x: x - 0.8, z, r: 1 }, { id: 'dining_chair', x: x + 0.8, z, r: 3 }])),
+    { id: 'plant_tree', x: 0.8, z: 12.6, r: 0 },
+    { id: 'plant_tree', x: w - 3, z: 12.6, r: 0 },
+  ],
+  office: () => [
+    ...[2, 5].flatMap((x) => [1.8, 4.6].flatMap((z) => [{ id: 'work_desk', x, z, r: 0 }, { id: 'office_chair', x, z: z + 0.85, r: 2 }])),
+    { id: 'dining_table', x: 5, z: 7.4, r: 0 },
+    ...[4.4, 5.6].flatMap((x) => [{ id: 'office_chair', x, z: 6.6, r: 0 }, { id: 'office_chair', x, z: 8.2, r: 2 }]),
+    { id: 'plant_floor', x: 0.5, z: 8.4, r: 0 },
+    { id: 'sofa', x: 8.4, z: 8.3, r: 2 },
+  ],
+  restaurant: () => [
+    ...[2.4, 5.4, 8.4].flatMap((x) => [2.6, 5.6].flatMap((z) => [{ id: 'table_small', x, z, r: 0 }, { id: 'dining_chair', x: x - 0.8, z, r: 1 }, { id: 'dining_chair', x: x + 0.8, z, r: 3 }])),
+    { id: 'piano', x: 2.4, z: 8.6, r: 0, use: '' },
+    { id: 'plant_floor', x: 0.5, z: 0.5, r: 0 },
+    { id: 'painting_l', x: 5, z: 0.3, r: 0 },
+  ],
+  library: () => [
+    ...[1, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6, 8.7, 9.8, 10.9].map((x) => ({ id: 'bookshelf', x, z: 0.3, r: 0 })),
+    { id: 'reading_table', x: 4, z: 4.5, r: 0 },
+    { id: 'reading_table', x: 8.5, z: 4.5, r: 0 },
+    ...[3.4, 4.6, 7.9, 9.1].flatMap((x) => [{ id: 'dining_chair', x, z: 3.65, r: 0 }, { id: 'dining_chair', x, z: 5.35, r: 2 }]),
+    { id: 'armchair', x: 2, z: 9, r: 0 },
+    { id: 'armchair', x: 3.6, z: 9, r: 0 },
+    { id: 'lamp_floor', x: 2.8, z: 10, r: 0 },
+  ],
+  gallery: () => [
+    { id: 'art_a', x: 4, z: 0.25, r: 0 },
+    { id: 'art_d', x: 9, z: 0.25, r: 0 },
+    { id: 'art_c', x: 0.25, z: 5, r: 1 },
+    { id: 'art_b', x: 0.25, z: 9, r: 1 },
+    { id: 'statue', x: 6, z: 6, r: 0 },
+    { id: 'sculpture', x: 10, z: 6, r: 0 },
+    { id: 'platform_bench', x: 8, z: 9, r: 0 },
+    ...[4, 9].map((x) => ({ id: 'stanchion', x, z: 1.2, r: 0 })),
+  ],
+  history: () => [
+    { id: 'display_case', x: 3, z: 0.6, r: 0 },
+    { id: 'display_case', x: 8, z: 0.6, r: 0 },
+    { id: 'display_case', x: 13, z: 0.6, r: 0 },
+    { id: 'sculpture', x: 6, z: 7, r: 0 },
+    { id: 'art_d', x: 0.25, z: 6, r: 1 },
+    { id: 'art_a', x: 0.25, z: 10.5, r: 1 },
+    { id: 'statue', x: 11, z: 8, r: 0 },
+    ...[5, 10].map((x) => ({ id: 'platform_bench', x, z: 11, r: 2 })),
+  ],
+  club: () => [
+    { id: 'bar_counter', x: 4, z: 1.6, r: 0 },
+    { id: 'sofa', x: 2.2, z: 6, r: 1 },
+    { id: 'sofa', x: 6.2, z: 8.6, r: 2 },
+    { id: 'table_small', x: 4, z: 6, r: 0 },
+    { id: 'dance_floor', x: 7.5, z: 5, r: 0 },
+    { id: 'plant_floor', x: 0.5, z: 10.4, r: 0 },
+  ],
+};
+
+/** A staircase along the east wall, and the upper floor it leads to. */
+function withUpstairs(l, kind) {
+  const up = UPSTAIRS[kind];
+  if (!up || l.floors > 1) return l;
+  const S = { x0: l.w - 1.55, x1: l.w - 0.1, zTop: 1.2, zBot: 5.6 };
+  // nothing on the ground floor in the way of the stairs (and never move a counter)
+  const clear = (it) => {
+    const def = FURNITURE_BY_ID[it.id];
+    if (!def) return true;
+    const [fw, fd] = footprint(def, it.r || 0);
+    return it.x + fw / 2 < S.x0 - 0.35 || it.z - fd / 2 > S.zBot + 0.4 || it.z + fd / 2 < S.zTop - 0.6;
+  };
+  if (l.items.some((it) => !clear(it) && ((it.use ?? FURNITURE_BY_ID[it.id]?.use) === 'service' || it.svc))) return l;
+  l.items = l.items.filter(clear);
+  l.floors = 2;
+  l.stairs = S;
+  l.upper = { walls: [], items: withUids(up(l.w, l.d).filter((it) => it.x < S.x0 - 0.8)) };
+  return l;
+}
+
 export function commercialLayout(place) {
   const kind = PLACE_TYPES[place.type].interior;
+  return withUpstairs(baseLayout(place, kind), kind);
+}
+
+function baseLayout(place, kind) {
   const L = (w, d, floor, wall, items) => ({ w, d, floor, wall, walls: [], items: withUids(items), doorX: w / 2 });
   /** A themed restaurant: counter and open kitchen at the back, seating to suit. */
   const eatery = (floor, wall, kind) => {
@@ -657,13 +745,36 @@ export class Interior {
     const src = level ? (layout.upper ||= { walls: [], items: [] }) : layout;
     const colliders = new ColliderWorld(4);
     colliders.bounds = { minX: 0.02, maxX: w - 0.02, minZ: 0.02, maxZ: d - 0.02 };
-    this.world = { colliders, groundY: () => 0, ceiling: H };
+    // stairs: the ground is a ramp up the flight (or down it, through the opening upstairs)
+    const S = layout.stairs && !opts.home ? layout.stairs : null;
+    this.stairs = S;
+    const stairY = (x, z) => {
+      if (!S || x < S.x0 || x > S.x1 || z < S.zTop || z > S.zBot) return 0;
+      const t = (S.zBot - z) / (S.zBot - S.zTop); // 0 at the foot, 1 at the top
+      return level ? -(1 - t) * H : t * H;
+    };
+    this.world = { colliders, groundY: stairY, ceiling: H };
+    this.levelItems = src.items;
 
     // floor + ceiling
     const tex = (FLOORS[layout.floor] || FLOORS.wood)().clone();
     tex.repeat.set(w / 2, d / 2);
     tex.needsUpdate = true;
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }));
+    const floorMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 });
+    let floorGeo = new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2);
+    const St0 = layout.stairs && !opts.home && level ? layout.stairs : null;
+    if (St0) {
+      // three pieces round the opening (world-space UVs keep the boards lined up)
+      const piece = (x0, z0, x1, z1) => {
+        const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2).translate((x0 + x1) / 2 - w / 2, 0, (z0 + z1) / 2 - d / 2);
+        const p = g.attributes.position;
+        const uv = g.attributes.uv;
+        for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + w / 2) / w, 1 - (p.getZ(i) + d / 2) / d);
+        return g;
+      };
+      floorGeo = mergeGeometries([piece(0, 0, St0.x0, d), piece(St0.x0, 0, w, St0.zTop), piece(St0.x0, St0.zBot, w, d)]);
+    }
+    const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.position.set(w / 2, 0, d / 2);
     floor.receiveShadow = true;
     root.add(floor);
@@ -738,6 +849,55 @@ export class Interior {
       const bar = new THREE.Mesh(new THREE.PlaneGeometry(0.05, wh - 0.14), trim);
       bar.position.set(x, wy, 0.025);
       root.add(frame, glass, bar);
+    }
+
+    // a real staircase for the bigger places
+    if (S) {
+      const n = 14;
+      const run = (S.zBot - S.zTop) / n;
+      const wood = new THREE.MeshStandardMaterial({ color: '#7a5a3c', roughness: 0.7 });
+      const nose = new THREE.MeshStandardMaterial({ color: '#4a3a2a', roughness: 0.6 });
+      const rail = new THREE.MeshStandardMaterial({ color: '#2b2d33', metalness: 0.6, roughness: 0.35 });
+      const sw = S.x1 - S.x0;
+      const xc = (S.x0 + S.x1) / 2;
+      const steps = [];
+      const noses = [];
+      for (let k = 0; k < n; k++) {
+        const hTop = ((k + 1) / n) * H;
+        const z = S.zBot - (k + 0.5) * run;
+        // upstairs the flight hangs below the floor, seen through the opening
+        const y0 = level ? -H : 0;
+        const top = level ? hTop - H : hTop;
+        steps.push(new THREE.BoxGeometry(sw, top - y0, run).translate(xc, (top + y0) / 2, z));
+        noses.push(new THREE.BoxGeometry(sw, 0.03, 0.05).translate(xc, top + 0.015, z + run / 2 - 0.025));
+      }
+      const fl = new THREE.Mesh(mergeGeometries(steps), wood);
+      fl.receiveShadow = fl.castShadow = true;
+      root.add(fl, new THREE.Mesh(mergeGeometries(noses), nose));
+      // a handrail on the open side, rising with the steps (and round the opening upstairs)
+      const len = Math.hypot(S.zBot - S.zTop, H);
+      const ang = Math.atan2(H, S.zBot - S.zTop);
+      const rails = [];
+      if (!level) {
+        rails.push(new THREE.CylinderGeometry(0.03, 0.03, len, 8).rotateX(Math.PI / 2 - ang).translate(S.x0, H / 2 + 0.9, (S.zTop + S.zBot) / 2));
+        for (let k = 0; k <= 6; k++) {
+          const z = S.zBot - (k / 6) * (S.zBot - S.zTop);
+          const y = (k / 6) * H;
+          rails.push(new THREE.CylinderGeometry(0.02, 0.02, 0.9, 6).translate(S.x0, y + 0.45, z));
+        }
+        colliders.add(S.x0 - 0.08, S.zTop, S.x0 + 0.04, S.zBot - 0.3, 3.5);
+      } else {
+        for (const [x0, z0, x1, z1] of [[S.x0, S.zTop, S.x0, S.zBot], [S.x0, S.zBot, S.x1, S.zBot]]) {
+          const l2 = Math.hypot(x1 - x0, z1 - z0);
+          const g = new THREE.CylinderGeometry(0.03, 0.03, l2, 8).rotateX(Math.PI / 2);
+          if (z0 === z1) g.rotateY(Math.PI / 2);
+          rails.push(g.translate((x0 + x1) / 2, 0.95, (z0 + z1) / 2));
+          for (let t = 0; t <= 1.001; t += 0.25) rails.push(new THREE.CylinderGeometry(0.02, 0.02, 0.95, 6).translate(x0 + (x1 - x0) * t, 0.475, z0 + (z1 - z0) * t));
+        }
+        colliders.add(S.x0 - 0.08, S.zTop + 0.3, S.x0 + 0.04, S.zBot, 1.2);
+        colliders.add(S.x0, S.zBot - 0.04, S.x1, S.zBot + 0.08, 1.2);
+      }
+      root.add(new THREE.Mesh(mergeGeometries(rails), rail));
     }
 
     // lift pad between storeys (two-floor homes are stairs-free)
@@ -925,6 +1085,8 @@ export class Interior {
         const px = x + (rng() - 0.5) * 0.4;
         const pz = z + (rng() - 0.5) * 0.4;
         if (this.world.colliders.pointBlocked(px, 0.4, pz, 0.5)) continue;
+        const St = this.stairs;
+        if (St && px > St.x0 - 0.6 && pz > St.zTop - 0.8 && pz < St.zBot + 0.8) continue;
         if (this.door && Math.hypot(px - this.door.x, pz - this.door.z) < 1.8) continue;
         out.push({ x: px, z: pz, k: rng() });
       }
