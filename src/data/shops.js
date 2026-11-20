@@ -330,6 +330,7 @@ export const SHOP_TYPES = {
       { id: 'cruiser', name: 'City cruiser (yours to keep, ride free with G)', icon: '🚲', price: 320, minutes: 15, needs: { fun: 10 }, line: 'Comfy saddle, a basket and a bell. Press G outside to ride.', special: 'bike', bike: 'cruiser' },
       { id: 'road', name: 'Road bike (faster)', icon: '🚴', price: 780, minutes: 15, needs: { fun: 12 }, line: 'Light, fast and a little terrifying downhill. Press G outside to ride.', special: 'bike', bike: 'road' },
       { id: 'ebike', name: 'E-bike (fastest, no sweat)', icon: '⚡', price: 1900, minutes: 15, needs: { fun: 14 }, line: 'A silent push with every pedal stroke. Press G outside to ride.', special: 'bike', bike: 'ebike' },
+      { id: 'skateboard', name: 'Skateboard (ride with G, Space to ollie)', icon: '🛹', price: 120, minutes: 10, needs: { fun: 10 }, line: 'Fresh grip tape, smooth bearings. Press G outside to skate.', special: 'bike', bike: 'skateboard' },
       { id: 'tuneup', name: 'Tune-up and a coffee while you wait', icon: '🔧', price: 35, minutes: 30, needs: { fun: 5 }, line: 'Gears clicking like new.' },
     ],
   },

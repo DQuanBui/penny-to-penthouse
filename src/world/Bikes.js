@@ -12,6 +12,8 @@ export const OWN_BIKES = {
   cruiser: { name: 'City cruiser', max: 6.5, accel: 2.6, color: '#27406b', effort: 1 },
   road: { name: 'Road bike', max: 8, accel: 3.2, color: '#c53a3a', effort: 1.2 },
   ebike: { name: 'E-bike', max: 9.5, accel: 4.2, color: '#1d1f24', effort: 0.2 },
+  skateboard: { name: 'Skateboard', max: 7.5, accel: 3.2, color: '#2f8f8f', effort: 0.5, skate: true },
+  rental_board: { name: 'Rental board', max: 7, accel: 3, color: '#ffd23f', effort: 0.5, skate: true },
   scooter: { name: 'Scooter', max: 13, accel: 5.5, color: '#e9c04c', effort: 0, moto: 'scooter' },
   motorbike: { name: 'Sport motorbike', max: 21, accel: 8, color: '#c53a3a', effort: 0, moto: 'motorbike' },
 };

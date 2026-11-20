@@ -35,6 +35,8 @@ export function animateRig(rig, dt, p) {
   a.phone = damp(a.phone || 0, p.phone ? 1 : 0, 7, dt);
   a.dance = damp(a.dance || 0, p.dancing ? 1 : 0, 5, dt);
   a.push = damp(a.push || 0, p.pushing ? 1 : 0, 6, dt);
+  a.skate = damp(a.skate || 0, p.skate ? 1 : 0, 8, dt);
+  a.kick = damp(a.kick || 0, p.push ? 1 : 0, 6, dt);
   a.cane = damp(a.cane || 0, p.cane ? 1 : 0, 6, dt);
   a.swim = damp(a.swim || 0, p.swimming ? 1 : 0, 6, dt);
   a.lie = damp(a.lie || 0, p.lying ? 1 : 0, 6, dt);
@@ -78,6 +80,14 @@ export function animateRig(rig, dt, p) {
     thR = lerp(thR, -1.05 - Math.sin(pc) * 0.42, a.ride);
     shL = lerp(shL, 1.15 + Math.cos(pc) * 0.45, a.ride);
     shR = lerp(shR, 1.15 - Math.cos(pc) * 0.45, a.ride);
+  }
+  // on a skateboard: knees bent, back foot kicking now and then
+  if (a.skate > 0.01) {
+    const kick = Math.max(0, Math.sin(t * 5)) * a.kick;
+    thL = lerp(thL, -0.32, a.skate);
+    shL = lerp(shL, 0.55, a.skate);
+    thR = lerp(thR, -0.12 + kick * 0.7, a.skate);
+    shR = lerp(shR, 0.45 + kick * 0.3, a.skate);
   }
   b.thighL.rotation.x = thL;
   b.thighR.rotation.x = thR;
@@ -222,6 +232,17 @@ export function animateRig(rig, dt, p) {
     b.shinL.rotation.x = lerp(b.shinL.rotation.x, 0.4, a.swim);
     b.shinR.rotation.x = lerp(b.shinR.rotation.x, 0.4, a.swim);
     b.head.rotation.x -= 0.15 * a.swim;
+  }
+  // skating: arms out for balance, standing side-on to the board, eyes forward
+  if (a.skate > 0.01) {
+    aLz = lerp(aLz, 0.75, a.skate);
+    aRz = lerp(aRz, -0.6, a.skate);
+    aLx = lerp(aLx, 0.15, a.skate);
+    aRx = lerp(aRx, -0.2, a.skate);
+    b.hips.position.y -= 0.07 * a.skate;
+    b.hips.rotation.y += 0.9 * a.skate;
+    b.chest.rotation.y -= 0.35 * a.skate;
+    b.head.rotation.y -= 0.5 * a.skate;
   }
   // lying on a towel (the body itself is tipped over by the caller): arms relaxed out
   if (a.lie > 0.01) {

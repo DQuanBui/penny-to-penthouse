@@ -17,6 +17,7 @@ import { decorateParks } from './Parks.js';
 import { buildFoodCarts } from './FoodCarts.js';
 import { beachSpec, buildBeach, beachY } from './Beach.js';
 import { buildSports } from './Sports.js';
+import { buildSkatePark, rampY } from './SkatePark.js';
 import { buildFacadeDetails } from './Facades.js';
 import { chunkCity } from './Chunks.js';
 import { buildZoo } from './Zoo.js';
@@ -208,6 +209,18 @@ export function generateCity(cfg, opts = {}) {
     if (sportsBlock) {
       sportsBlock.kind = 'sports';
       sportsBlock.lots = [];
+    }
+  }
+  // ...and a skate park in another district
+  let skateBlock = null;
+  if (cfg.skatepark !== false) {
+    const srng = mulberry32((cfg.seed || 1) * 17 + 3);
+    const sd = [...districts].sort((a, c) => a.rentMul - c.rentMul)[2] || districts[0];
+    const cands = blocks.filter((b) => b.district === sd && b.kind === 'build' && !b.lots.some((l) => l.place) && b.i > 0 && b.j > 0 && b.i < N - 1 && b.j < N - 1);
+    skateBlock = cands.length ? cands[Math.floor(srng() * cands.length)] : null;
+    if (skateBlock) {
+      skateBlock.kind = 'skate';
+      skateBlock.lots = [];
     }
   }
 
@@ -407,6 +420,7 @@ export function generateCity(cfg, opts = {}) {
   decorateParks(ctx);
   if (beach) buildBeach(ctx, beach);
   if (sportsBlock) buildSports(ctx, sportsBlock);
+  if (skateBlock) buildSkatePark(ctx, skateBlock);
   buildFoodCarts(ctx);
   if (zooSpec) buildZoo(ctx, zooSpec);
   if (bridge) buildBridge(ctx, bridge);
@@ -432,6 +446,11 @@ export function generateCity(cfg, opts = {}) {
       const y = beachY(beach, x, z);
       if (y != null) return y;
     }
+    // up the quarter pipes and over the funbox at the skate park
+    if (ctx.skatepark) {
+      const y = rampY(ctx.skatepark.ramps, x, z);
+      if (y != null) return K.CURB + y;
+    }
     // down the steps of a subway entrance
     for (const w of ctx.wells || []) {
       if (Math.abs(x - w.x) > 2.2 || Math.abs(z - w.z) > 2.2) continue;
@@ -445,7 +464,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, facadeStats: ctx.facadeStats, chunkStats: ctx.chunkStats, sports: ctx.sports || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, facadeStats: ctx.facadeStats, chunkStats: ctx.chunkStats, sports: ctx.sports || null, skatepark: ctx.skatepark || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */

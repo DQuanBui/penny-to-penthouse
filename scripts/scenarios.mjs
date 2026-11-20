@@ -434,6 +434,56 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** The skate park: quarter pipes, funbox, local skaters; rent a board and skate. */
+  async skate({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 16 * 60;
+      const S = g.city.skatepark;
+      if (!S) return null;
+      g.player.teleport(S.x + 21, S.z + 3, -Math.PI / 2);
+      g.cam.snapBehind(-Math.PI / 2 + 0.3);
+      g.cam.pitch = 0.32;
+      g.cam.dist = 10;
+      const qp = S.ramps.find((r) => r.kind === 'qp');
+      const y = g.city.groundY((qp.x0 + qp.x1) / 2, qp.dir > 0 ? qp.z0 + 0.8 : qp.z1 - 0.8);
+      return { district: g.city.districtAt(S.x, S.z).name, ramps: S.ramps.length, qpY: y.toFixed(2) };
+    });
+    console.log('skatepark', JSON.stringify(info));
+    if (!info) throw new Error('no skate park');
+    await page.waitForFunction(() => window.__game.skate.people.length > 0, null, { timeout: 20000 });
+    await wait(2500);
+    await shot('skate-park');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const k = g.city.skatepark.kiosk;
+      g.player.teleport(k.x, k.z, -Math.PI / 2);
+    });
+    await page.waitForFunction(() => /skateboard/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForFunction(() => window.__game.player.riding?.skate, null, { timeout: 10000 });
+    await page.keyboard.down('KeyW');
+    await wait(2500);
+    await page.keyboard.down('Space');
+    await wait(400);
+    await page.keyboard.up('Space');
+    await wait(300);
+    await page.keyboard.up('KeyW');
+    const r = await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading + 1.2);
+      g.cam.pitch = 0.2;
+      g.cam.dist = 4.5;
+      return { skate: g.player.riding?.skate, v: g.player.riding?.v.toFixed(1) };
+    });
+    console.log('skating', JSON.stringify(r));
+    await wait(700);
+    await shot('skate-ride');
+  },
   /** Scooters and motorbikes in traffic; buy one and ride it (G). */
   async motos({ page, shot, wait }) {
     await startLife(page, wait);

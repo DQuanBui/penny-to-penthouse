@@ -95,7 +95,13 @@ export class PlayerController {
     this.grounded = true;
     if (this.rig) {
       this.sync();
-      animateRig(this.rig, dt, { speed: R.v, grounded: true, riding: true, moto: !!R.moto });
+      if (R.skate) {
+        // ollie: a little hop with the board
+        if (input && !this.frozen && input.pressed('Space') && R.hop <= 0) R.hop = 0.55;
+        R.hop = Math.max(0, (R.hop || 0) - dt);
+        if (R.hop > 0) this.rig.group.position.y += Math.sin((R.hop / 0.55) * Math.PI) * 0.5;
+        animateRig(this.rig, dt, { speed: 0, grounded: R.hop <= 0, skate: true, push: throttle > 0 && R.v < R.max * 0.92 });
+      } else animateRig(this.rig, dt, { speed: R.v, grounded: true, riding: true, moto: !!R.moto });
     }
   }
 

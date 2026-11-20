@@ -49,6 +49,7 @@ import { BeachLife } from '../world/Beach.js';
 import { DuckLife } from '../world/Ducks.js';
 import { LiveEvents } from '../world/LiveEvents.js';
 import { SportsLife } from '../world/Sports.js';
+import { SkateLife, makeBoard } from '../world/SkatePark.js';
 import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -142,6 +143,7 @@ export class Game {
     this.ducks = new DuckLife(this);
     this.liveEvents = new LiveEvents(this);
     this.sports = new SportsLife(this);
+    this.skate = new SkateLife(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -294,6 +296,7 @@ export class Game {
     this.ducks.setCity(this.city);
     this.liveEvents.setCity(this.city);
     this.sports.setCity(this.city);
+    this.skate.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -804,12 +807,13 @@ export class Game {
     if (this.player.riding || this.inside || this.vehicles.driving) return;
     const def = kind === 'share' ? { ...SHARE, color: SHARE_COLOR, name: 'CityCycle' } : OWN_BIKES[kind] || OWN_BIKES.cruiser;
     this.player.sitting = false;
-    this.player.riding = { max: def.max, accel: def.accel, v: 0, kind, effort: def.effort ?? 1, moto: def.moto || null };
-    this.bikeMesh = def.moto ? makeMoto(def.moto, def.color) : makeBike(def.color);
+    this.player.riding = { max: def.max, accel: def.accel, v: 0, kind, effort: def.effort ?? 1, moto: def.moto || null, skate: !!def.skate, hop: 0 };
+    this.bikeMesh = def.skate ? makeBoard(def.color) : def.moto ? makeMoto(def.moto, def.color) : makeBike(def.color);
     this.playerRig.group.add(this.bikeMesh);
     if (def.moto && this.playerRig.bones?.head) this.playerRig.bones.head.add((this.helmetMesh = helmet(def.color)));
     this.audio?.play(def.moto ? 'bump' : 'click');
-    if (def.moto) this.hud.hint('moto', 'On your ' + def.name.toLowerCase() + ': W throttle · S brake · A/D steer. Press G (or E) to get off. Watch the traffic!', 9);
+    if (def.skate) this.hud.hint('skate', 'Skating: W push · S slow down · A/D carve · Space to ollie. Ride up the quarter pipes at the skate park! G (or E) to step off.', 9);
+    else if (def.moto) this.hud.hint('moto', 'On your ' + def.name.toLowerCase() + ': W throttle · S brake · A/D steer. Press G (or E) to get off. Watch the traffic!', 9);
     else this.hud.hint('bike', 'On the bike: W pedal · S brake · A/D steer. Press G (or E) to get off.', 9);
   }
 
@@ -988,6 +992,8 @@ export class Game {
       if (live) return live;
       const sport = this.sports.interactable(p);
       if (sport) return sport;
+      const sk = this.skate.interactable(p);
+      if (sk) return sk;
       const ts = this.city.timesSquare;
       if (ts && (ts.front.x - p.x) ** 2 + (ts.front.z - p.z) ** 2 < 4 * 4) return { label: '🔴 Sit on the red steps and watch the lights', action: () => this.sitOn(ts.seats[18 + Math.floor(Math.random() * 12)]) };
       const br = this.city.bridge;
@@ -1159,6 +1165,7 @@ export class Game {
     this.liveEvents.update(dt, this.player.pos, !!inside);
     this.sirenCheck(dt, inside);
     this.sports.update(dt, this.player.pos, !inside);
+    this.skate.update(dt, this.player.pos, !inside);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);
     if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {
