@@ -908,6 +908,22 @@ export class Game {
     p.teleport(p.pos.x + Math.sin(p.heading) * 0.75, p.pos.z + Math.cos(p.heading) * 0.75, p.heading);
   }
 
+  /** Now and then, the wail of a siren from an emergency vehicle passing nearby. */
+  sirenCheck(dt, inside) {
+    this._sirenT = (this._sirenT ?? 4) - dt;
+    if (this._sirenT > 0 || inside) return;
+    this._sirenT = 4.5;
+    const t = this.traffic;
+    const p = this.player.pos;
+    for (let i = 0; i < t.n; i++) {
+      if (!t.alive?.[i] || !t.siren?.[i]) continue;
+      if ((t.x[i] - p.x) ** 2 + (t.z[i] - p.z) ** 2 < 70 * 70) {
+        this.audio?.play('siren');
+        return;
+      }
+    }
+  }
+
   /** T: wait / skip time. */
   openWait() {
     const opts = [
@@ -1137,6 +1153,7 @@ export class Game {
     this.beachLife.update(dt, this.player.pos, !inside);
     this.ducks.update(dt, this.player.pos, !inside);
     this.liveEvents.update(dt, this.player.pos, !!inside);
+    this.sirenCheck(dt, inside);
     this.sports.update(dt, this.player.pos, !inside);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);

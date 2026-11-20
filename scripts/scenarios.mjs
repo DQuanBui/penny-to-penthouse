@@ -434,6 +434,64 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Emergency services: firehouses, precincts, fire engines and ambulances in traffic. */
+  async emergency({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 14 * 60;
+      const fh = g.city.places.find((p) => p.type === 'firehouse');
+      const face = Math.atan2(-fh.nx, -fh.nz);
+      g.player.teleport(fh.doorX + fh.nx * 9 + fh.nz * 2, fh.doorZ + fh.nz * 9 - fh.nx * 2, face);
+      g.cam.snapBehind(face);
+      g.cam.pitch = 0.18;
+      g.cam.dist = 6;
+      const t = g.traffic;
+      const kinds = {};
+      for (const m of t.meshes) kinds[m.type] = m.body.count;
+      return { firehouses: g.city.places.filter((p) => p.type === 'firehouse').map((p) => p.name), precincts: g.city.places.filter((p) => p.type === 'precinct').map((p) => p.name), kinds };
+    });
+    console.log('emergency', JSON.stringify(info));
+    await wait(2500);
+    await shot('emergency-firehouse');
+    // a fire engine in traffic, up close
+    await page.evaluate(() => {
+      const g = window.__game;
+      const t = g.traffic;
+      const mi = t.meshes.findIndex((m) => m.type === 'firetruck');
+      let i = -1;
+      for (let k = 0; k < t.n; k++) if (t.alive[k] && t.slotMesh[k] === mi) i = k;
+      if (i < 0) return;
+      const hx = Math.sin(t.ry[i]);
+      const hz = Math.cos(t.ry[i]);
+      g.player.teleport(t.x[i] + hx * 9 + hz * 4, t.z[i] + hz * 9 - hx * 4, 0);
+      const face = Math.atan2(t.x[i] - g.player.pos.x, t.z[i] - g.player.pos.z);
+      g.cam.snapBehind(face);
+      g.cam.pitch = 0.15;
+      g.cam.dist = 4;
+    });
+    await wait(1200);
+    await shot('emergency-engine');
+    // inside the firehouse
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.enterPlace(g.city.places.find((p) => p.type === 'firehouse'), true);
+    });
+    await page.waitForFunction(() => window.__game.inside?.place.type === 'firehouse', null, { timeout: 15000 });
+    await page.evaluate(() => {
+      const g = window.__game;
+      const L = g.interior.layout;
+      g.player.teleport(L.w / 2 + 2, L.d - 1.4, Math.PI);
+      g.cam.snapBehind(Math.PI + 0.3);
+      g.cam.pitch = 0.4;
+      g.cam.dist = 7;
+    });
+    await wait(1800);
+    await shot('emergency-inside');
+  },
   /** New York's six boroughs/districts, Harlem and the Bronx, the ballpark. */
   async boroughs({ page, shot, wait }) {
     await startLife(page, wait);

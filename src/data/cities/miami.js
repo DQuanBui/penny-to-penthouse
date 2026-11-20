@@ -60,5 +60,7 @@ export default {
     { type: 'dealer', name: 'Apex Motors', district: 'south_beach' },
     { type: 'mall', name: 'Bayside Galleria', district: 'brickell' },
     { type: 'shelter', name: 'Little Havana Pet Rescue', district: 'little_havana' },
+    { type: 'firehouse', name: 'Wynwood Fire Station', district: 'wynwood' },
+    { type: 'precinct', name: 'Brickell Police Station', district: 'brickell' },
   ],
 };

@@ -59,5 +59,7 @@ export default {
     { type: 'dealer', name: 'Apex Motors', district: 'the_domain' },
     { type: 'mall', name: 'Domain Galleria', district: 'the_domain' },
     { type: 'shelter', name: 'East Side Paws Rescue', district: 'east_austin' },
+    { type: 'firehouse', name: 'The Domain Fire Station', district: 'the_domain' },
+    { type: 'precinct', name: 'South Congress Police Station', district: 'south_congress' },
   ],
 };

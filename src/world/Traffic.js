@@ -18,8 +18,8 @@ const CAR_HL = 2.17;
 const BUS_HL = 5.75;
 // what you see on the streets: mostly sedans, compacts and SUVs, plus taxis,
 // pickups, sport sedans, delivery trucks, the odd supercar and police patrols
-const TYPE_MIX = { sedan: 24, compact: 17, suv: 16, sport: 8, pickup: 7, taxi: 10, box: 5, coupe: 4, supercar: 2, police: 3 };
-const TYPE_COLOR = { taxi: ['#f2c230'], police: ['#f4f4f2'], supercar: ['#e9c04c', '#c53a3a', '#3fbf5a', '#f07a1a', '#1d1f24', '#5a4fd0'] };
+const TYPE_MIX = { sedan: 24, compact: 17, suv: 16, sport: 8, pickup: 7, taxi: 10, box: 5, coupe: 4, supercar: 2, police: 3, firetruck: 1, ambulance: 1.2 };
+const TYPE_COLOR = { taxi: ['#f2c230'], police: ['#f4f4f2'], firetruck: ['#c41e1e'], ambulance: ['#f4f4f2'], supercar: ['#e9c04c', '#c53a3a', '#3fbf5a', '#f07a1a', '#1d1f24', '#5a4fd0'] };
 const CAR_COLORS = ['#f4f4f2', '#1d1f24', '#8a8d92', '#b0463c', '#27406b', '#d9c7a8', '#3f5f4a', '#e9c04c', ...CLOTH_COLORS.slice(8, 11)];
 
 export class Traffic {
@@ -116,7 +116,7 @@ export class Traffic {
         }
       }
       (groups[type] ||= []).push(i);
-      this.siren[i] = type === 'police' && this.rng() < 0.4 ? 1 : 0;
+      this.siren[i] = (type === 'police' && this.rng() < 0.4) || ((type === 'firetruck' || type === 'ambulance') && this.rng() < 0.7) ? 1 : 0;
     }
     this.carMat ||= carMaterial({ signals: true });
     this.glassMat ||= glassMaterial();

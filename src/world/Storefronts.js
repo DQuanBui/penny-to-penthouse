@@ -9,6 +9,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { PLACE_TYPES } from '../data/placeTypes.js';
 import { labelTexture, iconTexture } from './Textures.js';
 import { mulberry32, hashStr } from '../core/utils.js';
+import { vehicleGeometry, carMaterial } from './CarModel.js';
 
 const _c = new THREE.Color();
 const _m = new THREE.Matrix4();
@@ -174,6 +175,31 @@ export function buildStorefronts(ctx) {
       box('glass', 2.6, 2.8, 0.1, 0, 1.4, 0.16, '#ffffff'); // revolving-door drum
       cyl('solid', 1.35, 1.35, 0.12, 0, 2.9, 0.75, '#2b3038', 20);
       bag.add('glass', new THREE.CylinderGeometry(1.3, 1.3, 2.8, 20, 1, true, -Math.PI / 2, Math.PI).translate(0, 1.4, 0.15), '#ffffff', M);
+    } else if (look.front === 'firehouse') {
+      // brick front, two tall bay doors (one rolled up with the engine inside), a lit sign
+      const bh = 4.6;
+      box('solid', W, H > 9 ? 9 : H, 0.25, 0, (H > 9 ? 9 : H) / 2, 0.12, shade(brand, 1.05));
+      for (const s of [-1, 1]) {
+        const x = s * Math.min(2.6, W / 4);
+        box('solid', 4.0, 0.3, 0.4, x, bh + 0.15, 0.3, trim);
+        if (s < 0) {
+          box('solid', 3.6, bh, 0.1, x, bh / 2, 0.3, '#b3201e');
+          for (let k = 1; k < 6; k++) box('solid', 3.6, 0.04, 0.12, x, (k * bh) / 6, 0.33, '#8a1a18');
+        } else box('solid', 3.6, bh, 0.05, x, bh / 2, -0.4, '#1d1f24');
+      }
+      box('solid', 1.1, 2.4, 0.12, 0, 1.2, 0.3, '#3a2a24');
+      sign(logo(p.name, brand, { fg: '#f2d24a' }), Math.min(W - 1, 7), 0.62, 0, bh + 0.9, 0.42);
+      // the engine nosing out of the open bay
+      const eg = vehicleGeometry('firetruck', { low: true }).body;
+      eg.rotateY(0).translate(Math.min(2.6, W / 4), 0, -2.6);
+      eg.applyMatrix4(M);
+      const em = new THREE.InstancedMesh(eg, carMaterial(), 1);
+      em.setMatrixAt(0, new THREE.Matrix4());
+      em.setColorAt(0, new THREE.Color('#c41e1e'));
+      em.castShadow = true;
+      group.add(em);
+      // a red apron of paving across the sidewalk: keep clear
+      box('solid', 4.0, 0.015, 3.4, Math.min(2.6, W / 4), 0.01, 1.8, '#b33a32');
     } else if (look.front === 'showroom') {
       const sh = Math.min(H - 1.5, 7.5);
       box('glass', W - 0.8, sh, 0.08, 0, sh / 2, 0.05, '#ffffff');
@@ -321,6 +347,12 @@ export function buildStorefronts(ctx) {
           const x = -W / 2 + 0.6 + (i / (n - 1)) * (W - 1.2);
           bag.add('fabric', new THREE.ConeGeometry(0.16, 0.4, 3).rotateX(Math.PI).translate(x, 6.6 - Math.sin((i / (n - 1)) * Math.PI) * 0.6, 1.0), ['#e05c5c', '#ffd24a', '#4f9dff'][i % 3], M);
         }
+      } else if (ex === 'policeLamps') {
+        // a pair of blue lamps beside the door
+        side((s) => {
+          box('solid', 0.12, 2.2, 0.12, s * 1.6, 1.1, 0.5, '#2b2f38');
+          cyl('neon', 0.2, 0.2, 0.42, s * 1.6, 2.4, 0.5, '#4f8dff', 12);
+        });
       } else if (ex === 'displayCar') {
         const x = W / 2 - 3;
         box('solid', 4.0, 0.12, 2.2, x, 0.06, 1.8, '#c9ced6');

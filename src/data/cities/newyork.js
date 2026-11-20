@@ -76,5 +76,9 @@ export default {
     { type: 'historymuseum', name: 'Museum of Natural Wonders', district: 'midtown' },
     { type: 'library', name: 'Grand Hall Public Library', district: 'midtown' },
     { type: 'autoshow', name: 'Monarch Luxury Motors', district: 'lower_manhattan' },
+    { type: 'firehouse', name: 'Engine 47 Firehouse', district: 'midtown' },
+    { type: 'firehouse', name: 'Ladder 12 Firehouse', district: 'harlem' },
+    { type: 'precinct', name: '12th Precinct', district: 'lower_manhattan' },
+    { type: 'precinct', name: '41st Precinct', district: 'bronx' },
   ],
 };

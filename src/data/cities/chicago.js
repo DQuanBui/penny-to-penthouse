@@ -59,5 +59,7 @@ export default {
     { type: 'dealer', name: 'Apex Motors', district: 'hyde_park' },
     { type: 'mall', name: 'Magnificent Galleria', district: 'river_north' },
     { type: 'shelter', name: 'Wicker Park Paws', district: 'wicker_park' },
+    { type: 'firehouse', name: 'River North Fire Station', district: 'river_north' },
+    { type: 'precinct', name: 'Hyde Park Police Station', district: 'hyde_park' },
   ],
 };

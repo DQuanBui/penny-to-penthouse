@@ -127,6 +127,26 @@ export const SHOP_TYPES = {
       { id: 'pie', name: 'Slice of pie', icon: '🥧', price: 6, minutes: 15, needs: { hunger: 15, fun: 5 }, line: 'Warm cherry, à la mode.' },
     ],
   },
+  firehouse: {
+    label: 'Firehouse', icon: '🚒', color: '#c41e1e', cat: 'service', hours: [0, 24], interior: 'firehouse', weight: 0,
+    look: { front: 'firehouse', brand: '#8a1a1a', trim: '#e9e2d0', awning: 'none', extras: [] },
+    names: ['Engine 47', 'Ladder 12'],
+    menu: [
+      { id: 'tour', name: 'Tour the firehouse with a firefighter', icon: '🚒', price: 0, minutes: 30, needs: { fun: 14, social: 6 }, line: 'You sit in the driver\'s seat of the engine. The horn is VERY loud.' },
+      { id: 'pole', name: 'Try the fire pole (supervised)', icon: '🧯', price: 0, minutes: 10, needs: { fun: 10 }, line: 'Whoosh! Down two floors in a second.' },
+      { id: 'cookies', name: 'Bring the crew a box of cookies', icon: '🍪', price: 12, minutes: 15, needs: { social: 12, fun: 4 }, line: 'They insist you stay for a coffee. Good people.' },
+    ],
+  },
+  precinct: {
+    label: 'Police Precinct', icon: '🚓', color: '#2f5aa3', cat: 'service', hours: [0, 24], interior: 'precinct', weight: 0,
+    look: { front: 'classic', brand: '#1f2a44', trim: '#dfe3e8', awning: 'none', extras: ['policeLamps'] },
+    names: ['12th Precinct', '41st Precinct'],
+    menu: [
+      { id: 'lost', name: 'Report a lost item', icon: '📋', price: 0, minutes: 15, needs: { social: 2 }, line: 'The desk sergeant takes notes. Someone turned in a wallet just like yours last week.' },
+      { id: 'meeting', name: 'Join the community safety meeting', icon: '🤝', price: 0, minutes: 60, needs: { social: 12, fun: 2 }, line: 'Neighbours, officers and a lot of opinions about parking.' },
+      { id: 'ridealong', name: 'Ask about the ride-along program', icon: '🚓', price: 0, minutes: 10, needs: { fun: 5 }, line: 'They hand you a form and a free sticker.' },
+    ],
+  },
   autoshow: {
     label: 'Car Showroom', icon: '🚘', color: '#d84a4a', cat: 'shop', hours: [9, 20], interior: 'showroom', weight: 0.9,
     look: { front: 'showroom', brand: '#1d1f24', trim: '#f2f4f6', awning: 'none', extras: ['pennants', 'displayCar'] },

@@ -496,6 +496,30 @@ const SHAPES = {
       S.glow(new THREE.BoxGeometry(0.2, 0.02, 0.08).translate(x, 1.06, 0), '#fff1c8', 0.6);
     }
   },
+  fireEngine(S, f) {
+    const red = '#c41e1e';
+    S.box(f.w - 0.1, 1.9, f.d - 2.2, 0, 1.45, -1.0, red);
+    S.box(f.w - 0.1, 1.6, 2.0, 0, 1.6, f.d / 2 - 1.1, red);
+    S.box(f.w - 0.3, 0.7, 0.05, 0, 2.0, f.d / 2 - 0.08, '#2a3a4a');
+    S.box(f.w, 0.15, f.d - 2.2, 0, 2.47, -1.0, '#b9bdc3');
+    for (const x of [-0.5, 0.5]) S.box(0.08, 0.1, f.d - 2.6, x, 2.62, -1.2, '#d8dde6');
+    for (let z = -f.d / 2 + 0.6; z < f.d / 2 - 2.6; z += 0.45) S.box(1.0, 0.05, 0.05, 0, 2.62, z, '#d8dde6');
+    for (const s of [-1, 1]) {
+      S.box(0.02, 0.14, f.d - 0.4, s * (f.w / 2 - 0.04), 1.05, 0, '#f2d24a');
+      for (const z of [-f.d / 2 + 1.3, -f.d / 2 + 2.5, f.d / 2 - 1.4]) S.cyl(0.5, 0.5, 0.36, s * (f.w / 2 - 0.3), 0.5, z, '#16171a', 16, 0, Math.PI / 2);
+    }
+    S.glow(new THREE.BoxGeometry(0.6, 0.12, 0.25).translate(-0.4, 2.48, f.d / 2 - 0.9), '#ff2a2a', 1);
+    S.glow(new THREE.BoxGeometry(0.6, 0.12, 0.25).translate(0.4, 2.48, f.d / 2 - 0.9), '#ffffff', 1);
+  },
+  lockers(S, f, p) {
+    const n = Math.round(f.w / 0.5);
+    for (let i = 0; i < n; i++) {
+      const x = -f.w / 2 + 0.25 + i * 0.5;
+      S.box(0.48, 1.95, 0.48, x, 0.975, 0, p.color);
+      S.box(0.06, 0.2, 0.02, x + 0.15, 1.2, 0.25, '#2b2d33');
+      for (let k = 0; k < 3; k++) S.box(0.3, 0.02, 0.02, x, 1.7 + k * 0.05, 0.25, '#2b2d33');
+    }
+  },
   ticketMachine(S) {
     S.box(0.86, 1.75, 0.46, 0, 0.875, 0, '#2f4f7a');
     S.box(0.8, 0.22, 0.48, 0, 1.62, 0.005, '#e9c04c');

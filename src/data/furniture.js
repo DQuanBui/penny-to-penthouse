@@ -112,6 +112,8 @@ export const FURNITURE = [
   F('dino', 'Dinosaur Skeleton', 'shop', 0, 8, 3, 4.6, 0, 'dino', { shop: true, p: {} }),
   F('stanchion', 'Rope Barrier', 'shop', 0, 2.4, 0.3, 1, 0, 'stanchion', { shop: true, p: {} }),
   F('reading_table', 'Reading Table', 'shop', 0, 2.4, 1.1, 0.76, 0, 'readingTable', { shop: true, p: {} }),
+  F('fire_engine', 'Fire Engine', 'shop', 0, 2.6, 8.2, 3, 0, 'fireEngine', { shop: true, p: {} }),
+  F('lockers', 'Lockers', 'shop', 0, 2, 0.5, 2, 0, 'lockers', { shop: true, p: { color: '#5a6a7a' } }),
   F('ticket_machine', 'Ticket Machine', 'shop', 0, 0.9, 0.5, 1.8, 0, 'ticketMachine', { shop: true, use: 'tickets', p: {} }),
   F('newsstand', 'Newsstand', 'shop', 0, 2.6, 1.2, 2.4, 0, 'newsstand', { shop: true, use: 'snack', p: {} }),
   F('subway_map', 'Subway Map', 'shop', 0, 1.8, 0.08, 2.4, 0, 'subwayMap', { shop: true, p: {} }),

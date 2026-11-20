@@ -352,6 +352,30 @@ export function commercialLayout(place) {
         { id: 'lamp_floor', x: 10.6, z: 4.3, r: 0 },
         { id: 'rug_small', x: 9.4, z: 4.3, r: 0 },
       ]);
+    case 'firehouse':
+      return L(16, 12, 'concrete', '#d9cdb8', [
+        { id: 'fire_engine', x: 4, z: 4.6, r: 0 },
+        { id: 'lockers', x: 10, z: 0.3, r: 0 },
+        { id: 'lockers', x: 12.2, z: 0.3, r: 0 },
+        { id: 'grab_pole', x: 14.6, z: 1.6, r: 0 },
+        { id: 'dining_table', x: 11.2, z: 4.6, r: 0 },
+        { id: 'dining_chair', x: 10.7, z: 3.8, r: 0 },
+        { id: 'dining_chair', x: 11.7, z: 3.8, r: 0 },
+        { id: 'dining_chair', x: 10.7, z: 5.4, r: 2 },
+        { id: 'dining_chair', x: 11.7, z: 5.4, r: 2 },
+        { id: 'sofa', x: 13.8, z: 7.4, r: 3 },
+        { id: 'tv_big', x: 15.7, z: 7.4, r: 3, use: '' },
+        { id: 'reception', x: 10.6, z: 10, r: 2 },
+      ]);
+    case 'precinct':
+      return L(14, 10, 'tile', '#dfe6ee', [
+        { id: 'reception', x: 7, z: 6.8, r: 2 },
+        ...[2, 5, 9, 12].map((x) => ({ id: 'work_desk', x, z: 2, r: 0 })),
+        ...[2, 5, 9, 12].map((x) => ({ id: 'office_chair', x, z: 2.9, r: 2 })),
+        { id: 'lockers', x: 1.4, z: 9.7, r: 2 },
+        { id: 'platform_bench', x: 11.6, z: 9.2, r: 2 },
+        { id: 'plant_floor', x: 13.4, z: 0.6, r: 0 },
+      ]);
     case 'library':
       return L(16, 12, 'wood', '#efe6d6', [
         { id: 'reception', x: 13, z: 9.8, r: 2 },
