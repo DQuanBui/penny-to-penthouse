@@ -4,14 +4,14 @@ import { pick } from '../core/utils.js';
 
 export const SKIN_TONES = ['#fde0cc', '#f6cfb0', '#edbd98', '#e0a67e', '#d0936a', '#bd7f56', '#a56a44', '#8a5435', '#6e412a', '#553222', '#40251a'];
 export const HAIR_COLORS = ['#17130f', '#2e1f16', '#4a2f1d', '#6b4526', '#8f5f30', '#b5803f', '#d8b162', '#e9d9a8', '#9a3b24', '#c0c0c4', '#f2f2f0', '#3d6fd0', '#d04f8a', '#3fa07a', '#7a4fd0'];
-export const EYE_COLORS = ['#3b2616', '#5c3a1e', '#7a5a2c', '#3f6f4a', '#3a6ea5', '#5f8fbf', '#6b6f78', '#2a2a2e'];
+export const EYE_COLORS = ['#3b2616', '#5c3a1e', '#7a5a2c', '#3f6f4a', '#3a6ea5', '#5f8fbf', '#6b6f78', '#2a2a2e', '#3fa0e0', '#8a4fd0', '#d84a7a', '#3fbf7a', '#d4a02a'];
 export const CLOTH_COLORS = ['#f4f4f2', '#1d1f24', '#3a4254', '#7a8494', '#c53a3a', '#e07b39', '#e9c04c', '#4f9d5d', '#2f8f8f', '#3f76d0', '#5a4fd0', '#a04fc0', '#e06a9a', '#8a5a3c', '#d9c7a8', '#27406b'];
 
 export const BODY_TYPES = ['slim', 'average', 'athletic', 'curvy', 'heavy'];
 export const FACE_SHAPES = ['oval', 'round', 'square', 'heart'];
 export const EYE_SHAPES = ['round', 'almond', 'wide', 'narrow'];
 export const BROWS = ['soft', 'thick', 'arched', 'straight'];
-export const HAIR_STYLES = ['bald', 'buzz', 'short', 'sidepart', 'quiff', 'curly', 'afro', 'long', 'wavy', 'bob', 'ponytail', 'bun', 'mohawk', 'braids'];
+export const HAIR_STYLES = ['bald', 'buzz', 'short', 'sidepart', 'quiff', 'curly', 'afro', 'long', 'wavy', 'bob', 'ponytail', 'bun', 'mohawk', 'braids', 'spiky', 'twintails', 'hime'];
 export const FACIAL_HAIR = ['none', 'stubble', 'mustache', 'goatee', 'beard'];
 export const TOPS = ['tee', 'tank', 'shirt', 'hoodie', 'sweater', 'blazer', 'jacket', 'dress'];
 export const BOTTOMS = ['jeans', 'slacks', 'joggers', 'shorts', 'skirt'];
@@ -20,7 +20,7 @@ export const ACCESSORIES = ['none', 'glasses', 'sunglasses', 'cap', 'beanie', 'h
 
 export const LABELS = {
   bald: 'Bald', buzz: 'Buzz Cut', short: 'Short', sidepart: 'Side Part', quiff: 'Quiff', curly: 'Curly', afro: 'Afro', long: 'Long',
-  wavy: 'Wavy', bob: 'Bob', ponytail: 'Ponytail', bun: 'Top Bun', mohawk: 'Mohawk', braids: 'Braids',
+  wavy: 'Wavy', bob: 'Bob', ponytail: 'Ponytail', bun: 'Top Bun', mohawk: 'Mohawk', braids: 'Braids', spiky: 'Spiky', twintails: 'Twin Tails', hime: 'Long Straight',
   tee: 'T-Shirt', tank: 'Tank Top', shirt: 'Button-Up', hoodie: 'Hoodie', sweater: 'Sweater', blazer: 'Blazer', jacket: 'Jacket', dress: 'Dress',
 };
 export const label = (id) => LABELS[id] || id.charAt(0).toUpperCase() + id.slice(1);

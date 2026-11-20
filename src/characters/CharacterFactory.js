@@ -1,7 +1,9 @@
-// Procedural humanoid: rounded torso and tapered limbs, a modelled face
-// (eyes, lashes, brows, nose, smile), 14 hairstyles, clothing and accessories.
-// All parts are merged into ONE vertex-coloured SkinnedMesh (a single draw
-// call) bound to a 17-bone skeleton that Animation.js drives procedurally.
+// Procedural anime-style humanoid: cel-shaded (toon) with an ink outline, a
+// larger head with big glossy eyes, lashes and a small nose and mouth, anime
+// hair with bangs (17 styles), clothing and accessories. All parts are merged
+// into ONE vertex-coloured SkinnedMesh bound to a 17-bone skeleton that
+// Animation.js drives procedurally; the outline is a second, inflated copy
+// drawn inside-out on the same skeleton.
 // If GLB character models are present they are used instead (see GLBCharacters.js).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -34,12 +36,33 @@ const FACE = { oval: [0.94, 1.1, 1.0], round: [1.03, 1.03, 1.03], square: [1.0, 
 const EYE = { round: [1, 1], almond: [1.25, 0.78], wide: [1.15, 1.12], narrow: [1.2, 0.6] };
 const LONG_SLEEVE = { shirt: 1, hoodie: 1, sweater: 1, blazer: 1, jacket: 1, uniform: 1, labcoat: 1, chefcoat: 1, coat: 1, turnout: 1 };
 
-const HEAD_SCALE = 1.06; // close to real proportions (was a cartoonish 1.17)
+const HEAD_SCALE = 1.15; // anime proportions: a slightly larger head
 const HEAD_PIVOT = 1.515;
 const LIFT = 0.065; // legs are shortened by this much; the mesh is lowered to keep feet on the ground
 
 let sharedMaterial = null;
-const material = () => (sharedMaterial ||= new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0 }));
+let outlineMaterial = null;
+/** Cel shading: three flat tones of light instead of a smooth falloff. */
+function toonRamp() {
+  const t = new THREE.DataTexture(new Uint8Array([105, 105, 105, 255, 185, 185, 185, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.needsUpdate = true;
+  return t;
+}
+const material = () => (sharedMaterial ||= new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: toonRamp() }));
+/** The ink line: the same skinned mesh, pushed out along its normals and drawn inside-out. */
+const outline = () => {
+  if (outlineMaterial) return outlineMaterial;
+  outlineMaterial = new THREE.MeshBasicMaterial({ color: '#1d1418', side: THREE.BackSide });
+  outlineMaterial.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aOutline;')
+      .replace('#include <begin_vertex>', 'vec3 transformed = vec3( position ) + normal * 0.0068 * aOutline;');
+  };
+  outlineMaterial.customProgramCacheKey = () => 'char-outline';
+  return outlineMaterial;
+};
 
 const _c = new THREE.Color();
 const _q = new THREE.Quaternion();
@@ -52,7 +75,7 @@ class Parts {
   constructor() {
     this.list = [];
   }
-  add(geo, bone, color) {
+  add(geo, bone, color, ink = 1) {
     if (bone === 'head') geo.translate(0, -HEAD_PIVOT, 0).scale(HEAD_SCALE, HEAD_SCALE, HEAD_SCALE).translate(0, HEAD_PIVOT, 0);
     const n = geo.attributes.position.count;
     _c.set(color);
@@ -71,6 +94,12 @@ class Parts {
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     geo.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4));
     geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
+    // tiny parts (buttons, strings, fingers) get no ink line: it would swamp them
+    if (ink) {
+      geo.computeBoundingSphere();
+      if (geo.boundingSphere.radius < 0.032) ink = 0;
+    }
+    geo.setAttribute('aOutline', new THREE.BufferAttribute(new Float32Array(n).fill(ink), 1));
     this.list.push(geo);
     return geo;
   }
@@ -281,36 +310,37 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
   P.add(sph(1, hx, hy, hz, 20).translate(0, HY, 0), 'head', skin);
   if (a.face === 'square') P.add(sph(1, hx * 0.9, hy * 0.5, hz * 0.86, 14).translate(0, HY - 0.052, 0.004), 'head', skin);
   for (const m of [-1, 1]) {
-    P.add(sph(0.023, 0.45, 1, 0.7, 8).translate(m * hx * 0.98, HY - 0.002, -0.004), 'head', shade(skin, 0.96));
-    // eye
+    P.add(sph(0.022, 0.45, 1, 0.7, 8).translate(m * hx * 0.98, HY - 0.006, -0.004), 'head', shade(skin, 0.96));
+    // big anime eyes: white, a tall iris that darkens toward the top, pupil, two catchlights
     const es = EYE[a.eyeShape] || EYE.round;
-    const ex = m * 0.043;
-    const ey = 0.012;
+    const ex = m * 0.041;
+    const ey = -0.006;
     const ez = faceZ(ex, ey);
-    P.add(sph(0.02, es[0], es[1], 0.34, 10).translate(ex, HY + ey, ez - 0.0045), 'head', '#f7f5f0');
-    P.add(sph(0.0122, 1, Math.min(1, es[1] + 0.15), 0.4, 10).translate(ex, HY + ey, ez + 0.0015), 'head', a.eyes);
-    P.add(sph(0.0062, 1, 1, 0.4, 8).translate(ex, HY + ey, ez + 0.0052), 'head', '#0c0c0e');
-    P.add(sph(0.0026, 1, 1, 0.5, 6).translate(ex + 0.004, HY + ey + 0.004, ez + 0.0072), 'head', '#ffffff');
-    P.add(bx(0.042 * es[0], 0.004, 0.006).rotateZ(-m * 0.06).translate(ex, HY + ey + 0.019 * es[1], ez + 0.0005), 'head', '#241a14');
-    // relaxed upper eyelid covers the top of the eye
-    P.add(new THREE.SphereGeometry(0.0212, 12, 6, 0, Math.PI * 2, 0, Math.PI * 0.36).scale(es[0] * 1.04, es[1] * 1.0, 0.42).translate(ex, HY + ey + 0.001, ez - 0.0038), 'head', shade(skin, 0.93));
-    // cheek: a hint of warmth
-    P.add(sph(0.017, 1.15, 0.7, 0.18, 10).translate(m * 0.056, HY - 0.022, faceZ(m * 0.056, -0.022) - 0.0028), 'head', mix(skin, '#e07a7a', 0.1));
-    // brow
-    const browC = a.hair === 'bald' ? '#3a2a1e' : mix(a.hairColor, '#1a1410', 0.35);
-    const bt = a.brows === 'thick' ? 0.013 : 0.008;
-    const br = a.brows === 'arched' ? 0.24 : a.brows === 'straight' ? 0 : 0.1;
-    P.add(bx(0.042, bt, 0.009).rotateZ(-m * br).translate(ex, HY + 0.046, faceZ(ex, 0.046) + 0.003), 'head', browC);
+    const ew = 0.0235 * Math.min(1.15, es[0]);
+    const eh = 0.03 * Math.max(0.72, Math.min(1.1, es[1]));
+    const D = 0; // details: no ink outline
+    P.add(sph(1, ew, eh, 0.009, 16).translate(ex, HY + ey, ez - 0.0025), 'head', '#fbfaf7', D);
+    P.add(sph(1, ew * 0.8, eh * 0.88, 0.009, 16).translate(ex, HY + ey - eh * 0.05, ez + 0.0008), 'head', a.eyes, D);
+    P.add(sph(1, ew * 0.76, eh * 0.42, 0.009, 14).translate(ex, HY + ey + eh * 0.4, ez + 0.0016), 'head', shade(a.eyes, 0.5), D);
+    P.add(sph(1, ew * 0.36, eh * 0.44, 0.009, 12).translate(ex, HY + ey - eh * 0.04, ez + 0.0024), 'head', '#0c0b10', D);
+    P.add(sph(1, ew * 0.26, eh * 0.22, 0.007, 10).translate(ex - ew * 0.28, HY + ey + eh * 0.3, ez + 0.0036), 'head', '#ffffff', D);
+    P.add(sph(1, ew * 0.13, eh * 0.11, 0.007, 8).translate(ex + ew * 0.3, HY + ey - eh * 0.36, ez + 0.0036), 'head', '#ffffff', D);
+    // a bold upper lash line that flicks out at the corner, a light lower one
+    const lash = '#1c1216';
+    P.add(new THREE.TorusGeometry(ew * 1.04, 0.0046, 4, 16, Math.PI).scale(1, (eh / ew) * 0.97, 1).rotateZ(m * 0.06).translate(ex, HY + ey, ez + 0.0028), 'head', lash, D);
+    P.add(bx(0.013, 0.0045, 0.004).rotateZ(m * 0.55).translate(ex + m * ew * 1.08, HY + ey + eh * 0.12, ez + 0.0024), 'head', lash, D);
+    P.add(new THREE.TorusGeometry(ew * 0.72, 0.0016, 3, 10, Math.PI * 0.6).rotateZ(-Math.PI * 0.8).scale(1, (eh / ew) * 0.9, 1).translate(ex, HY + ey, ez + 0.0026), 'head', shade(lash, 1.6), D);
+    // thin brows set high, a touch of blush under the eyes
+    const browC = a.hair === 'bald' ? '#3a2a1e' : mix(a.hairColor, '#1a1410', 0.3);
+    const br = a.brows === 'arched' ? 0.22 : a.brows === 'straight' ? 0 : 0.1;
+    const bt = a.brows === 'thick' ? 0.0075 : 0.0048;
+    const by = ey + eh + 0.017;
+    P.add(bx(0.034, bt, 0.006).rotateZ(-m * br).translate(ex + m * 0.002, HY + by, faceZ(ex, by) + 0.003), 'head', browC, D);
+    P.add(sph(1, 0.016, 0.0065, 0.004, 10).translate(m * 0.052, HY - 0.034, faceZ(m * 0.052, -0.034) + 0.0004), 'head', mix(skin, '#ff6f86', 0.32), D);
   }
-  // nose: bridge + tip + nostrils
-  P.add(sph(0.0085, 0.85, 2.2, 0.9, 8).translate(0, HY + 0.004, faceZ(0, 0.004) - 0.002), 'head', shade(skin, 0.97));
-  P.add(sph(0.0125, 0.95, 0.95, 0.9, 10).translate(0, HY - 0.016, faceZ(0, -0.016) + 0.0005), 'head', shade(skin, 0.95));
-  for (const m of [-1, 1]) P.add(sph(0.0075, 1, 0.8, 0.8, 6).translate(m * 0.0105, HY - 0.021, faceZ(m * 0.0105, -0.021) - 0.002), 'head', shade(skin, 0.9));
-  // lips with a gentle smile line
-  const lip = mix(skin, '#a8414f', 0.42);
-  P.add(sph(0.0165, 1.25, 0.32, 0.55, 10).translate(0, HY - 0.0385, faceZ(0, -0.0385) - 0.002), 'head', shade(lip, 0.92));
-  P.add(sph(0.0165, 1.15, 0.42, 0.6, 10).translate(0, HY - 0.047, faceZ(0, -0.047) - 0.0025), 'head', lip);
-  P.add(new THREE.TorusGeometry(0.019, 0.0018, 4, 10, Math.PI).rotateZ(Math.PI).translate(0, HY - 0.0405, faceZ(0, -0.045) + 0.0012), 'head', shade(lip, 0.55));
+  // a small nose and a little smiling mouth
+  P.add(sph(0.0062, 1, 1.25, 0.9, 6).translate(0, HY - 0.026, faceZ(0, -0.026) + 0.0004), 'head', shade(skin, 0.88), 0);
+  P.add(new THREE.TorusGeometry(0.0115, 0.0022, 4, 12, Math.PI * 0.75).rotateZ(-Math.PI * 0.875).translate(0, HY - 0.042, faceZ(0, -0.046) + 0.0012), 'head', '#8a3a44', 0);
 
   addHair(P, a, { hx, hy, hz, HY, faceZ });
   addFacialHair(P, a, { hx, hy, hz, HY, faceZ });
@@ -343,6 +373,13 @@ export function buildCharacter(appearance = defaultAppearance(), opts = {}) {
   mesh.position.y = -LIFT;
   mesh.add(bones.hips);
   mesh.bind(new THREE.Skeleton(boneList));
+  // the ink outline shares the geometry and the skeleton
+  if (opts.outline !== false) {
+    const ink = new THREE.SkinnedMesh(geo, outline());
+    ink.bind(mesh.skeleton, mesh.bindMatrix);
+    ink.frustumCulled = false;
+    mesh.add(ink);
+  }
 
   const group = new THREE.Group();
   group.add(mesh);
@@ -385,7 +422,52 @@ function addHair(P, a, H) {
     if (!hat) P.add(g, 'head', c);
   };
   const PI = Math.PI;
+  // anime bangs: a fringe of tapered locks over the forehead
+  const bangs = (n = 7, len = 0.07, spread = 0.9) => {
+    if (hat) return;
+    for (let i = 0; i < n; i++) {
+      const t = (i / (n - 1) - 0.5) * spread;
+      const ang = t * 1.6;
+      const x = Math.sin(ang) * hx * 0.98;
+      const z = Math.cos(ang) * hz * 0.93;
+      const l = len * (1 - Math.abs(t) * 0.5) * (0.85 + ((i * 37) % 10) / 40);
+      P.add(new THREE.ConeGeometry(0.019, l, 5).rotateX(PI).rotateZ(-t * 0.5).translate(x, HY + 0.07 - l / 2, z), 'head', c);
+    }
+  };
+  const spikes = (n, len, y0 = 0.2) => {
+    for (let i = 0; i < n; i++) {
+      const th = y0 + ((i * 0.618) % 1) * 1.15;
+      const ph = i * 2.39996;
+      const dx = Math.sin(th) * Math.cos(ph);
+      const dy = Math.cos(th);
+      const dz = Math.sin(th) * Math.sin(ph);
+      if (dz > 0.6 && dy < 0.5) continue;
+      const g = new THREE.ConeGeometry(0.03, len, 6).translate(0, len / 2, 0);
+      g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx, dy, dz)));
+      g.translate(dx * hx * 0.85, HY + dy * hy * 0.85, dz * hz * 0.85);
+      top(g);
+    }
+  };
+  if (!['buzz', 'afro', 'mohawk', 'curly', 'bald'].includes(style)) bangs(style === 'hime' ? 9 : 7, style === 'short' || style === 'quiff' ? 0.05 : 0.075);
   switch (style) {
+    case 'spiky':
+      top(cap(1.07, 0.55 * PI, -0.35));
+      spikes(16, 0.11);
+      break;
+    case 'twintails':
+      top(cap(1.08, 0.53 * PI, -0.3));
+      for (const m of [-1, 1]) {
+        P.add(sph(0.03).translate(m * 0.1, HY + 0.06, -0.03), 'head', a.accColor || '#e05a8a');
+        P.add(new THREE.CapsuleGeometry(0.036, 0.3, 4, 10).rotateZ(m * 0.25).translate(m * 0.15, HY - 0.12, -0.04), 'head', c);
+        P.add(new THREE.ConeGeometry(0.036, 0.1, 8).rotateX(PI).translate(m * 0.19, HY - 0.33, -0.04), 'head', c);
+      }
+      break;
+    case 'hime':
+      top(cap(1.08, 0.52 * PI, -0.3));
+      // long straight hair falling past the shoulders, with side locks framing the face
+      P.add(new THREE.SphereGeometry(1, 20, 12, PI / 2 + 0.85, PI * 2 - 1.7, 0.28 * PI, 0.62 * PI).scale(hx * 1.1, hy * 2.3, hz * 1.06).translate(0, HY - 0.07, -0.01), 'head', c);
+      for (const m of [-1, 1]) P.add(bx(0.03, 0.16, 0.035).translate(m * hx * 0.93, HY - 0.06, hz * 0.55), 'head', c);
+      break;
     case 'buzz':
       top(cap(1.035, 0.5 * PI, -0.3));
       break;
