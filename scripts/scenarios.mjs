@@ -434,6 +434,34 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Food trucks at the kerb by parks and plazas. */
+  async trucks({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 12 * 60;
+      const t = g.city.vendors.filter((v) => v.truck);
+      const v = t[0];
+      g.player.teleport(v.x + 4, v.z + 2.5, -Math.PI / 2 - 0.5);
+      g.cam.snapBehind(-Math.PI / 2 - 0.5);
+      g.cam.pitch = 0.15;
+      g.cam.dist = 5;
+      return t.map((q) => q.cart);
+    });
+    console.log('trucks', JSON.stringify(info));
+    await wait(2500);
+    await shot('truck');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const v = g.city.vendors.find((q) => q.truck);
+      g.player.teleport(v.x, v.z + 0.3, Math.PI);
+    });
+    await page.waitForFunction(() => /truck: buy/.test(window.__game.interactable?.label || ''), null, { timeout: 15000 });
+    console.log('label', await page.evaluate(() => window.__game.interactable.label));
+  },
   /** Two-storey homes: the spiral staircase between floors. */
   async homestairs({ page, shot, wait }) {
     await startLife(page, wait);

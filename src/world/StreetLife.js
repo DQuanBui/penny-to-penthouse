@@ -122,12 +122,13 @@ export class StreetLife {
         const rig = createRig(s.kind === 'sitter' ? roleAppearance('homeless', r) : s.kind === 'vendor' ? roleAppearance('vendor', r) : randomAppearance(r));
         // vendors stand behind the cart, buskers on their spot
         const back = s.kind === 'vendor' ? -0.95 : 0;
-        rig.group.position.set(s.x + Math.sin(s.ry) * back, this.city.groundY(s.x, s.z), s.z + Math.cos(s.ry) * back);
+        if (s.vx != null) rig.group.position.set(s.vx, s.vy || 0, s.vz);
+        else rig.group.position.set(s.x + Math.sin(s.ry) * back, this.city.groundY(s.x, s.z), s.z + Math.cos(s.ry) * back);
         rig.group.rotation.y = s.ry;
         if (s.kind === 'busker') rig.group.add(guitar());
         if (s.kind === 'sitter') rig.group.add(sitterProps(s.cart));
         let steam = null;
-        if (s.kind === 'vendor' && CART_KINDS[s.cart]?.steam) rig.group.add((steam = steamPuffs()));
+        if (s.kind === 'vendor' && CART_KINDS[s.cart]?.steam && !s.truck) rig.group.add((steam = steamPuffs()));
         this.game.scene.add(rig.group);
         a = { spot: s, rig, kind: s.kind, steam };
         this.actors.set(s.id, a);

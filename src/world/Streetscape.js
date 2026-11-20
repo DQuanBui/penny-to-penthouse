@@ -82,6 +82,7 @@ export function buildStreetscape(ctx) {
       const c0 = axis === 'z' ? b.x0 : b.z0;
       for (let t = c0 + 6; t < c0 + K.BLOCK - 6; t += 6.4) {
         if (rng() > 0.34) continue;
+        if ((ctx.truckSpots || []).some((q) => Math.abs(q.x - (axis === 'z' ? t : lane)) < 6.5 && Math.abs(q.z - (axis === 'z' ? lane : t)) < 3)) continue; // a food truck parks here
         const x = axis === 'z' ? t : lane;
         const z = axis === 'z' ? lane : t;
         const type = pick(rng, PARKED);

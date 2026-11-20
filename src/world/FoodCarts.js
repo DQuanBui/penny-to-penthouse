@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { labelTexture } from './Textures.js';
+import { vehicleGeometry, carMaterial } from './CarModel.js';
 
 const F = (id, name, icon, price, needs, line) => ({ id, name, icon, price, needs, line });
 
@@ -89,7 +90,42 @@ CART_KINDS.newsstand = {
     F('gum', 'Pack of gum', '🍬', 1, { fun: 2 }, 'Minty.'),
   ],
 };
-export const CART_IDS = Object.keys(CART_KINDS).filter((k) => k !== 'newsstand');
+// food trucks parked at the kerb (not street carts)
+const TRUCKS = {
+  taco_truck: { name: 'Taco truck', sign: 'TACOS EL SOL', icon: '🌮', body: '#f2c230', band: '#c53a3a', umb: ['#c53a3a', '#3fbf7a'], menu: [
+    F('tacos3', 'Three tacos al pastor', '🌮', 9, { hunger: 42, fun: 6 }, 'Pineapple, cilantro, a squeeze of lime.'),
+    F('burrito', 'Loaded burrito', '🌯', 11, { hunger: 58, fun: 4 }, 'Heavy enough to count as a workout.'),
+    F('horchata', 'Horchata', '🥛', 4, { fun: 5, energy: 4 }, 'Cinnamon and ice.'),
+  ] },
+  burger_truck: { name: 'Burger truck', sign: 'SMASH BROS BURGERS', icon: '🍔', body: '#1d1f24', band: '#e9c04c', umb: ['#e9c04c', '#1d1f24'], menu: [
+    F('smash', 'Double smash burger', '🍔', 12, { hunger: 55, fun: 7 }, 'Crispy edges, melty cheese, secret sauce.'),
+    F('fries', 'Loaded fries', '🍟', 7, { hunger: 30, fun: 5 }, 'Cheese, bacon bits, a lot of napkins.'),
+    F('shake', 'Milkshake', '🥤', 6, { fun: 10, hunger: 10 }, 'So thick the straw stands up.'),
+  ] },
+  kbbq_truck: { name: 'Korean BBQ truck', sign: 'SEOUL ON WHEELS', icon: '🥢', body: '#f4f1ea', band: '#2f6db5', umb: ['#2f6db5', '#c53a3a'], menu: [
+    F('bulgogi', 'Bulgogi rice bowl', '🍚', 12, { hunger: 52, fun: 5 }, 'Sweet, smoky, a fried egg on top.'),
+    F('kfc', 'Korean fried chicken', '🍗', 11, { hunger: 44, fun: 8 }, 'Double fried, gochujang glaze.'),
+    F('tteok', 'Spicy rice cakes', '🌶️', 8, { hunger: 30, fun: 6 }, 'Chewy and fiery.'),
+  ] },
+  crepe_truck: { name: 'Crêpe truck', sign: 'LA PETITE CRÊPE', icon: '🥞', body: '#e8c6d8', band: '#7a3f6a', umb: ['#7a3f6a', '#f4f1ea'], menu: [
+    F('nutella', 'Chocolate-hazelnut crêpe', '🥞', 8, { hunger: 22, fun: 12 }, 'Folded in a paper cone. Messy, perfect.'),
+    F('savory', 'Ham and cheese galette', '🧀', 10, { hunger: 38 }, 'Buckwheat, crispy at the edges.'),
+    F('latte', 'Café au lait', '☕', 4, { energy: 14 }, 'In a bowl-sized cup.'),
+  ] },
+  lobster_truck: { name: 'Lobster roll truck', sign: 'HARBOR LOBSTER CO.', icon: '🦞', body: '#c53a3a', band: '#f4f1ea', umb: ['#f4f1ea', '#2f6db5'], menu: [
+    F('lobroll', 'Lobster roll', '🦞', 24, { hunger: 40, fun: 14 }, 'Buttered, toasted, piled high. Worth every cent.'),
+    F('chowder', 'Clam chowder', '🥣', 9, { hunger: 34 }, 'Creamy, with oyster crackers.'),
+    F('lemonade2', 'Fresh lemonade', '🍋', 4, { fun: 6, energy: 5 }, 'Cold and tart.'),
+  ] },
+  greek_truck: { name: 'Greek truck', sign: 'OPA! STREET FOOD', icon: '🥙', body: '#f4f1ea', band: '#2f5aa3', umb: ['#2f5aa3', '#f4f1ea'], menu: [
+    F('souvlaki', 'Chicken souvlaki pita', '🥙', 10, { hunger: 46, fun: 5 }, 'Tzatziki, tomato, onion, fries tucked inside.'),
+    F('spanakopita', 'Spanakopita', '🥧', 6, { hunger: 24 }, 'Flaky and buttery.'),
+    F('baklava', 'Baklava', '🍯', 4, { hunger: 10, fun: 9 }, 'Honey all over your fingers.'),
+  ] },
+};
+Object.assign(CART_KINDS, TRUCKS);
+export const TRUCK_IDS = Object.keys(TRUCKS);
+export const CART_IDS = Object.keys(CART_KINDS).filter((k) => k !== 'newsstand' && !TRUCKS[k]);
 
 class Bag {
   constructor() {
@@ -192,6 +228,66 @@ export function buildFoodCarts(ctx) {
     group.add(new THREE.Mesh(mergeGeometries(list), mat));
   }
   return n;
+}
+
+/**
+ * Food trucks parked in the kerb lane beside parks and landmark plazas, with
+ * the serving window on the sidewalk side. Spots join ctx.vendors (truck: true).
+ */
+export function buildFoodTrucks(ctx, lane) {
+  const { group, colliders, K, rng, blocks, roadCenter, N } = ctx;
+  const spots = [];
+  const sites = blocks.filter((b) => b.kind === 'park' || b.kind === 'landmark').slice(0, 10);
+  for (const b of sites) {
+    // the north side of the block (when there is a street there), parked toward the east
+    if (b.j === 0) continue;
+    const z = roadCenter(b.j) + lane;
+    const x = b.cx + (rng() - 0.5) * 20;
+    spots.push({ x, z, ry: Math.PI / 2, nx: 0, nz: 1, kind: TRUCK_IDS[spots.length % TRUCK_IDS.length] });
+    void N;
+  }
+  const mat = carMaterial();
+  const types = {};
+  for (const s of spots) (types[s.kind] ||= []).push(s);
+  const geo = vehicleGeometry('box', { low: true }).body;
+  const inst = new THREE.InstancedMesh(geo, mat, spots.length);
+  const bag = new Bag();
+  const signs = new Map();
+  const m4 = new THREE.Matrix4();
+  spots.forEach((s, i) => {
+    const k = CART_KINDS[s.kind];
+    m4.makeRotationY(s.ry).setPosition(s.x, 0, s.z);
+    inst.setMatrixAt(i, m4);
+    inst.setColorAt(i, new THREE.Color(k.body));
+    // serving window, counter, awning on the sidewalk side (local +x is the sidewalk when ry = PI/2... use the normal)
+    const side = (geo2, color) => bag.add(geo2, color, s.x, 0, s.z, 0);
+    const wx = s.x;
+    const wz = s.z + s.nz * 1.12;
+    side(new THREE.BoxGeometry(2.4, 1.0, 0.06).translate(0, 1.55, 0).translate(wx - s.x, 0, wz - s.z), '#1a1b1f');
+    side(new THREE.BoxGeometry(2.6, 0.06, 0.4).translate(0, 1.05, 0).translate(wx - s.x, 0, wz - s.z + s.nz * 0.18), '#c9ced6');
+    side(new THREE.BoxGeometry(2.9, 0.06, 1.0).rotateX(-s.nz * 0.35).translate(0, 2.35, 0).translate(wx - s.x, 0, wz - s.z + s.nz * 0.45), k.band);
+    const p = new THREE.PlaneGeometry(2.6, 0.62).translate(s.x, 2.75, s.z + s.nz * 1.13);
+    if (!signs.has(k)) signs.set(k, []);
+    signs.get(k).push(p);
+    colliders.add(s.x - 3.4, s.z - 1.15, s.x + 3.4, s.z + 1.15, 3);
+    // the cook stands inside at the window; customers queue on the sidewalk
+    ctx.vendors.push({ x: s.x, z: s.z + s.nz * 2.2, ry: Math.atan2(0, -s.nz) + Math.PI, kind: 'cart', cart: s.kind, id: 'truck_' + i, truck: true, vx: s.x, vz: s.z + s.nz * 0.55, vy: 0.75 });
+  });
+  if (spots.length) {
+    inst.instanceColor.needsUpdate = true;
+    inst.castShadow = true;
+    group.add(inst);
+    const mesh = new THREE.Mesh(mergeGeometries(bag.list), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, side: THREE.DoubleSide }));
+    mesh.castShadow = true;
+    group.add(mesh);
+    for (const [k, list] of signs) {
+      const mat2 = new THREE.MeshBasicMaterial({ map: labelTexture(k.sign, { icon: k.icon, bg: k.band, accent: k.umb[1] }), toneMapped: false });
+      mat2.userData.ownMap = true;
+      group.add(new THREE.Mesh(mergeGeometries(list), mat2));
+    }
+  }
+  ctx.truckSpots = spots;
+  return spots.length;
 }
 
 /** Rising steam puffs over a cart's grill (added to the vendor's group). */

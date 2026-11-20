@@ -14,7 +14,8 @@ import { buildLandmarks } from './Landmarks.js';
 import { buildStorefronts } from './Storefronts.js';
 import { buildStreetscape, addRooftops } from './Streetscape.js';
 import { decorateParks } from './Parks.js';
-import { buildFoodCarts } from './FoodCarts.js';
+import { buildFoodCarts, buildFoodTrucks } from './FoodCarts.js';
+import { LANE_OUT } from './Vehicles.js';
 import { beachSpec, buildBeach, beachY } from './Beach.js';
 import { buildSports } from './Sports.js';
 import { buildSkatePark, rampY } from './SkatePark.js';
@@ -423,6 +424,7 @@ export function generateCity(cfg, opts = {}) {
   if (sportsBlock) buildSports(ctx, sportsBlock);
   if (skateBlock) buildSkatePark(ctx, skateBlock);
   buildFoodCarts(ctx);
+  buildFoodTrucks(ctx, LANE_OUT);
   if (zooSpec) buildZoo(ctx, zooSpec);
   if (bridge) buildBridge(ctx, bridge);
   buildStreetscape(ctx);
