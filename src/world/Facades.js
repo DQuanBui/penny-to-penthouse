@@ -8,6 +8,40 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { FACADE, InstanceBatch } from './Buildings.js';
 import { adTextures } from './TimesSquare.js';
 
+// fictional names for apartment buildings and towers
+const HOME_NAMES = ['The Beaumont', 'Maple Court', 'Riverside Lofts', 'The Ashford', 'Linden House', 'Park View', 'The Wellington', 'Harbor House', 'The Calloway', 'Willow Gardens', 'The Hartley', 'Cedar Hall', 'The Marlowe', 'Briarwood', 'The Ellison', 'Juniper Lofts', 'The Sterling', 'Oakmont', 'The Adeline', 'Sycamore Place'];
+const TOWER_NAMES = ['MERIDIAN TOWER', 'APEX ONE', 'SUMMIT PLAZA', 'HALCYON TOWER', 'NORTHSTAR', 'THE VANTAGE', 'ORION CENTER', 'SILVERLINE', 'ZENITH TOWER', 'CROWN POINT', 'AURORA PLAZA', 'THE PINNACLE'];
+const texCache = new Map();
+/** A name plaque (gold letters on dark) or a lit tower name (white letters, no background). */
+function nameTexture(text, tower) {
+  const key = (tower ? 't:' : 'h:') + text;
+  if (texCache.has(key)) return texCache.get(key);
+  const c = document.createElement('canvas');
+  c.width = tower ? 1024 : 512;
+  c.height = tower ? 128 : 128;
+  const g = c.getContext('2d');
+  if (!tower) {
+    g.fillStyle = '#1d1f24';
+    g.fillRect(0, 0, c.width, c.height);
+    g.strokeStyle = '#c9a24a';
+    g.lineWidth = 6;
+    g.strokeRect(8, 8, c.width - 16, c.height - 16);
+  }
+  g.fillStyle = tower ? '#f4f6ff' : '#e8c45a';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  let size = tower ? 96 : 62;
+  const font = (s) => (tower ? `800 ${s}px Outfit,"Segoe UI",sans-serif` : `600 ${s}px Georgia,"Times New Roman",serif`);
+  g.font = font(size);
+  while (g.measureText(text).width > c.width * 0.86 && size > 20) g.font = font((size -= 4));
+  g.fillText(text, c.width / 2, c.height / 2 + 4);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  texCache.set(key, t);
+  return t;
+}
+
 const N4 = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 
 class Bag {
@@ -43,6 +77,16 @@ export function buildFacadeDetails(ctx) {
   const shrubs = new InstanceBatch(new THREE.IcosahedronGeometry(0.6, 1), new THREE.MeshStandardMaterial({ color: '#3f7a34', roughness: 0.9, flatShading: true }), { castShadow: true });
   const posts = new Bag();
   let escapes = 0;
+  const plaques = new Map(); // texture -> plane geometries
+  const entry = new Bag();
+  const canopies = new Bag();
+  const towers = new Map();
+  let named = 0;
+  const sample = [];
+  const addPlane = (map, tex, geo) => {
+    if (!map.has(tex)) map.set(tex, []);
+    map.get(tex).push(geo);
+  };
 
   for (const b of list) {
     const w = b.x1 - b.x0;
@@ -81,6 +125,37 @@ export function buildFacadeDetails(ctx) {
         for (let r = 0; r < 6; r++) iron.add(facadeBox(f, off + fw / 2 - 0.625, K.CURB + fh - 2.4 + r * 0.38, 0.95, 0.45, 0.03, 0.03));
         escapes++;
       }
+    }
+    // ---- apartment entrances with a canopy and the building's name
+    if (side && !b.place && b.h > 9 && b.h < 70 && rng() < 0.55) {
+      const [nx, nz] = N4[side];
+      const len = nz ? w : d;
+      if (len > 7) {
+        const f = { nx, nz, x: cx + nx * (w / 2), z: cz + nz * (d / 2) };
+        const u = (rng() - 0.5) * (len - 6) * 0.6;
+        entry.add(facadeBox(f, u, K.CURB + 1.25, 0.06, 1.7, 2.5, 0.12)); // a dark double door
+        canopies.add(facadeBox(f, u, K.CURB + 2.85, 0.75, 2.4, 0.14, 1.5));
+        for (const s of [-1, 1]) canopies.add(facadeBox(f, u + s * 1.05, K.CURB + 1.4, 1.4, 0.06, 2.8, 0.06));
+        const name = HOME_NAMES[Math.floor(rng() * HOME_NAMES.length)];
+        const geo = new THREE.PlaneGeometry(2.2, 0.55);
+        geo.applyMatrix4(new THREE.Matrix4().makeRotationY(Math.atan2(nx, nz)));
+        geo.translate(f.x + nx * 1.52, K.CURB + 3.05, f.z + nz * 1.52);
+        geo.translate(nz * u, 0, -nx * u);
+        addPlane(plaques, nameTexture(name, false), geo);
+        named++;
+        if (sample.length < 12) sample.push({ x: f.x + nz * u, z: f.z - nx * u, nx, nz, name });
+      }
+    }
+    // ---- tower names lit near the top
+    if (side && !b.place && b.h > 60 && rng() < 0.5) {
+      const [nx, nz] = N4[side];
+      const len = nz ? w : d;
+      const tw = Math.min(len * 0.8, 22);
+      const geo = new THREE.PlaneGeometry(tw, tw / 8);
+      geo.applyMatrix4(new THREE.Matrix4().makeRotationY(Math.atan2(nx, nz)));
+      geo.translate(cx + nx * (w / 2 + 0.12), K.CURB + b.h - tw / 8 - 1.5, cz + nz * (d / 2 + 0.12));
+      addPlane(towers, nameTexture(TOWER_NAMES[Math.floor(rng() * TOWER_NAMES.length)], true), geo);
+      named++;
     }
     // ---- warning lights on the tallest towers
     const top = b.top || b.h;
@@ -121,6 +196,14 @@ export function buildFacadeDetails(ctx) {
     }
   }
 
+  if (entry.list.length) group.add(new THREE.Mesh(mergeGeometries(entry.list), new THREE.MeshStandardMaterial({ color: '#2a3340', roughness: 0.2, metalness: 0.5 })));
+  if (canopies.list.length) {
+    const m = new THREE.Mesh(mergeGeometries(canopies.list), new THREE.MeshStandardMaterial({ color: '#1f3a2f', roughness: 0.6 }));
+    m.castShadow = true;
+    group.add(m);
+  }
+  for (const [tex, geos] of plaques) group.add(new THREE.Mesh(mergeGeometries(geos), new THREE.MeshBasicMaterial({ map: tex })));
+  for (const [tex, geos] of towers) group.add(new THREE.Mesh(mergeGeometries(geos), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false })));
   if (iron.list.length) {
     const m = new THREE.Mesh(mergeGeometries(iron.list), new THREE.MeshStandardMaterial({ color: '#1e1f23', roughness: 0.6, metalness: 0.5 }));
     m.castShadow = true;
@@ -144,5 +227,5 @@ export function buildFacadeDetails(ctx) {
       mat.color.set(on ? '#ff2a2a' : '#3a0a0a');
     });
   }
-  return { escapes, beacons: warn.length, billboards: [...boards.values()].reduce((s, l) => s + l.length, 0) };
+  return { escapes, named, sample, beacons: warn.length, billboards: [...boards.values()].reduce((s, l) => s + l.length, 0) };
 }

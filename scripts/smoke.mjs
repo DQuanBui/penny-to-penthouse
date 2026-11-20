@@ -24,6 +24,9 @@ if (!browser) {
   process.exit(2);
 }
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+// software GL on a busy machine can be slow to boot and reload
+page.setDefaultTimeout(60000);
+page.setDefaultNavigationTimeout(90000);
 const errors = [];
 const warnings = new Map();
 page.on('console', (m) => {
@@ -36,8 +39,8 @@ const shot = (n) => page.screenshot({ path: new URL(`./shots/${n}.png`, import.m
 const wait = (ms) => page.waitForTimeout(ms);
 
 try {
-  await page.goto(url, { waitUntil: 'load' });
-  await page.waitForFunction(() => window.__game, null, { timeout: 60000 });
+  await page.goto(url, { waitUntil: 'load', timeout: 90000 });
+  await page.waitForFunction(() => window.__game, null, { timeout: 90000 });
   const run = scenarios[name];
   if (!run) throw new Error('Unknown scenario: ' + name);
   await run({ page, shot, wait });

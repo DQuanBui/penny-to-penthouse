@@ -787,6 +787,16 @@ export const scenarios = {
       return g.city.facadeStats;
     });
     console.log('details', JSON.stringify(st));
+    await page.evaluate(() => {
+      const g = window.__game;
+      const e = g.city.facadeStats.sample[0];
+      const face = Math.atan2(-e.nx, -e.nz);
+      g.player.teleport(e.x + e.nx * 6 + e.nz * 2, e.z + e.nz * 6 - e.nx * 2, face);
+      g.cam.snapBehind(face + 0.3);
+      g.cam.pitch = 0.12;
+      g.cam.dist = 4;
+      console.log('entrance ' + e.name);
+    });
     await wait(3000);
     await shot('facades-street');
     await page.evaluate(() => {
