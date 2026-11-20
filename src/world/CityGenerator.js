@@ -103,9 +103,29 @@ export function generateCity(cfg, opts = {}) {
   }
   // the city zoo takes a whole block in a leafy, lower-rise district
   const zooDistrict = [...districts].sort((a, c) => (a.style === 'skyscraper') - (c.style === 'skyscraper') || a.rentMul - c.rentMul)[0];
-  const zooCands = blocks.filter((b) => b.district === zooDistrict && b.kind === 'build');
-  const zooBlock = zooCands.length ? zooCands[Math.floor(rng() * zooCands.length)] : null;
-  if (zooBlock) zooBlock.kind = 'zoo';
+  // ...as a big walled park beyond the city edge (a free edge: no water, not the airport's)
+  rng(); // (keeps the generator's sequence as it was)
+  let zooSpec = null;
+  for (const side of ['north', 'east', 'south', 'west']) {
+    if (water[side] || side === airportSide(cfg)) continue;
+    const onEdge = (b) => (side === 'north' ? b.j === 0 : side === 'south' ? b.j === N - 1 : side === 'west' ? b.i === 0 : b.i === N - 1);
+    const along = (b) => (side === 'north' || side === 'south' ? b.i : b.j);
+    const edge = blocks.filter((b) => b.district === zooDistrict && b.kind === 'build' && onEdge(b) && along(b) >= 1 && along(b) <= N - 2).sort((a, c) => along(a) - along(c));
+    if (!edge.length) continue;
+    const zb = edge[Math.floor(edge.length / 2)];
+    zb.kind = 'park'; // a little park across the road from the zoo gate
+    zooSpec = { side, uc: side === 'north' || side === 'south' ? zb.cx : zb.cz, district: zooDistrict, i: zb.i, j: zb.j };
+    break;
+  }
+  /** Ring cells beyond the edge that the zoo grounds take over (no backdrop buildings). */
+  const zooField = (i, j) => {
+    if (!zooSpec) return false;
+    const s = zooSpec.side;
+    if (s === 'north') return j < 0 && Math.abs(i - zooSpec.i) <= 1;
+    if (s === 'south') return j >= N && Math.abs(i - zooSpec.i) <= 1;
+    if (s === 'west') return i < 0 && Math.abs(j - zooSpec.j) <= 1;
+    return i >= N && Math.abs(j - zooSpec.j) <= 1;
+  };
   // a university campus where the college is, and a neighbourhood school
   const pickBlock = (d) => {
     const c = blocks.filter((b) => b.district === d && b.kind === 'build');
@@ -332,7 +352,7 @@ export function generateCity(cfg, opts = {}) {
   for (let j = -ring; j < N + ring; j++) {
     for (let i = -ring; i < N + ring; i++) {
       if (i >= 0 && i < N && j >= 0 && j < N) continue;
-      if (airfield(i, j)) continue; // open land for the runway
+      if (airfield(i, j) || zooField(i, j)) continue; // open land for the runway / the zoo grounds
       if ((water.west && i < 0) || (water.east && i >= N) || (water.north && j < 0) || (water.south && j >= N)) continue;
       const x0 = blockMin(i);
       const z0 = blockMin(j);
@@ -387,7 +407,7 @@ export function generateCity(cfg, opts = {}) {
   if (beach) buildBeach(ctx, beach);
   if (sportsBlock) buildSports(ctx, sportsBlock);
   buildFoodCarts(ctx);
-  if (zooBlock) buildZoo(ctx, zooBlock);
+  if (zooSpec) buildZoo(ctx, zooSpec);
   if (bridge) buildBridge(ctx, bridge);
   buildStreetscape(ctx);
   ctx.facadeStats = buildFacadeDetails(ctx);

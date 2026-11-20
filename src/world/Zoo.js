@@ -1,10 +1,12 @@
-// The city zoo: a fenced block with an entrance arch, walkways, a flamingo
-// pond and four big enclosures (giraffes and zebras, elephants, lions,
-// penguins). Animals wander their enclosures; visitors stand at the walls.
-// A ticket from the booth at the gate lets you in for the day.
+// The city zoo: a big walled park just beyond the city edge, across the road
+// from a little park. Through the gate (with a day ticket from the booths) an
+// avenue of trees leads past eleven habitats: giraffes and zebras, elephants,
+// lions, tigers, brown bears, hippos, rhinos, monkeys, kangaroos, penguins and
+// a flamingo lagoon, plus a café lawn. Animals wander their habitats; visitors
+// lean on the walls.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { labelTexture } from './Textures.js';
+import { labelTexture, Tex } from './Textures.js';
 import { createRig } from '../characters/CharacterFactory.js';
 import { animateRig } from '../characters/Animation.js';
 import { roleAppearance } from '../characters/Customization.js';
@@ -14,8 +16,6 @@ import { mulberry32, fmtMoney, dampAngle } from '../core/utils.js';
 import { h, btn } from '../ui/dom.js';
 import { dialog } from '../ui/Menus.js';
 
-const R = 23.6; // fence line from the block centre
-const WALK = 3.5; // half-width of the cross walkways
 export const ZOO_HOURS = [9, 18];
 
 /** Vertex-coloured geometry bag, merged into one mesh. */
@@ -45,11 +45,23 @@ const cy = (r0, r1, hh, s = 12) => new THREE.CylinderGeometry(r0, r1, hh, s);
 const sp = (r, sx = 1, sy = 1, sz = 1, s = 12) => new THREE.SphereGeometry(r, s, Math.max(6, Math.round(s * 0.7))).scale(sx, sy, sz);
 
 const ENCLOSURES = [
-  { id: 'savanna', sx: -1, sz: -1, ground: '#cbb26a', label: 'Giraffes & Zebras', icon: '🦒', species: [['giraffe', 2], ['zebra', 3]], fact: 'A giraffe\'s tongue is about 50 cm long — and dark blue, so it does not sunburn.' },
-  { id: 'elephants', sx: 1, sz: -1, ground: '#9a7a55', label: 'Elephants', icon: '🐘', species: [['elephant', 2]], fact: 'Elephants recognise themselves in a mirror and mourn their dead.' },
-  { id: 'lions', sx: -1, sz: 1, ground: '#d6b878', label: 'Lions', icon: '🦁', species: [['lion', 3]], fact: 'A lion\'s roar can be heard 8 km away. They sleep up to 20 hours a day.' },
-  { id: 'penguins', sx: 1, sz: 1, ground: '#e4edf2', label: 'Penguins', icon: '🐧', species: [['penguin', 6]], fact: 'Penguins can drink sea water: a gland above their eyes filters out the salt.' },
+  { id: 'savanna', u: -64, v: 33, ground: '#cbb26a', label: 'Giraffes & Zebras', icon: '🦒', species: [['giraffe', 2], ['zebra', 3]], fact: 'A giraffe\'s tongue is about 50 cm long — and dark blue, so it does not sunburn.' },
+  { id: 'elephants', u: -24, v: 33, ground: '#9a7a55', label: 'Elephants', icon: '🐘', species: [['elephant', 2]], fact: 'Elephants recognise themselves in a mirror and mourn their dead.' },
+  { id: 'lions', u: 24, v: 33, ground: '#d6b878', label: 'Lions', icon: '🦁', species: [['lion', 3]], fact: 'A lion\'s roar can be heard 8 km away. They sleep up to 20 hours a day.' },
+  { id: 'tigers', u: 64, v: 33, ground: '#8a9a5a', label: 'Tigers', icon: '🐅', species: [['tiger', 2]], fact: 'No two tigers have the same stripes — and the stripes are on their skin too.' },
+  { id: 'bears', u: -64, v: 63, ground: '#7a6a4a', label: 'Brown Bears', icon: '🐻', species: [['bear', 2]], fact: 'A brown bear can smell food from more than 30 km away.' },
+  { id: 'hippos', u: -24, v: 63, ground: '#8a7a5a', label: 'Hippos', icon: '🦛', species: [['hippo', 2]], fact: 'Hippos cannot really swim. They walk and bounce along the bottom of the river.' },
+  { id: 'rhinos', u: 24, v: 63, ground: '#a08a64', label: 'Rhinos', icon: '🦏', species: [['rhino', 2]], fact: 'A rhino\'s horn is made of keratin, the same stuff as your fingernails.' },
+  { id: 'monkeys', u: 64, v: 63, ground: '#6a8a4a', label: 'Monkeys', icon: '🐒', species: [['monkey', 5]], fact: 'Some monkeys use stones as tools to crack open nuts.' },
+  { id: 'kangaroos', u: -64, v: 93, ground: '#b9a06a', label: 'Kangaroos', icon: '🦘', species: [['kangaroo', 4]], fact: 'Kangaroos cannot walk backwards. One hop can cover eight metres.' },
+  { id: 'penguins', u: -24, v: 93, ground: '#e4edf2', label: 'Penguins', icon: '🐧', species: [['penguin', 7]], fact: 'Penguins can drink sea water: a gland above their eyes filters out the salt.' },
+  { id: 'flamingos', u: 64, v: 93, ground: '#9ab27a', label: 'Flamingo Lagoon', icon: '🦩', species: [['flamingo', 7]], fact: 'Flamingos are pink because of the shrimp and algae they eat.' },
 ];
+const EU = 17; // enclosure half-size along the edge
+const EV = 11; // and outward
+const FU = 89; // fence half-width
+const FV0 = 3; // fence: front line (gate) and back line, measured out from the road edge
+const FV1 = 111;
 
 // ---- animals: a group with legs on pivots so they can walk ------------------------------
 function leg(group, x, y, z, len, r, color) {
@@ -130,129 +142,269 @@ const SPECIES = {
     part(g, new THREE.ConeGeometry(0.03, 0.14, 6).rotateX(2.2), '#1d1f24', 0, 1.72, 0.42);
     return { legs: [leg(g, 0, 0.95, 0, 0.95, 0.018, '#e86a8a')] };
   } },
+  tiger: { speed: 0.9, scale: 1, build(g) {
+    const org = '#e0852a';
+    part(g, sp(1, 0.36, 0.36, 0.9), org, 0, 0.92, 0);
+    part(g, sp(0.29), org, 0, 1.12, 0.92);
+    part(g, bx(0.16, 0.12, 0.18), '#f4ead8', 0, 1.04, 1.16);
+    for (const s of [-1, 1]) part(g, sp(0.07), org, s * 0.17, 1.38, 0.9);
+    // black stripes wrapped over the back
+    for (let i = 0; i < 7; i++) part(g, new THREE.TorusGeometry(0.34, 0.035, 4, 12, Math.PI).rotateY(Math.PI / 2), '#1d1d1f', 0, 0.95, -0.6 + i * 0.19);
+    part(g, cy(0.04, 0.03, 0.95, 6), org, 0, 0.95, -1.2).rotation.x = -0.9;
+    return { legs: [[-0.2, 0.68, 0.5], [0.2, 0.68, 0.5], [-0.2, 0.68, -0.5], [0.2, 0.68, -0.5]].map(([x, y, z]) => leg(g, x, y, z, 0.68, 0.09, org)) };
+  } },
+  bear: { speed: 0.55, scale: 1, build(g) {
+    const br = '#6b4a2e';
+    part(g, sp(1, 0.6, 0.62, 1.0), br, 0, 1.05, 0);
+    part(g, sp(1, 0.5, 0.5, 0.45), shade(br, 1.05), 0, 1.35, 0.55);
+    part(g, sp(0.34), br, 0, 1.4, 1.05);
+    part(g, sp(1, 0.15, 0.13, 0.18), '#4a3220', 0, 1.3, 1.36);
+    for (const s of [-1, 1]) part(g, sp(0.1), br, s * 0.22, 1.7, 0.98);
+    return { legs: [[-0.32, 0.7, 0.5], [0.32, 0.7, 0.5], [-0.32, 0.7, -0.5], [0.32, 0.7, -0.5]].map(([x, y, z]) => leg(g, x, y, z, 0.7, 0.16, br)) };
+  } },
+  hippo: { speed: 0.4, scale: 1, build(g) {
+    const gr = '#8a7a88';
+    part(g, sp(1, 0.85, 0.65, 1.35), gr, 0, 0.85, 0);
+    part(g, bx(0.9, 0.6, 0.85), gr, 0, 0.92, 1.45);
+    part(g, bx(0.95, 0.35, 0.5), shade(gr, 1.1), 0, 0.72, 1.82);
+    for (const s of [-1, 1]) {
+      part(g, sp(0.08), '#2a2420', s * 0.25, 1.26, 1.35);
+      part(g, sp(0.07), gr, s * 0.3, 1.3, 1.2);
+    }
+    return { legs: [[-0.45, 0.45, 0.7], [0.45, 0.45, 0.7], [-0.45, 0.45, -0.7], [0.45, 0.45, -0.7]].map(([x, y, z]) => leg(g, x, y, z, 0.45, 0.2, gr)) };
+  } },
+  rhino: { speed: 0.5, scale: 1, build(g) {
+    const gr = '#8a8a86';
+    part(g, sp(1, 0.68, 0.7, 1.25), gr, 0, 1.15, 0);
+    part(g, bx(0.55, 0.55, 0.9), gr, 0, 1.05, 1.45);
+    part(g, new THREE.ConeGeometry(0.12, 0.5, 8), '#d8d0bc', 0, 1.45, 1.8).rotation.x = 0.4;
+    part(g, new THREE.ConeGeometry(0.08, 0.25, 8), '#d8d0bc', 0, 1.42, 1.5);
+    for (const s of [-1, 1]) part(g, new THREE.ConeGeometry(0.07, 0.2, 6), gr, s * 0.2, 1.42, 1.1);
+    return { legs: [[-0.38, 0.65, 0.65], [0.38, 0.65, 0.65], [-0.38, 0.65, -0.65], [0.38, 0.65, -0.65]].map(([x, y, z]) => leg(g, x, y, z, 0.65, 0.17, gr)) };
+  } },
+  monkey: { speed: 1.1, scale: 1, build(g) {
+    const br = '#7a5232';
+    part(g, sp(1, 0.2, 0.26, 0.24), br, 0, 0.62, 0);
+    part(g, sp(0.17), br, 0, 0.92, 0.12);
+    part(g, sp(1, 0.12, 0.1, 0.08), '#d9b48a', 0, 0.9, 0.24);
+    for (const s of [-1, 1]) part(g, sp(0.05), '#d9b48a', s * 0.16, 0.95, 0.1);
+    const tail = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.55, -0.2), new THREE.Vector3(0, 0.5, -0.55), new THREE.Vector3(0, 0.8, -0.75), new THREE.Vector3(0, 1.0, -0.6)]);
+    part(g, new THREE.TubeGeometry(tail, 10, 0.025, 5), br, 0, 0, 0);
+    return { legs: [[-0.1, 0.42, 0.08], [0.1, 0.42, 0.08], [-0.1, 0.42, -0.08], [0.1, 0.42, -0.08]].map(([x, y, z]) => leg(g, x, y, z, 0.42, 0.04, br)) };
+  } },
+  kangaroo: { speed: 1.4, scale: 1, hop: true, build(g) {
+    const tan = '#b88a5a';
+    const body = part(g, sp(1, 0.28, 0.45, 0.32), tan, 0, 1.0, 0);
+    body.rotation.x = 0.35;
+    part(g, sp(1, 0.13, 0.16, 0.22), tan, 0, 1.55, 0.18);
+    for (const s of [-1, 1]) part(g, new THREE.ConeGeometry(0.05, 0.2, 6), tan, s * 0.07, 1.74, 0.12);
+    part(g, cy(0.03, 0.1, 0.9, 6), tan, 0, 0.55, -0.45).rotation.x = -1.0;
+    for (const s of [-1, 1]) part(g, bx(0.09, 0.08, 0.38), shade(tan, 0.9), s * 0.13, 0.05, 0.12);
+    return { legs: [[-0.13, 0.7, 0], [0.13, 0.7, 0]].map(([x, y, z]) => leg(g, x, y, z, 0.62, 0.08, tan)) };
+  } },
 };
 function shade(hex, f) {
   return '#' + new THREE.Color(hex).multiplyScalar(f).getHexString();
 }
 
-/** Build the zoo's static parts on block b and register its entrance place. */
-export function buildZoo(ctx, b) {
-  const { group, colliders, K, places } = ctx;
+/**
+ * Build the zoo beyond the city edge. spec = { side, uc } — the edge it sits
+ * on and its centre along that edge. u runs along the edge, v outward from
+ * the road (0 at the edge of the outermost road).
+ */
+export function zooAt(ctx, spec) {
+  const { half } = ctx;
+  const [ox, oz] = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] }[spec.side];
+  return (u, v) => (ox ? [ox * (half + v), spec.uc + u] : [spec.uc + u, oz * (half + v)]);
+}
+
+export function buildZoo(ctx, spec) {
+  const { group, colliders, K, places, rng } = ctx;
   const Y = K.CURB;
-  const cx = b.cx;
-  const cz = b.cz;
-  const bag = new Bag();
+  const at = zooAt(ctx, spec);
   const name = ctx.cfg.zoo || `${ctx.cfg.name} Zoo`;
-  // walkway paving over the whole lawn, then the enclosure grounds
-  bag.add(bx(2 * R, 0.04, 2 * R), '#cfc6b4', cx, Y + 0.02, cz);
-  for (const e of ENCLOSURES) {
-    const x0 = cx + e.sx * WALK;
-    const x1 = cx + e.sx * R;
-    const z0 = cz + e.sz * WALK;
-    const z1 = cz + e.sz * R;
-    e.rect = [Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1)];
-    const [ax, az, bxx, bz] = e.rect;
-    bag.add(bx(bxx - ax, 0.05, bz - az), e.ground, (ax + bxx) / 2, Y + 0.045, (az + bz) / 2);
-    // low stone wall + rail along the walkway sides
-    const wx = cx + e.sx * WALK;
-    const wz = cz + e.sz * WALK;
-    const lenX = R - WALK;
-    bag.add(bx(0.35, 0.9, lenX), '#a39a8a', wx, Y + 0.45, cz + e.sz * (WALK + lenX / 2));
-    bag.add(bx(lenX, 0.9, 0.35), '#a39a8a', cx + e.sx * (WALK + lenX / 2), Y + 0.45, wz);
-    bag.add(bx(0.06, 0.06, lenX), '#4a4f58', wx, Y + 1.35, cz + e.sz * (WALK + lenX / 2));
-    bag.add(bx(lenX, 0.06, 0.06), '#4a4f58', cx + e.sx * (WALK + lenX / 2), Y + 1.35, wz);
-    for (let t = 0; t <= lenX; t += 2.5) {
-      bag.add(bx(0.06, 0.5, 0.06), '#4a4f58', wx, Y + 1.12, cz + e.sz * (WALK + t));
-      bag.add(bx(0.06, 0.5, 0.06), '#4a4f58', cx + e.sx * (WALK + t), Y + 1.12, wz);
-    }
-    colliders.add(wx - 0.2, Math.min(wz, cz + e.sz * R), wx + 0.2, Math.max(wz, cz + e.sz * R), 1.4);
-    colliders.add(Math.min(wx, cx + e.sx * R), wz - 0.2, Math.max(wx, cx + e.sx * R), wz + 0.2, 1.4);
-    // scenery inside
-    const mx = (ax + bxx) / 2;
-    const mz = (az + bz) / 2;
-    if (e.id === 'savanna') {
-      for (const [ox, oz] of [[-4, -5], [5, 3]]) {
-        bag.add(cy(0.18, 0.25, 3.2, 8), '#6b4a2a', mx + ox, Y + 1.6, mz + oz);
-        bag.add(cy(2.6, 2.2, 0.5, 10), '#5a8a3a', mx + ox, Y + 3.4, mz + oz);
-      }
-    } else if (e.id === 'elephants') {
-      bag.add(cy(3.2, 3.2, 0.06, 24), '#4f8fb0', mx + 3, Y + 0.08, mz + 3);
-      for (const [ox, oz, r] of [[-5, -4, 1.4], [-6, 2, 1]]) bag.add(new THREE.DodecahedronGeometry(r, 0), '#8a8072', mx + ox, Y + r * 0.6, mz + oz);
-    } else if (e.id === 'lions') {
-      for (const [ox, oz, r] of [[3, -3, 2.2], [-4, 4, 1.6], [5, 5, 1.2]]) bag.add(new THREE.DodecahedronGeometry(r, 0).scale(1.3, 0.7, 1), '#b59a72', mx + ox, Y + r * 0.45, mz + oz);
-      bag.add(cy(0.2, 0.28, 3, 8), '#6b4a2a', mx - 5, Y + 1.5, mz - 5);
-      bag.add(sp(2.2, 1, 0.6, 1), '#6f8f3a', mx - 5, Y + 3.2, mz - 5);
-    } else if (e.id === 'penguins') {
-      bag.add(bx(9, 0.06, 7), '#3f9fd0', mx + 2, Y + 0.08, mz + 2);
-      for (const [ox, oz, r] of [[-5, -4, 1.3], [-3, 4, 0.9], [6, -5, 1.1]]) bag.add(new THREE.DodecahedronGeometry(r, 0), '#f2f6f8', mx + ox, Y + r * 0.5, mz + oz);
-    }
-    // a sign at the walkway corner
-    const sgx = cx + e.sx * (WALK - 0.6);
-    const sgz = cz + e.sz * (WALK + 4);
-    bag.add(bx(0.08, 1.2, 0.08), '#3a3f48', sgx, Y + 0.6, sgz);
-    const tex = labelTexture(e.label, { icon: e.icon, bg: '#2f5a3a', accent: '#e9c04c' });
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.4), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
-    sign.position.set(sgx, Y + 1.35, sgz);
-    sign.rotation.y = e.sx > 0 ? -Math.PI / 2 : Math.PI / 2;
-    group.add(sign);
-    e.sign = { x: sgx - e.sx * 0.9, z: sgz };
-  }
-  // flamingo pond in the middle, with a ring of flowers
-  bag.add(cy(2.8, 2.8, 0.06, 28), '#4f9fc0', cx, Y + 0.07, cz);
-  bag.add(new THREE.TorusGeometry(2.9, 0.18, 6, 28).rotateX(Math.PI / 2), '#8f8a7c', cx, Y + 0.12, cz);
-  colliders.add(cx - 2.6, cz - 2.6, cx + 2.6, cz + 2.6, 0.5);
-  // outer iron fence with the gate on the south side
-  const fence = (x0, z0, x1, z1) => {
-    const len = Math.hypot(x1 - x0, z1 - z0);
-    const along = Math.abs(x1 - x0) > Math.abs(z1 - z0);
-    bag.add(bx(along ? len : 0.06, 0.06, along ? 0.06 : len), '#24382c', (x0 + x1) / 2, Y + 2.0, (z0 + z1) / 2);
-    bag.add(bx(along ? len : 0.06, 0.06, along ? 0.06 : len), '#24382c', (x0 + x1) / 2, Y + 0.25, (z0 + z1) / 2);
-    for (let t = 0; t <= len; t += 0.45) {
-      const k = t / len;
-      bag.add(bx(0.04, 2.1, 0.04), '#24382c', x0 + (x1 - x0) * k, Y + 1.05, z0 + (z1 - z0) * k);
-    }
-    colliders.add(Math.min(x0, x1) - 0.1, Math.min(z0, z1) - 0.1, Math.max(x0, x1) + 0.1, Math.max(z0, z1) + 0.1, 2.2);
+  const bag = new Bag();
+  // a flat piece of ground (u0..u1, v0..v1) at height y
+  const pad = (u0, v0, u1, v1, color, y) => {
+    const [x0, z0] = at(u0, v0);
+    const [x1, z1] = at(u1, v1);
+    bag.add(bx(Math.abs(x1 - x0), 0.04, Math.abs(z1 - z0)), color, (x0 + x1) / 2, y, (z0 + z1) / 2);
   };
-  fence(cx - R, cz - R, cx + R, cz - R);
-  fence(cx - R, cz - R, cx - R, cz + R);
-  fence(cx + R, cz - R, cx + R, cz + R);
-  fence(cx - R, cz + R, cx - 2.6, cz + R);
-  fence(cx + 2.6, cz + R, cx + R, cz + R);
-  // entrance arch
-  for (const s of [-1, 1]) {
-    bag.add(bx(0.7, 4.6, 0.7), '#7a5a3c', cx + s * 3.1, Y + 2.3, cz + R);
-    colliders.add(cx + s * 3.1 - 0.35, cz + R - 0.35, cx + s * 3.1 + 0.35, cz + R + 0.35, 4.6);
-  }
-  bag.add(bx(7.2, 0.9, 0.5), '#2f5a3a', cx, Y + 4.9, cz + R);
-  const archTex = labelTexture(name, { icon: '🦁', bg: '#2f5a3a', accent: '#e9c04c' });
-  for (const s of [1, -1]) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 0.82), new THREE.MeshBasicMaterial({ map: archTex, toneMapped: false }));
-    m.position.set(cx, Y + 4.9, cz + R + s * 0.26);
-    if (s < 0) m.rotation.y = Math.PI;
+  const solid = (u0, v0, u1, v1, top = 1.4) => {
+    const [x0, z0] = at(u0, v0);
+    const [x1, z1] = at(u1, v1);
+    colliders.add(Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1), Y + top);
+  };
+  const put = (geo, color, u, v, y = 0) => {
+    const [x, z] = at(u, v);
+    bag.add(geo, color, x, Y + y, z);
+  };
+  // lawns all around, paving inside the fence
+  const grass = new THREE.MeshStandardMaterial({ map: Tex.grass(), roughness: 1 });
+  grass.map = grass.map.clone();
+  grass.map.wrapS = grass.map.wrapT = THREE.RepeatWrapping;
+  grass.map.repeat.set(40, 30);
+  grass.map.needsUpdate = true;
+  grass.userData.ownMap = true;
+  {
+    const [x0, z0] = at(-108, -0.5);
+    const [x1, z1] = at(108, 150);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(Math.abs(x1 - x0), Math.abs(z1 - z0)).rotateX(-Math.PI / 2), grass);
+    m.position.set((x0 + x1) / 2, Y - 0.005, (z0 + z1) / 2);
+    m.receiveShadow = true;
     group.add(m);
   }
-  // ticket booth beside the gate (outside)
-  bag.add(bx(1.8, 2.4, 1.4), '#e9e2d0', cx + 5, Y + 1.2, cz + R + 1.2);
-  bag.add(bx(2.1, 0.15, 1.7), '#2f5a3a', cx + 5, Y + 2.48, cz + R + 1.2);
-  colliders.add(cx + 4.1, cz + R + 0.5, cx + 5.9, cz + R + 1.9, 2.5);
-  // snack kiosk near the pond
-  bag.add(bx(1.6, 1.1, 1.0), '#f4f1ea', cx + 4.6, Y + 0.55, cz + 1.9);
-  bag.add(new THREE.ConeGeometry(1.5, 0.6, 8), '#e85c8a', cx + 4.6, Y + 2.6, cz + 1.9);
-  bag.add(cy(0.04, 0.04, 1.6, 6), '#b9bdc3', cx + 4.6, Y + 1.6, cz + 1.9);
-  colliders.add(cx + 3.8, cz + 1.4, cx + 5.4, cz + 2.4, 1.2);
-  // benches along the walkways
-  for (const [x, z, ry] of [[-2.6, 12, Math.PI / 2], [2.6, -12, -Math.PI / 2], [12, -2.6, Math.PI], [-12, 2.6, 0]]) {
-    bag.add(bx(ry % Math.PI ? 0.5 : 1.6, 0.45, ry % Math.PI ? 1.6 : 0.5), '#7a5a3c', cx + x, Y + 0.45, cz + z);
-    ctx.benchSpots?.push({ x: cx + x, z: cz + z, ry });
+  pad(-FU, 0, FU, FV1, '#cfc6b4', Y + 0.01);
+  for (const e of ENCLOSURES) {
+    const [ax, az] = at(e.u - EU, e.v - EV);
+    const [bx2, bz] = at(e.u + EU, e.v + EV);
+    e.rect = [Math.min(ax, bx2), Math.min(az, bz), Math.max(ax, bx2), Math.max(az, bz)];
+    pad(e.u - EU, e.v - EV, e.u + EU, e.v + EV, e.ground, Y + 0.04);
+    // a low stone wall with a rail all the way round
+    for (const [u0, v0, u1, v1] of [[e.u - EU, e.v - EV, e.u + EU, e.v - EV], [e.u - EU, e.v + EV, e.u + EU, e.v + EV], [e.u - EU, e.v - EV, e.u - EU, e.v + EV], [e.u + EU, e.v - EV, e.u + EU, e.v + EV]]) {
+      const [x0, z0] = at(u0, v0);
+      const [x1, z1] = at(u1, v1);
+      const w = Math.max(0.35, Math.abs(x1 - x0));
+      const d = Math.max(0.35, Math.abs(z1 - z0));
+      bag.add(bx(w, 0.9, d), '#a39a8a', (x0 + x1) / 2, Y + 0.45, (z0 + z1) / 2);
+      bag.add(bx(Math.max(0.06, w - 0.29), 0.06, Math.max(0.06, d - 0.29)), '#4a4f58', (x0 + x1) / 2, Y + 1.35, (z0 + z1) / 2);
+      const len = Math.max(w, d);
+      for (let t = 0; t <= len; t += 2.5) {
+        const k = t / len;
+        bag.add(bx(0.06, 0.5, 0.06), '#4a4f58', x0 + (x1 - x0) * k, Y + 1.12, z0 + (z1 - z0) * k);
+      }
+      colliders.add(Math.min(x0, x1) - 0.2, Math.min(z0, z1) - 0.2, Math.max(x0, x1) + 0.2, Math.max(z0, z1) + 0.2, Y + 1.4);
+    }
+    // scenery for each habitat
+    const tree = (du, dv, s = 1) => {
+      put(cy(0.18 * s, 0.25 * s, 3.2 * s, 8).translate(0, 1.6 * s, 0), '#6b4a2a', e.u + du, e.v + dv);
+      put(sp(2.2 * s, 1, 0.65, 1).translate(0, 3.4 * s, 0), '#5a8a3a', e.u + du, e.v + dv);
+    };
+    const rock = (du, dv, r, c = '#8a8072') => put(new THREE.DodecahedronGeometry(r, 0).scale(1.3, 0.75, 1).translate(0, r * 0.45, 0), c, e.u + du, e.v + dv);
+    const pool = (du, dv, w, d, c = '#4f8fb0') => pad(e.u + du - w / 2, e.v + dv - d / 2, e.u + du + w / 2, e.v + dv + d / 2, c, Y + 0.07);
+    const id = e.id;
+    if (id === 'savanna') [tree(-9, -4), tree(8, 5, 1.2), rock(-3, 6, 1.2)];
+    else if (id === 'elephants') [pool(7, 4, 9, 6), rock(-9, -5, 1.6), rock(-11, 2, 1.1)];
+    else if (id === 'lions') [rock(5, -3, 2.4, '#b59a72'), rock(-6, 5, 1.6, '#b59a72'), tree(-10, -5)];
+    else if (id === 'tigers') [pool(-7, 5, 8, 5), tree(8, -4, 1.1), tree(10, 6), rock(0, -6, 1.5)];
+    else if (id === 'bears') [pool(6, 5, 9, 5), rock(-6, -4, 2.2), rock(-10, 4, 1.5), tree(10, -6)];
+    else if (id === 'hippos') [pool(2, 2, 22, 13, '#4f7f90'), rock(-12, -7, 1.1)];
+    else if (id === 'rhinos') [pad(e.u - 6, e.v - 2, e.u + 4, e.v + 6, '#6a5238', Y + 0.06), tree(10, -6), rock(-10, -6, 1.3)];
+    else if (id === 'monkeys') {
+      tree(-9, -5, 1.3);
+      tree(9, 5, 1.2);
+      // a climbing frame of poles and ropes
+      for (const [du, dv] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) put(cy(0.12, 0.12, 5, 8).translate(0, 2.5, 0), '#7a5a3c', e.u + du, e.v + dv);
+      put(bx(6.4, 0.2, 0.2).translate(0, 4.6, 0), '#7a5a3c', e.u, e.v - 3);
+      put(bx(6.4, 0.2, 0.2).translate(0, 4.6, 0), '#7a5a3c', e.u, e.v + 3);
+      put(bx(5.8, 0.15, 5.8).translate(0, 2.6, 0), '#8a6a4a', e.u, e.v);
+    } else if (id === 'kangaroos') [tree(-10, -4), tree(9, 6), rock(4, -6, 1)];
+    else if (id === 'penguins') [pool(3, 2, 14, 10, '#3f9fd0'), rock(-10, -5, 1.3, '#f2f6f8'), rock(-9, 5, 1.0, '#f2f6f8')];
+    else if (id === 'flamingos') [pool(0, 1, 24, 14, '#5fb0c8'), tree(-13, -7, 0.9)];
+    // the sign on the path side (toward the gate)
+    const [sgx, sgz] = at(e.u + 6, e.v - EV - 1.4);
+    bag.add(bx(0.08, 1.2, 0.08), '#3a3f48', sgx, Y + 0.6, sgz);
+    const tex = labelTexture(e.label, { icon: e.icon, bg: '#2f5a3a', accent: '#e9c04c' });
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.45), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, side: THREE.DoubleSide }));
+    sign.material.userData.ownMap = true;
+    sign.position.set(sgx, Y + 1.4, sgz);
+    sign.rotation.y = Math.atan2(sgx - at(e.u + 6, e.v - EV - 3)[0], sgz - at(e.u + 6, e.v - EV - 3)[1]) + Math.PI;
+    group.add(sign);
+    const [vx, vz] = at(e.u, e.v - EV - 1.6);
+    e.sign = { x: vx, z: vz };
+    // where visitors stand to look in
+    e.views = [-12, -4, 4, 12].map((du) => at(e.u + du, e.v - EV - 1.1));
+  }
+  // the café and picnic lawn (the empty slot), with the snack kiosk
+  pad(7, 82, 41, 104, '#6f9f4a', Y + 0.04);
+  put(bx(3, 2.4, 2).translate(0, 1.2, 0), '#f4f1ea', 24, 86);
+  put(new THREE.ConeGeometry(2.6, 0.9, 8).translate(0, 3.0, 0), '#e85c8a', 24, 86);
+  solid(22.5, 85, 25.5, 87, 2.5);
+  for (const [du, dv] of [[16, 92], [24, 96], [32, 92], [20, 100], [30, 100]]) {
+    put(bx(1.9, 0.07, 0.8).translate(0, 0.75, 0), '#8a6a4a', du, dv);
+    for (const s of [-1, 1]) put(bx(1.9, 0.06, 0.3).translate(0, 0.45, s * 0.65), '#7a5a3c', du, dv);
+    put(cy(0.05, 0.05, 2.4, 6).translate(0, 1.2, 0), '#b9bdc3', du, dv);
+    put(new THREE.ConeGeometry(1.4, 0.5, 8).translate(0, 2.55, 0), ['#e84a4a', '#2f6db5', '#f2b33d'][Math.floor(rng() * 3)], du, dv);
+    solid(du - 1, dv - 0.8, du + 1, dv + 0.8, 0.8);
+  }
+  // planters with trees down the main avenue and benches facing the enclosures
+  for (let v = 22; v < 108; v += 14) {
+    for (const s of [-1, 1]) {
+      put(bx(1.6, 0.5, 1.6).translate(0, 0.25, 0), '#8a8072', s * 5, v);
+      put(sp(1.5, 1, 0.9, 1).translate(0, 2.4, 0), '#4f8a3f', s * 5, v);
+      put(cy(0.12, 0.16, 1.6, 6).translate(0, 1.3, 0), '#6b4a2a', s * 5, v);
+      solid(s * 5 - 0.8, v - 0.8, s * 5 + 0.8, v + 0.8, 1.2);
+    }
+  }
+  // outer iron fence, the gate in the middle of the front
+  const fence = (u0, v0, u1, v1) => {
+    const [x0, z0] = at(u0, v0);
+    const [x1, z1] = at(u1, v1);
+    const len = Math.hypot(x1 - x0, z1 - z0);
+    const along = Math.abs(x1 - x0) > Math.abs(z1 - z0);
+    bag.add(bx(along ? len : 0.06, 0.06, along ? 0.06 : len), '#24382c', (x0 + x1) / 2, Y + 2.4, (z0 + z1) / 2);
+    bag.add(bx(along ? len : 0.06, 0.06, along ? 0.06 : len), '#24382c', (x0 + x1) / 2, Y + 0.25, (z0 + z1) / 2);
+    for (let t = 0; t <= len; t += 0.5) {
+      const k = t / len;
+      bag.add(bx(0.04, 2.5, 0.04), '#24382c', x0 + (x1 - x0) * k, Y + 1.25, z0 + (z1 - z0) * k);
+    }
+    colliders.add(Math.min(x0, x1) - 0.1, Math.min(z0, z1) - 0.1, Math.max(x0, x1) + 0.1, Math.max(z0, z1) + 0.1, Y + 2.6);
+  };
+  fence(-FU, FV0, -3, FV0);
+  fence(3, FV0, FU, FV0);
+  fence(-FU, FV0, -FU, FV1);
+  fence(FU, FV0, FU, FV1);
+  fence(-FU, FV1, FU, FV1);
+  // tall hedges inside the fence: you cannot see in for free
+  for (const [u0, v0, u1, v1] of [[-FU + 0.8, FV0 + 0.8, -8, FV0 + 1.8], [8, FV0 + 0.8, FU - 0.8, FV0 + 1.8]]) {
+    const [x0, z0] = at(u0, v0);
+    const [x1, z1] = at(u1, v1);
+    bag.add(bx(Math.abs(x1 - x0), 2.8, Math.abs(z1 - z0)), '#3f6f34', (x0 + x1) / 2, Y + 1.4, (z0 + z1) / 2);
+    colliders.add(Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1), Y + 2.8);
+  }
+  // the entrance arch over the gate
+  for (const s of [-1, 1]) {
+    put(bx(0.8, 5.2, 0.8).translate(0, 2.6, 0), '#7a5a3c', s * 3.4, FV0);
+    solid(s * 3.4 - 0.4, FV0 - 0.4, s * 3.4 + 0.4, FV0 + 0.4, 5.2);
+  }
+  put(bx(7.8, 1.0, 0.6).translate(0, 5.5, 0), '#2f5a3a', 0, FV0);
+  const archTex = labelTexture(name, { icon: '🦁', bg: '#2f5a3a', accent: '#e9c04c' });
+  const [gx, gz] = at(0, FV0);
+  const [ox2, oz2] = at(0, FV0 - 1);
+  const face = Math.atan2(ox2 - gx, oz2 - gz);
+  for (const s of [0, Math.PI]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 0.9), new THREE.MeshBasicMaterial({ map: archTex, toneMapped: false }));
+    m.material.userData.ownMap = s === 0;
+    m.position.set(gx + Math.sin(face + s) * 0.32, Y + 5.5, gz + Math.cos(face + s) * 0.32);
+    m.rotation.y = face + s;
+    group.add(m);
+  }
+  // ticket booths outside the gate
+  for (const s of [-1, 1]) {
+    put(bx(2.2, 2.5, 1.4).translate(0, 1.25, 0), '#e9e2d0', s * 7, 1.3);
+    put(bx(2.5, 0.16, 1.7).translate(0, 2.58, 0), '#2f5a3a', s * 7, 1.3);
+    solid(s * 7 - 1.1, 0.6, s * 7 + 1.1, 2.0, 2.5);
   }
   group.add(bag.mesh());
 
-  const place = {
-    id: 'zoo', type: 'zoo', name, district: b.district, icon: '🦁', color: '#4f8a3a', label: 'Zoo', outdoor: true,
-    nx: 0, nz: 1, doorX: cx, doorZ: cz + R, x: cx + 5, z: cz + R + 2.6,
-  };
+  // the zoo is a walled park: free to walk in through the gate with a ticket
+  const [c0x, c0z] = at(-FU - 2, -0.5);
+  const [c1x, c1z] = at(FU + 2, FV1 + 2);
+  colliders.corridors = [...(colliders.corridors || []), { minX: Math.min(c0x, c1x), maxX: Math.max(c0x, c1x), minZ: Math.min(c0z, c1z), maxZ: Math.max(c0z, c1z) }];
+  const [px, pz] = at(7, -0.2);
+  const [dx, dz] = at(0, FV0);
+  const [nx, nz] = [Math.sign(ox2 - gx), Math.sign(oz2 - gz)];
+  const place = { id: 'zoo', type: 'zoo', name, district: spec.district, icon: '🦁', color: '#4f8a3a', label: 'Zoo', outdoor: true, nx, nz, doorX: dx, doorZ: dz, x: px, z: pz };
   places.push(place);
-  ctx.zoo = { name, cx, cz, enclosures: ENCLOSURES.map((e) => ({ ...e })), kiosk: { x: cx + 4.6, z: cz + 2.9 }, place };
+  const [kx, kz] = at(24, 84);
+  const [cx, cz] = at(0, 57);
+  const [fx0, fz0] = at(-FU, FV0);
+  const [fx1, fz1] = at(FU, FV1);
+  const [ox, oz] = at(0, FV0 - 1.6);
+  ctx.zoo = {
+    name, cx, cz, place, enclosures: ENCLOSURES.map((e) => ({ ...e })), kiosk: { x: kx, z: kz },
+    rect: [Math.min(fx0, fx1), Math.min(fz0, fz1), Math.max(fx0, fx1), Math.max(fz0, fz1)], outside: { x: ox, z: oz },
+  };
   return ctx.zoo;
 }
 
@@ -279,13 +431,12 @@ export class ZooLife {
         for (let k = 0; k < n; k++) this.spawn(kind, e.rect, rng, Y, k);
       }
     }
-    for (let k = 0; k < 5; k++) this.spawn('flamingo', [this.data.cx - 2.2, this.data.cz - 2.2, this.data.cx + 2.2, this.data.cz + 2.2], rng, Y, k);
   }
 
   spawn(kind, rect, rng, Y, k) {
     const g = new THREE.Group();
     const parts = SPECIES[kind].build(g, k);
-    const pad = kind === 'flamingo' ? 0.3 : 2;
+    const pad = 2;
     const a = { kind, g, legs: parts.legs, rect: [rect[0] + pad, rect[1] + pad, rect[2] - pad, rect[3] - pad], x: 0, z: 0, ry: rng() * 6.28, tx: 0, tz: 0, wait: rng() * 4, phase: rng() * 6, moving: false, Y };
     a.x = a.rect[0] + rng() * (a.rect[2] - a.rect[0]);
     a.z = a.rect[1] + rng() * (a.rect[3] - a.rect[1]);
@@ -314,21 +465,20 @@ export class ZooLife {
   }
 
   inside(p) {
-    const d = this.data;
-    return !!d && Math.abs(p.x - d.cx) < R && Math.abs(p.z - d.cz) < R;
+    const r = this.data?.rect;
+    return !!r && p.x > r[0] && p.x < r[2] && p.z > r[1] && p.z < r[3];
   }
 
   /** Turnstile: without a ticket (or after closing) you cannot walk in through the gate. */
   blockPlayer(pos) {
     const d = this.data;
     if (!d) return false;
-    const lx = pos.x - d.cx;
-    const lz = pos.z - d.cz;
     const wasOutside = !this.prevInside;
-    this.prevInside = Math.abs(lx) < R && Math.abs(lz) < R;
+    this.prevInside = this.inside(pos);
     if (!this.prevInside || !wasOutside) return false;
     if (this.hasTicket() && this.open()) return false;
-    pos.z = d.cz + R + 0.35;
+    pos.x = d.outside.x;
+    pos.z = d.outside.z;
     this.prevInside = false;
     if (!this._warned || performance.now() - this._warned > 4000) {
       this._warned = performance.now();
@@ -339,10 +489,9 @@ export class ZooLife {
 
   update(dt, playerPos, visible) {
     if (!this.data) return;
-    this.group.visible = visible;
-    if (!visible) return;
-    const near = (playerPos.x - this.data.cx) ** 2 + (playerPos.z - this.data.cz) ** 2 < 120 * 120;
-    if (!near) return;
+    const d2 = (playerPos.x - this.data.cx) ** 2 + (playerPos.z - this.data.cz) ** 2;
+    this.group.visible = visible && d2 < 280 * 280;
+    if (!this.group.visible || d2 > 200 * 200) return;
     for (const a of this.animals) {
       const sp = SPECIES[a.kind];
       if (!a.moving) {
@@ -368,8 +517,10 @@ export class ZooLife {
       }
       a.phase += dt * (a.moving ? sp.speed * 4.2 : 0);
       const swing = a.moving ? 0.45 : 0;
-      a.legs.forEach((l, k) => (l.rotation.x = Math.sin(a.phase + (k === 0 || k === 3 ? 0 : Math.PI)) * swing));
-      a.g.position.set(a.x, a.Y + (a.moving ? Math.abs(Math.sin(a.phase)) * 0.03 : 0), a.z);
+      if (sp.hop) a.legs.forEach((l) => (l.rotation.x = a.moving ? -Math.abs(Math.sin(a.phase * 0.5)) * 0.8 : 0));
+      else a.legs.forEach((l, k) => (l.rotation.x = Math.sin(a.phase + (k === 0 || k === 3 ? 0 : Math.PI)) * swing));
+      const lift = sp.hop && a.moving ? Math.abs(Math.sin(a.phase * 0.5)) * 0.45 : a.moving ? Math.abs(Math.sin(a.phase)) * 0.03 : 0;
+      a.g.position.set(a.x, a.Y + lift, a.z);
       a.g.rotation.y = a.ry;
       a.g.rotation.z = sp.waddle && a.moving ? Math.sin(a.phase) * 0.15 : 0;
     }
@@ -378,7 +529,7 @@ export class ZooLife {
 
   /** A few visitors at the enclosure walls during opening hours. */
   updateVisitors(dt, playerPos) {
-    const want = this.open() ? 8 : 0;
+    const want = this.open() ? 16 : 0;
     if (this.visitors.length !== want) {
       for (const v of this.visitors) {
         v.rig.group.removeFromParent();
@@ -388,14 +539,13 @@ export class ZooLife {
       const rng = mulberry32(777 + (this.game.sim?.day || 0));
       const d = this.data;
       for (let k = 0; k < want; k++) {
-        const e = d.enclosures[k % 4];
-        const along = WALK + 3 + rng() * 15;
-        const onX = rng() < 0.5;
-        const x = d.cx + (onX ? e.sx * (WALK - 0.7) : e.sx * along);
-        const z = d.cz + (onX ? e.sz * along : e.sz * (WALK - 0.7));
+        const e = d.enclosures[k % d.enclosures.length];
+        const [x, z] = e.views[Math.floor(rng() * e.views.length)];
+        const ex = (e.rect[0] + e.rect[2]) / 2;
+        const ez = (e.rect[1] + e.rect[3]) / 2;
         const rig = createRig(roleAppearance(rng() < 0.5 ? 'tourist' : rng() < 0.5 ? 'student' : 'civilian', rng));
         rig.group.position.set(x, this.city.K.CURB, z);
-        rig.group.rotation.y = onX ? Math.atan2(e.sx, 0) : Math.atan2(0, e.sz);
+        rig.group.rotation.y = Math.atan2(ex - x, ez - z);
         this.group.add(rig.group);
         this.visitors.push({ rig, talk: rng() < 0.4 });
       }
@@ -449,7 +599,7 @@ export class ZooLife {
       title: `🦁 ${place.name}`,
       body: h(
         'div.menu-col',
-        h('div.muted', `Giraffes, zebras, elephants, lions, penguins and flamingos. Open ${ZOO_HOURS[0]} AM – ${ZOO_HOURS[1] - 12} PM daily.`),
+        h('div.muted', `Giraffes, zebras, elephants, lions, tigers, bears, hippos, rhinos, monkeys, kangaroos, penguins and flamingos. Open ${ZOO_HOURS[0]} AM – ${ZOO_HOURS[1] - 12} PM daily.`),
         has
           ? h('div.good', '🎟️ You have a ticket for today. Walk through the gate!')
           : !this.open()

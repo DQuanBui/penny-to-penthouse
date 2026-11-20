@@ -37,7 +37,7 @@ const wait = (ms) => page.waitForTimeout(ms);
 
 try {
   await page.goto(url, { waitUntil: 'load' });
-  await page.waitForFunction(() => window.__game, null, { timeout: 20000 });
+  await page.waitForFunction(() => window.__game, null, { timeout: 60000 });
   const run = scenarios[name];
   if (!run) throw new Error('Unknown scenario: ' + name);
   await run({ page, shot, wait });

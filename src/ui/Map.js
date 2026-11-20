@@ -23,7 +23,7 @@ export class CityMap {
     this.city = city;
     this.waypoint = null;
     const K = city.K;
-    const pad = K.PROM + (city.beach ? 66 : 30);
+    const pad = Math.max(K.PROM + (city.beach ? 66 : 30), city.zoo?.rect ? 130 : 0);
     this.extent = city.half + pad;
     const size = Math.ceil(this.extent * 2 * PX);
     const cv = (this.image = document.createElement('canvas'));
@@ -56,6 +56,18 @@ export class CityMap {
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText('🏖️', X(bx), X(bz));
+    }
+    // the zoo grounds beyond the edge
+    const Z = city.zoo?.rect;
+    if (Z) {
+      g.fillStyle = '#4f7a3a';
+      g.beginPath();
+      g.roundRect(X(Z[0]), X(Z[1]), (Z[2] - Z[0]) * PX, (Z[3] - Z[1]) * PX, 10);
+      g.fill();
+      g.font = `${22 * PX}px sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('🦁', X((Z[0] + Z[2]) / 2), X((Z[1] + Z[3]) / 2));
     }
     g.fillStyle = '#353a48'; // roads
     g.fillRect(X(Math.max(lx0, -this.extent)), X(Math.max(lz0, -this.extent)), (Math.min(lx1, city.half) - Math.max(lx0, -city.half) + (w.west ? 0 : pad) + (w.east ? 0 : pad)) * PX, 0);

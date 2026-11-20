@@ -1500,32 +1500,39 @@ export const scenarios = {
     await startLife(page, wait);
     const info = await page.evaluate(() => {
       const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
       g.weather.force = 'clear';
       g.state.time.total = 11 * 60;
       g.state.money.checking = 500;
       const z = g.city.zoo;
       const pl = z.place;
-      g.player.teleport(pl.x, pl.z + 6, Math.PI);
-      g.cam.snapBehind(Math.PI);
-      g.cam.pitch = 0.15;
-      return { name: z.name, animals: g.zooLife.animals.length, kinds: [...new Set(g.zooLife.animals.map((a) => a.kind))] };
+      // across the road, looking at the gate
+      const inward = Math.atan2(-pl.nx, -pl.nz);
+      g.player.teleport(z.outside.x + pl.nx * 9, z.outside.z + pl.nz * 9, inward);
+      g.cam.snapBehind(inward);
+      g.cam.pitch = 0.2;
+      g.cam.dist = 8;
+      return { name: z.name, animals: g.zooLife.animals.length, kinds: [...new Set(g.zooLife.animals.map((q) => q.kind))], enclosures: z.enclosures.length };
     });
     console.log('zoo', JSON.stringify(info));
-    await wait(1500);
+    await wait(2500);
     await shot('zoo-gate');
     // walk into the gate without a ticket
-    const blocked = await page.evaluate(async () => {
-      const g = window.__game;
-      const z = g.city.zoo;
-      g.player.teleport(z.cx, z.cz + 25, Math.PI);
-      g.cam.snapBehind(Math.PI);
-      return true;
-    });
-    await page.keyboard.down('KeyW');
-    await wait(2500);
-    await page.keyboard.up('KeyW');
-    const pos1 = await page.evaluate(() => ({ dz: (window.__game.player.pos.z - window.__game.city.zoo.cz).toFixed(1), inside: window.__game.zooLife.inside(window.__game.player.pos) }));
-    console.log('no ticket', blocked, JSON.stringify(pos1));
+    const walkIn = async (ms) => {
+      await page.evaluate(() => {
+        const g = window.__game;
+        const z = g.city.zoo;
+        const inward = Math.atan2(-z.place.nx, -z.place.nz);
+        g.player.teleport(z.outside.x, z.outside.z, inward);
+        g.cam.snapBehind(inward);
+      });
+      await page.keyboard.down('KeyW');
+      await wait(ms);
+      await page.keyboard.up('KeyW');
+      return page.evaluate(() => window.__game.zooLife.inside(window.__game.player.pos));
+    };
+    console.log('no ticket: inside =', await walkIn(3000));
     // buy a ticket at the booth
     await page.evaluate(() => {
       const g = window.__game;
@@ -1535,48 +1542,30 @@ export const scenarios = {
     await page.waitForFunction(() => window.__game.interactable && /tickets/.test(window.__game.interactable.label), null, { timeout: 8000 });
     await page.evaluate(() => window.__game.interactable.action());
     await page.waitForSelector('.dialog:has-text("Day ticket")');
-    await shot('zoo-booth');
     await page.click('text=Day ticket');
     await wait(300);
-    await page.evaluate(() => {
-      const g = window.__game;
-      const z = g.city.zoo;
-      g.player.teleport(z.cx, z.cz + 25, Math.PI);
-      g.cam.snapBehind(Math.PI);
-    });
-    await page.keyboard.down('KeyW');
-    await wait(9000);
-    await page.keyboard.up('KeyW');
-    const pos2 = await page.evaluate(() => ({ dz: (window.__game.player.pos.z - window.__game.city.zoo.cz).toFixed(1), inside: window.__game.zooLife.inside(window.__game.player.pos) }));
-    console.log('with ticket', JSON.stringify(pos2));
-    // look at each enclosure
-    for (const k of [0, 1, 2, 3]) {
-      await page.evaluate((i) => {
+    await page.waitForFunction(() => window.__game.zooLife.hasTicket(), null, { timeout: 5000 });
+    console.log('with ticket: inside =', await walkIn(9000));
+    // the habitats
+    for (const id of ['savanna', 'hippos', 'monkeys', 'tigers', 'kangaroos', 'bears']) {
+      await page.evaluate((eid) => {
         const g = window.__game;
-        const e = g.city.zoo.enclosures[i];
+        const e = g.city.zoo.enclosures.find((q) => q.id === eid);
         const cx = (e.rect[0] + e.rect[2]) / 2;
         const cz = (e.rect[1] + e.rect[3]) / 2;
-        const z = g.city.zoo;
-        const px = z.cx + e.sx * 1.2;
-        const pz = z.cz + e.sz * 1.2;
-        const hd = Math.atan2(cx - px, cz - pz);
-        g.player.teleport(px, pz, hd);
+        const hd = Math.atan2(cx - e.sign.x, cz - e.sign.z);
+        g.player.teleport(e.sign.x, e.sign.z, hd);
         g.cam.snapBehind(hd);
-        g.cam.pitch = 0.22;
-        g.cam.dist = 6;
-      }, k);
-      await wait(1400);
-      await shot('zoo-' + ['savanna', 'elephants', 'lions', 'penguins'][k]);
+        g.cam.pitch = 0.3;
+        g.cam.dist = 7;
+      }, id);
+      await wait(1800);
+      await shot('zoo-' + id);
     }
-    await page.evaluate(() => {
-      const g = window.__game;
-      const e = g.city.zoo.enclosures[0];
-      g.player.teleport(e.sign.x, e.sign.z, 0);
-    });
     await page.waitForFunction(() => window.__game.interactable && /Watch/.test(window.__game.interactable.label), null, { timeout: 8000 });
     await page.evaluate(() => window.__game.interactable.action());
     await wait(1500);
-    console.log('watched', await page.evaluate(() => [window.__game.state.stats.zooAnimals, Object.keys(window.__game.state.achievements)]));
+    console.log('watched', await page.evaluate(() => window.__game.state.stats.zooAnimals));
   },
   /** Neighbourhood businesses: named storefronts, hours, interiors, menus, barber, map filters. */
   async shops({ page, shot, wait }) {
