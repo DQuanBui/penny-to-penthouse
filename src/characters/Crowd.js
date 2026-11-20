@@ -60,8 +60,9 @@ function impostorGeometry() {
     parts.push(g);
   };
   // head, hair, neck
-  add(new THREE.SphereGeometry(0.115, 10, 8).scale(0.95, 1.08, 1).translate(0, 1.63, 0.005), 2);
-  add(new THREE.SphereGeometry(0.125, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55).translate(0, 1.645, -0.012), 3);
+  // (anime proportions: a slightly larger head, like the close-up characters)
+  add(new THREE.SphereGeometry(0.13, 10, 8).scale(0.95, 1.08, 1).translate(0, 1.645, 0.005), 2);
+  add(new THREE.SphereGeometry(0.141, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.58).translate(0, 1.66, -0.012), 3);
   add(new THREE.CylinderGeometry(0.05, 0.055, 0.1, 8).translate(0, 1.49, 0), 2);
   // torso + shoulders + hips
   add(new THREE.CapsuleGeometry(0.16, 0.3, 4, 10).scale(1, 1, 0.72).translate(0, 1.22, 0), 0);
@@ -80,8 +81,20 @@ function impostorGeometry() {
   return mergeGeometries(parts);
 }
 
-function impostorMaterial() {
-  const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+let ramp = null;
+const toonRamp = () => {
+  if (ramp) return ramp;
+  ramp = new THREE.DataTexture(new Uint8Array([110, 110, 110, 255, 190, 190, 190, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
+  ramp.minFilter = ramp.magFilter = THREE.NearestFilter;
+  ramp.generateMipmaps = false;
+  ramp.needsUpdate = true;
+  return ramp;
+};
+
+/** The far crowd: cel-shaded like the near characters (ink = true: the outline pass). */
+function impostorMaterial(ink = false) {
+  const mat = ink ? new THREE.MeshBasicMaterial({ color: '#1d1418', side: THREE.BackSide }) : new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: toonRamp() });
+  mat.customProgramCacheKey = () => (ink ? 'crowd-ink' : 'crowd-toon');
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = worldUniforms.uTime;
     shader.vertexShader = shader.vertexShader
@@ -109,11 +122,13 @@ function impostorMaterial() {
           transformed.y = aSwing.y + yy * cs - transformed.z * sn;
           transformed.z = yy * sn + transformed.z * cs;
         }
-        transformed.y += abs(sin(cyc)) * 0.025 * aGait.z;`,
+        transformed.y += abs(sin(cyc)) * 0.025 * aGait.z;` + (ink ? '\n        transformed += normal * 0.014;' : ''),
       )
       .replace(
         '#include <color_vertex>',
-        `#include <color_vertex>
+        ink
+          ? '#include <color_vertex>'
+          : `#include <color_vertex>
         vColor.rgb = aPart < 0.5 ? aTop : (aPart < 1.5 ? aBottom : (aPart < 2.5 ? aSkin : (aPart < 3.5 ? aHair : vec3(0.07, 0.07, 0.08))));`,
       );
   };
@@ -151,6 +166,11 @@ export function createImpostors(n, rng) {
   geo.setAttribute('aGait', gait);
   const mesh = new THREE.InstancedMesh(geo, impostorMaterial(), n);
   mesh.frustumCulled = false;
+  // the ink outline shares the instance matrices, so it always follows
+  const ink = new THREE.InstancedMesh(geo, impostorMaterial(true), n);
+  ink.instanceMatrix = mesh.instanceMatrix;
+  ink.frustumCulled = false;
+  mesh.add(ink);
   return { mesh, gait, top, bottom, skin, hair };
 }
 
