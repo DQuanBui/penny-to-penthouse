@@ -50,6 +50,7 @@ import { DuckLife } from '../world/Ducks.js';
 import { LiveEvents } from '../world/LiveEvents.js';
 import { SportsLife } from '../world/Sports.js';
 import { SkateLife, makeBoard } from '../world/SkatePark.js';
+import { StreetShows } from '../world/StreetShows.js';
 import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -144,6 +145,7 @@ export class Game {
     this.liveEvents = new LiveEvents(this);
     this.sports = new SportsLife(this);
     this.skate = new SkateLife(this);
+    this.shows = new StreetShows(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -297,6 +299,7 @@ export class Game {
     this.liveEvents.setCity(this.city);
     this.sports.setCity(this.city);
     this.skate.setCity(this.city);
+    this.shows.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -1012,6 +1015,8 @@ export class Game {
       if (sport) return sport;
       const sk = this.skate.interactable(p);
       if (sk) return sk;
+      const show = this.shows.interactable(p);
+      if (show) return show;
       const ts = this.city.timesSquare;
       if (ts && (ts.front.x - p.x) ** 2 + (ts.front.z - p.z) ** 2 < 4 * 4) return { label: '🔴 Sit on the red steps and watch the lights', action: () => this.sitOn(ts.seats[18 + Math.floor(Math.random() * 12)]) };
       const br = this.city.bridge;
@@ -1191,6 +1196,8 @@ export class Game {
     }
     this.sports.update(dt, this.player.pos, !inside);
     this.skate.update(dt, this.player.pos, !inside);
+    this.shows.update(dt, this.player.pos, !!inside);
+    this.playerBalloon?.userData.tick?.(performance.now() / 1000);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);
     if (this.pet.active && (!inside || this.pet.mesh.parent === this.interior.scene)) {

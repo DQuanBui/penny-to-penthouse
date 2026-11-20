@@ -434,6 +434,37 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Street performers: breakdancers, a living statue, a magician, a balloon seller. */
+  async shows({ page, shot, wait }) {
+    await startLife(page, wait);
+    const list = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 15 * 60;
+      return g.shows.shows.map((q) => q.kind + '@' + Math.round(q.x) + ',' + Math.round(q.z));
+    });
+    console.log('shows', JSON.stringify(list));
+    for (const kind of ['breakdance', 'statue', 'magician', 'balloons']) {
+      await page.evaluate((k) => {
+        const g = window.__game;
+        const sh = g.shows.shows.find((q) => q.kind === k);
+        const o = k === 'balloons' ? 1.6 : 3.2;
+        g.player.teleport(sh.x + o, sh.z + o, Math.atan2(-1, -1));
+        g.cam.snapBehind(Math.atan2(-1, -1));
+        g.cam.pitch = 0.25;
+        g.cam.dist = 5;
+      }, kind);
+      await page.waitForFunction((k) => window.__game.shows.shows.find((q) => q.kind === k)?.live, kind, { timeout: 20000 });
+      await wait(1800);
+      await shot('show-' + kind);
+    }
+    await page.waitForFunction(() => /balloon/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await wait(600);
+    console.log('balloon', await page.evaluate(() => !!window.__game.playerBalloon));
+  },
   /** Stairs inside bigger places: walk up to the second floor and back down. */
   async upstairs({ page, shot, wait }) {
     await startLife(page, wait);
