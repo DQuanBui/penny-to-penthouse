@@ -57,6 +57,9 @@ export class CityMap {
       g.textBaseline = 'middle';
       g.fillText('🏖️', X(bx), X(bz));
     }
+    g.fillStyle = '#353a48'; // roads
+    g.fillRect(X(Math.max(lx0, -this.extent)), X(Math.max(lz0, -this.extent)), (Math.min(lx1, city.half) - Math.max(lx0, -city.half) + (w.west ? 0 : pad) + (w.east ? 0 : pad)) * PX, 0);
+    g.fillRect(X(w.west ? -city.half : -this.extent), X(w.north ? -city.half : -this.extent), ((w.east ? city.half : this.extent) - (w.west ? -city.half : -this.extent)) * PX, ((w.south ? city.half : this.extent) - (w.north ? -city.half : -this.extent)) * PX);
     // the zoo grounds beyond the edge
     const Z = city.zoo?.rect;
     if (Z) {
@@ -69,9 +72,6 @@ export class CityMap {
       g.textBaseline = 'middle';
       g.fillText('🦁', X((Z[0] + Z[2]) / 2), X((Z[1] + Z[3]) / 2));
     }
-    g.fillStyle = '#353a48'; // roads
-    g.fillRect(X(Math.max(lx0, -this.extent)), X(Math.max(lz0, -this.extent)), (Math.min(lx1, city.half) - Math.max(lx0, -city.half) + (w.west ? 0 : pad) + (w.east ? 0 : pad)) * PX, 0);
-    g.fillRect(X(w.west ? -city.half : -this.extent), X(w.north ? -city.half : -this.extent), ((w.east ? city.half : this.extent) - (w.west ? -city.half : -this.extent)) * PX, ((w.south ? city.half : this.extent) - (w.north ? -city.half : -this.extent)) * PX);
     // blocks
     const tint = ['#4a5876', '#5a6a58', '#6a5a74', '#74604e', '#5a6e78', '#6e5a5a'];
     for (const b of city.blocks) {
