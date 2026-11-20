@@ -27,6 +27,20 @@ RESUME HERE: All 13 phases are complete and deployed. Post-launch polish round d
 - [x] World food: 12 more shop types in data/shops.js with eatery() themed interiors
 - [x] Bigger cities (grid 12), suspension bridge (world/Bridge.js: walkable corridor, deckY ground, BridgeLife strollers), subway (world/Subway.js: platform + subwaycar interiors, trains, rides)
 
+## Third round (city life)
+- [x] Times Square (world/TimesSquare.js, landmark type 'times_square'): billboard towers, tickers, red steps (per-step colliders), TimesSquareLife tourists
+- [x] Food carts (world/FoodCarts.js): CART_KINDS menus, corner carts, steam; StreetLife.openCart(spot) by kind; 'vendor' role with apron
+- [x] Beaches (world/Beach.js, cfg.beach): sloped sand mesh, beachY in groundY, corridor + walls, Roads rail gap; BeachLife (sunbathers, swimmers, volleyball, frisbee, lifeguard); player swimming (floatY, swim pose) and lying (sunbathe)
+- [x] More roles: firefighter, paramedic, sanitation, rich, elderly (cane), parent (stroller), skater, musician, poor; crowd RIG_ROLES
+- [x] Ducks and swans (world/Ducks.js): instanced clusters along the waterfront, feed from the railing
+- [x] Live events (world/LiveEvents.js): kerb crashes (police/ambulance, 911, help) and purse snatchers (chase on the sidewalk lattice, return the bag); OBBs via Game.pushOutOfMovers
+- [x] Sports block (world/Sports.js, block kind 'sports'): basketball + soccer pickup games, join (emote with move: true)
+- [x] Subway stairwells (Props.js subwayEntrance): depth "punch" quad (renderOrder -1 after ground/water at -2), wellY in groundY; bigger station hall with ticket machines (state.transitPass), newsstand, maps, transit police
+- [x] New shop types: autoshow, library (skill XP via menu item xp), artmuseum, historymuseum with themed interiors and furniture
+- [x] Building details (world/Facades.js): fire escapes, rooftop billboards, warning lights, roof gardens
+- [x] District grid (cfg.districtGrid) — New York is 2 x 3 on a 15 x 15 map with Harlem and the Bronx; Borough Field ballpark landmark
+- [x] Zoo moved beyond the city edge (zooField in the backdrop loop, corridor): 11 habitats, new species (tiger, bear, hippo, rhino, monkey, kangaroo)
+
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
 - [x] 2. Characters: factory (GLB hook + procedural), animations, 10 archetypes, creator UI, Random
@@ -97,7 +111,8 @@ RESUME HERE: All 13 phases are complete and deployed. Post-launch polish round d
 
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- New scenarios: collide, crowd, faces, fronts, animals, park, events, pets, hud, rooms, photo, buses, walkers, turns, people, meet, shops, zoo, campus, travel, airfield, cars, bikes, rain, food, bridge, subway.
+- New scenarios: collide, crowd, faces, fronts, animals, park, events, pets, hud, rooms, photo, buses, walkers, turns, people, meet, shops, zoo, campus, travel, airfield, cars, bikes, rain, food, bridge, subway, sit, emotes, times, carts, beach (CITY=Miami for others), ducks, live, sports, stairs, culture, facades, boroughs. `ROLES=a,b node scripts/smoke.mjs people` lines up chosen roles.
+- Do not edit files under src/ while a smoke run is going: the dev server hot-reloads and the run fails (window.__game undefined).
 - Scenarios: polish (post FX, audio, debug panel), drive (dealer, driving, parking, traffic), life (tutorial, events, Goals/Rankings/Calendar), cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
