@@ -434,6 +434,24 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** District banners on the street lamps (and spring blossoms). */
+  async banners({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 11 * 60;
+      const L = g.city.lampPositions;
+      const x = L[40];
+      const z = L[41];
+      g.player.teleport(x + 6, z + 6, Math.atan2(-1, -1));
+      g.cam.snapBehind(Math.atan2(-1, -1));
+      g.cam.pitch = -0.2;
+      g.cam.dist = 4;
+    });
+    await wait(2000);
+    await shot('banners');
+  },
   /** Anime accessories: bows, cat ears, hair clips (close-up lineup). */
   async accessories({ page, shot, wait }) {
     await startLife(page, wait);

@@ -11,6 +11,35 @@ const cyl = (r0, r1, h, x = 0, y = 0, z = 0, seg = 8) => new THREE.CylinderGeome
 
 const LEAF = ['#4f8f3f', '#5fa04a', '#3f7f3a', '#6aa84f', '#4a9050'];
 const LEAF_FALL = ['#d98a2b', '#c8642a', '#e0a83a', '#b5522a', '#d9b23a'];
+const BLOSSOM = ['#f4b6c8', '#f8c8d8', '#eaa0b8', '#fbe0e8', '#f0a8c0'];
+const BANNER_COLORS = ['#b5343c', '#2f5aa3', '#3f6e4a', '#7a3fd0', '#c9a24a', '#2f8f8f'];
+
+/** A district's lamp-post banner: its name down a coloured strip. */
+function bannerTexture(name, color) {
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 288;
+  const g = c.getContext('2d');
+  g.fillStyle = color;
+  g.fillRect(0, 0, 128, 288);
+  g.fillStyle = 'rgba(255,255,255,0.9)';
+  g.fillRect(8, 8, 112, 6);
+  g.fillRect(8, 274, 112, 6);
+  g.save();
+  g.translate(64, 144);
+  g.rotate(-Math.PI / 2);
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  let size = 44;
+  g.font = `800 ${size}px Outfit,"Segoe UI",sans-serif`;
+  while (g.measureText(name.toUpperCase()).width > 250 && size > 18) g.font = `800 ${(size -= 3)}px Outfit,"Segoe UI",sans-serif`;
+  g.fillStyle = '#ffffff';
+  g.fillText(name.toUpperCase(), 0, 2);
+  g.restore();
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
 
 /** Side descriptors for a block: outward normal + tangent. */
 const SIDES = [
@@ -87,6 +116,7 @@ export function buildProps(ctx) {
   const waterDisc = new InstanceBatch(cyl(2.9, 2.9, 0.05, 0, 0.56, 0, 20), new THREE.MeshStandardMaterial({ color: '#4fa3d1', roughness: 0.1, metalness: 0.3 }));
 
   ctx.lampPositions = [];
+  const banners = {}; // district id -> { d, geos }
   const season = ctx.season || 'spring';
   const leafPal = season === 'fall' && !palm ? LEAF_FALL : LEAF;
 
@@ -101,8 +131,10 @@ export function buildProps(ctx) {
       const r = (1.5 + rng() * 0.8) * scale;
       const bare = season === 'winter' && cfg.weather?.snowInWinter;
       if (!bare) {
-        leaves.add(x, Y + h + r * 0.55, z, { sx: r, sy: r * 0.9, sz: r, ry: rng() * 6, color: pick(rng, leafPal) });
-        leaves.add(x + (rng() - 0.5) * r, Y + h + r * 1.1, z + (rng() - 0.5) * r, { sx: r * 0.7, sy: r * 0.65, sz: r * 0.7, ry: rng() * 6, color: pick(rng, leafPal) });
+        const blossom = season === 'spring' && !palm && rng() < 0.22;
+        const pal = blossom ? BLOSSOM : leafPal;
+        leaves.add(x, Y + h + r * 0.55, z, { sx: r, sy: r * 0.9, sz: r, ry: rng() * 6, color: pick(rng, pal) });
+        leaves.add(x + (rng() - 0.5) * r, Y + h + r * 1.1, z + (rng() - 0.5) * r, { sx: r * 0.7, sy: r * 0.65, sz: r * 0.7, ry: rng() * 6, color: pick(rng, pal) });
       } else {
         // bare winter branches: a thin crown
         leaves.add(x, Y + h + r * 0.4, z, { sx: r * 0.5, sy: r * 0.7, sz: r * 0.5, ry: rng() * 6, color: '#7a6a5a' });
@@ -141,6 +173,15 @@ export function buildProps(ctx) {
         if (t === -11 || t === 11) {
           const ry = Math.atan2(s.nx, s.nz);
           lamps.add(x, Y, z, { ry });
+          if (!b.backdrop) {
+            const d = b.district;
+            const list = (banners[d.id] ||= { d, geos: [] });
+            for (const sgn of [1, -1]) {
+              const p = new THREE.PlaneGeometry(0.5, 1.15).rotateY((sgn * Math.PI) / 2).translate(sgn * 0.025, 4.1, 0.38);
+              p.rotateY(ry).translate(x, Y, z);
+              list.geos.push(p);
+            }
+          }
           const hx = x + s.nx * 1.5;
           const hz = z + s.nz * 1.5;
           bulbs.add(hx, Y + 5.82, hz, { ry });
@@ -257,6 +298,11 @@ export function buildProps(ctx) {
     }
   }
 
+  for (const { d, geos } of Object.values(banners)) {
+    const mat = new THREE.MeshStandardMaterial({ map: bannerTexture(d.name, BANNER_COLORS[d.index % BANNER_COLORS.length]), roughness: 0.8, side: THREE.DoubleSide });
+    mat.userData.ownMap = true;
+    group.add(new THREE.Mesh(mergeGeometries(geos), mat));
+  }
   for (const b of [lamps, bulbs, trunks, leaves, benches, grass, paths, fountains, waterDisc, tl, ...Object.values(lights)]) {
     const m = b.build();
     if (m) group.add(m);
