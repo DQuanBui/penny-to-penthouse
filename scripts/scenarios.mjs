@@ -1793,11 +1793,11 @@ export const scenarios = {
         const IM = g.traffic.meshes[0].body.constructor;
         const bodyMesh = new IM(c.body, mat, 1);
         bodyMesh.setColorAt(0, new (g._winColor.constructor)(c.color));
-        const glassMesh = new (g.traffic.meshes[0].glass.constructor)(c.glass, gmat, 1);
+        const glassMesh = c.glass ? new IM(c.glass, gmat, 1) : null; // two-wheelers have no glass
         const off = (k - (window.__lineup.length - 1) / 2) * 2.6;
         const x = p.x + fx * 9 + fz * off;
         const z = p.z + fz * 9 - fx * off;
-        for (const m of [bodyMesh, glassMesh]) {
+        for (const m of [bodyMesh, glassMesh].filter(Boolean)) {
           const M = new (g.traffic._m.constructor)();
           M.makeRotationY(h + Math.PI / 2);
           M.setPosition(x, 0.0, z);

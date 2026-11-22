@@ -18,8 +18,8 @@ const CAR_HL = 2.17;
 const BUS_HL = 5.75;
 // what you see on the streets: mostly sedans, compacts and SUVs, plus taxis,
 // pickups, sport sedans, delivery trucks, the odd supercar and police patrols
-const TYPE_MIX = { sedan: 24, compact: 17, suv: 16, sport: 8, pickup: 7, taxi: 10, box: 5, coupe: 4, supercar: 2, police: 3, firetruck: 1, ambulance: 1.2, scooter: 7, motorbike: 5 };
-const TYPE_COLOR = { taxi: ['#f2c230'], police: ['#f4f4f2'], firetruck: ['#c41e1e'], ambulance: ['#f4f4f2'], scooter: ['#e9c04c', '#c53a3a', '#3fbf7a', '#f4f4f2', '#3f76d0', '#e06a9a', '#1d1f24'], motorbike: ['#c53a3a', '#1d1f24', '#3f76d0', '#e9c04c', '#f4f4f2', '#3fbf7a'], supercar: ['#e9c04c', '#c53a3a', '#3fbf5a', '#f07a1a', '#1d1f24', '#5a4fd0'] };
+const TYPE_MIX = { sedan: 24, compact: 17, suv: 16, sport: 8, pickup: 7, taxi: 10, box: 5, coupe: 4, supercar: 2, police: 3, firetruck: 1, ambulance: 1.2, scooter: 7, motorbike: 5, garbage: 1.4, van: 4 };
+const TYPE_COLOR = { taxi: ['#f2c230'], police: ['#f4f4f2'], firetruck: ['#c41e1e'], ambulance: ['#f4f4f2'], garbage: ['#3f6e4a', '#f4f4f2'], van: ['#7a4a2a', '#f4f4f2', '#2f5aa3', '#e9c04c', '#3a3f48'], scooter: ['#e9c04c', '#c53a3a', '#3fbf7a', '#f4f4f2', '#3f76d0', '#e06a9a', '#1d1f24'], motorbike: ['#c53a3a', '#1d1f24', '#3f76d0', '#e9c04c', '#f4f4f2', '#3fbf7a'], supercar: ['#e9c04c', '#c53a3a', '#3fbf5a', '#f07a1a', '#1d1f24', '#5a4fd0'] };
 const CAR_COLORS = ['#f4f4f2', '#1d1f24', '#8a8d92', '#b0463c', '#27406b', '#d9c7a8', '#3f5f4a', '#e9c04c', ...CLOTH_COLORS.slice(8, 11)];
 
 export class Traffic {

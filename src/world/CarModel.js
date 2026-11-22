@@ -70,6 +70,9 @@ BODIES.motorbike = { L: 1.08, W: 0.8, moto: 'sport' };
 BODIES.scooter_solo = { ...BODIES.scooter, solo: true };
 BODIES.motorbike_solo = { ...BODIES.motorbike, solo: true };
 BODIES.ambulance = { ...BODIES.box, extra: 'ambulance' };
+// city workhorses: a garbage truck and a delivery van
+BODIES.garbage = { ...BODIES.box, L: 3.7, extra: 'garbage' };
+BODIES.van = { ...BODIES.suv, L: 2.45, roof: 2.15, roofR: -2.3, rear: -2.4, tail: 'wagon', extra: 'van' };
 
 /** Collision half-sizes per style (hw half width, hl half length). */
 export const BODY_DIMS = Object.fromEntries(Object.entries(BODIES).map(([k, b]) => [k, { hw: b.W / 2 + 0.02, hl: b.L + 0.05 }]));
@@ -208,6 +211,21 @@ function buildBody(B, low) {
     }
   }
 
+  if (B.extra === 'garbage') {
+    // the packer at the back: a sloped hopper, a dark loading mouth, hazard stripes, a step for the crew
+    add(new THREE.BoxGeometry(W - 0.1, 1.3, 0.9).translate(0, 1.35, -L + 0.35), '#5a6068');
+    add(new THREE.BoxGeometry(W - 0.5, 0.6, 0.05).translate(0, 1.1, -L - 0.1), '#141518');
+    for (let i = 0; i < 6; i++) add(new THREE.BoxGeometry(0.2, 0.12, 0.03).rotateZ(0.7).translate(-W / 2 + 0.3 + i * 0.32, 0.55, -L - 0.12), i % 2 ? '#141518' : '#f2c230');
+    add(new THREE.BoxGeometry(W - 0.2, 0.06, 0.35).translate(0, 0.42, -L - 0.25), '#9aa2ad');
+    add(new THREE.BoxGeometry(0.3, 0.1, 0.24).translate(0, roof + 0.06, L - 0.9), '#ff9a1a', 0, 4);
+  }
+  if (B.extra === 'van') {
+    // a sliding-door line and a logo stripe for a parcel company
+    for (const x of [-(W / 2 + 0.005), W / 2 + 0.005]) {
+      add(new THREE.BoxGeometry(0.02, 0.5, 1.6).translate(x, belt + 0.25, -0.6), '#e8e4da');
+      add(new THREE.BoxGeometry(0.02, 0.03, 1.2).translate(x, belt + 0.25, 0.4), '#2b2d33');
+    }
+  }
   if (B.extra === 'fire' || B.extra === 'ambulance') {
     // a light bar over the cab: alternating flashers (aLight 4 / 5)
     const zc = L - 0.95;
