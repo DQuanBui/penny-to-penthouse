@@ -434,6 +434,24 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Ride the city bus from a shelter to another district. */
+  async busride({ page, shot, wait }) {
+    await startLife(page, wait);
+    const from = await page.evaluate(() => {
+      const g = window.__game;
+      g.state.time.total = 10 * 60;
+      const st = g.city.busStops[0];
+      g.player.teleport(st.x + 0.5, st.z + 0.5, 0);
+      return g.city.districtAt(st.x, st.z).name;
+    });
+    await page.waitForFunction(() => /Wait for the bus/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog:has-text("The bus pulls in")', { timeout: 90000 });
+    await shot('bus-dialog');
+    await page.click('.dialog .btn >> nth=0');
+    await page.waitForFunction(() => (window.__game.state.stats.busRides || 0) > 0, null, { timeout: 20000 });
+    console.log('rode from', from, 'to', await page.evaluate(() => window.__game.city.districtAt(window.__game.player.pos.x, window.__game.player.pos.z).name));
+  },
   /** Fireworks over the harbor on Friday and Saturday nights. */
   async fireworks({ page, shot, wait }) {
     await startLife(page, wait);
