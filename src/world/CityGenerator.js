@@ -65,7 +65,8 @@ export function generateCity(cfg, opts = {}) {
     return {
       ...d,
       index: q,
-      styleDef: DISTRICT_STYLES[d.style] || DISTRICT_STYLES.midrise,
+      // each city repaints the shared district styles in its own colours (cfg.theme)
+      styleDef: { ...(DISTRICT_STYLES[d.style] || DISTRICT_STYLES.midrise), ...(cfg.theme?.styles?.[d.style] || {}) },
       cx: -half + K.ROAD / 2 + ((N * K.PITCH) / DC) * (qi + 0.5),
       cz: -half + K.ROAD / 2 + ((N * K.PITCH) / DR) * (qj + 0.5),
     };
@@ -291,7 +292,7 @@ export function generateCity(cfg, opts = {}) {
     const d = z1 - z0;
     const cx = (x0 + x1) / 2;
     const cz = (z0 + z1) / 2;
-    const ACCENT = ['#c96a4a', '#d9c39a', '#7a8a9a', '#a35a4a', '#e0d4bc', '#5f7a8a', '#b98a6a', '#8a9a7a'];
+    const ACCENT = cfg.theme?.accent || ['#c96a4a', '#d9c39a', '#7a8a9a', '#a35a4a', '#e0d4bc', '#5f7a8a', '#b98a6a', '#8a9a7a'];
     const color = over?.color || (rng() < 0.18 ? pick(rng, ACCENT) : pick(rng, st.palette));
     const type = FACADE_ID[over?.facade || pick(rng, st.facade)] ?? FACADE.MASONRY;
     if (over?.tiers) st = { ...st, tiers: true };

@@ -24,6 +24,16 @@ export default {
   hotel: 'The Capitol Lodge',
   bridge: 'Lakeside Bridge',
   bridgeStyle: 'stone',
+  // pale limestone downtown, painted storefronts on South Congress, murals in East Austin
+  theme: {
+    look: 'Limestone, murals and string lights',
+    accent: ['#e07a4a', '#3fa38a', '#e9c04c', '#d86a9a'],
+    styles: {
+      midrise: { palette: ['#e8dcc0', '#d9c8a2', '#f2d8a8', '#e07a4a', '#3fa38a', '#f4ead6', '#c8b58e', '#e9c04c'] },
+      warehouse: { palette: ['#e0563f', '#3fa38a', '#f2b63c', '#5a7fbf', '#d86a9a', '#8a5a44', '#6f6f73'] },
+      skyscraper: { palette: ['#c9d6df', '#9fb8c8', '#e8dcc0', '#7f9ab0', '#d9cdb0', '#5f7f95'] },
+    },
+  },
   hills: { name: 'Live Oak Ridge' },
   waterfront: ['south'],
   waterName: 'the Lake',

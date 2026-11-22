@@ -24,6 +24,16 @@ export default {
   hotel: 'The Lakeview Grand',
   bridge: 'Lakefront Bridge',
   bridgeStyle: 'steel',
+  // deep red brick and cream terra-cotta, dark steel towers in the Loop
+  theme: {
+    look: 'Brick, steel and the lake',
+    accent: ['#2f6db5', '#c53a3a', '#e0d2b4', '#5a6a7a'],
+    styles: {
+      midrise: { palette: ['#8a3b2e', '#9a4a36', '#7a3a30', '#b0603e', '#6e4a3a', '#a85a40', '#e0d2b4', '#c8b896'] },
+      brownstone: { palette: ['#7a3a2e', '#8a4a36', '#6b3428', '#9a5a40', '#5f3a2e', '#a8684a'] },
+      skyscraper: { palette: ['#3a3f48', '#55606b', '#8a95a3', '#6a7480', '#2e333a', '#b8c0c8', '#c9b79a'] },
+    },
+  },
   hills: { name: 'Prairie Bluffs' },
   waterfront: ['east'],
   waterName: 'the Lake',

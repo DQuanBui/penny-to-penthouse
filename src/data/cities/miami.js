@@ -24,6 +24,17 @@ export default {
   hotel: 'Ocean Breeze Resort',
   bridge: 'Biscayne Bay Bridge',
   bridgeStyle: 'steel',
+  // pastel Art Deco by the sea, clay-tile roofs in Little Havana, a riot of colour in Wynwood
+  theme: {
+    look: 'Pastel deco and neon',
+    accent: ['#f48fb1', '#80deea', '#ffe082', '#a5d6a7', '#ce93d8'],
+    styles: {
+      houses: { palette: ['#f7c6d0', '#c8eedd', '#fbefb0', '#b8e6ef', '#fbd3b8', '#e2d3f2', '#fdfbf6', '#f4b8c8'], roofs: ['#c8683e', '#b85a36', '#d27a4a', '#e0a070'] },
+      beach: { palette: ['#f7c6d0', '#bfe9e2', '#fbefb0', '#b8dff2', '#ffffff', '#fbd3b8', '#e6d6f5'] },
+      warehouse: { palette: ['#e0563f', '#3a9ad9', '#f2b63c', '#5cbf8a', '#b85ccf', '#f06292', '#26c6da', '#ffb74d'] },
+      skyscraper: { palette: ['#dff1f4', '#bfe1e8', '#f4f4f2', '#a8d8e0', '#e8eef2', '#9cc9d6'] },
+    },
+  },
   hills: { name: 'Hammock Hill' },
   waterfront: ['east', 'south'],
   waterName: 'the Bay',

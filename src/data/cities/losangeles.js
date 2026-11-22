@@ -25,6 +25,17 @@ export default {
   hotel: 'Hotel Palisade',
   bridge: 'Pacific Point Bridge',
   bridgeStyle: 'steel',
+  // sun-bleached stucco, terracotta roofs, warm sandstone in Hollywood
+  theme: {
+    look: 'Stucco, palms and sunsets',
+    accent: ['#e07a4a', '#d9b44a', '#6aa6c0', '#c85a5a', '#8ab07a'],
+    styles: {
+      houses: { palette: ['#f3ead8', '#ead7b8', '#f6efe2', '#e8c9a6', '#dfe6d4', '#f2dcc2', '#e3d0e0'], roofs: ['#b8592f', '#c8683e', '#a84a2a', '#d07a4a'] },
+      midrise: { palette: ['#e8d9c0', '#f0e2c8', '#d9b48c', '#c8a07a', '#e6cfa8', '#f4ead6', '#b8c8d0'] },
+      beach: { palette: ['#f6efe2', '#e6f0f4', '#f2e2cc', '#d8ecf0', '#ffffff', '#f4dcc8'] },
+      skyscraper: { palette: ['#d8dde2', '#c9d6df', '#b8c4cc', '#e6e2d8', '#a9b8c4', '#8fa3b3'] },
+    },
+  },
   hills: { name: 'Canyon Crest' },
   waterfront: ['west'],
   waterName: 'the Pacific',
