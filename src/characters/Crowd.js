@@ -30,6 +30,33 @@ const SPAWN_RING = 1; // spawn within ±1 block of the player (the 3×3 blocks a
 const TOPS = ['#e9e6df', '#1f2229', '#3b4558', '#6d7787', '#8c2f2f', '#c46a3a', '#d9b44a', '#3f6e4a', '#2f6e78', '#2f5aa3', '#5a4a8a', '#a8577a', '#7a5a42', '#c9b9a0', '#24324f', '#e0d6c4', '#9aa6b2'];
 const BOTTOMS = ['#1d2433', '#2b3448', '#3a3f48', '#5c6370', '#8a7a62', '#c9b9a0', '#1f1f22', '#4a3a2c', '#2d4a6b', '#6b5a48'];
 
+// little speech bubbles over people chatting on the sidewalk
+const CHAT_EMOJI = ['💬', '😂', '❤️', '👍', '☕', '🎉', '🤔', '😮', '😊', '🍕', '🙌', '💯'];
+const bubbleTex = new Map();
+function bubbleTexture(e) {
+  if (bubbleTex.has(e)) return bubbleTex.get(e);
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(255,255,255,0.95)';
+  g.beginPath();
+  g.roundRect(10, 8, 108, 88, 26);
+  g.fill();
+  g.beginPath();
+  g.moveTo(48, 94);
+  g.lineTo(64, 120);
+  g.lineTo(76, 94);
+  g.fill();
+  g.font = '58px "Segoe UI Emoji","Apple Color Emoji",sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(e, 64, 54);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  bubbleTex.set(e, t);
+  return t;
+}
+
 /** 0..1 share of the crowd that is out at a given hour. */
 export function crowdDensity(hour) {
   if (hour < 5) return 0.1;
@@ -625,7 +652,20 @@ export class Crowd {
       const umb = this.raining && this.role[a] !== this.roleId('jogger');
       setUmbrella(rig, umb);
       const carry = rig.appearance?.carry;
-      animateRig(rig, dt, { speed: this.cur[a], grounded: true, umbrella: umb && carry !== 'stroller', pushing: carry === 'stroller', cane: carry === 'cane', shaking: met && mt > 0.15 && mt < 2.0, waving: met && mt > 0 && this.pause[a] < 1.1, talking: (this.pause[a] > 0 && this.chat[a] === 1) || (met && mt >= 2.0 && this.pause[a] >= 1.1) });
+      const talking = (this.pause[a] > 0 && this.chat[a] === 1) || (met && mt >= 2.0 && this.pause[a] >= 1.1);
+      animateRig(rig, dt, { speed: this.cur[a], grounded: true, umbrella: umb && carry !== 'stroller', pushing: carry === 'stroller', cane: carry === 'cane', shaking: met && mt > 0.15 && mt < 2.0, waving: met && mt > 0 && this.pause[a] < 1.1, talking });
+      // a speech bubble pops up while they chat (a new emoji each conversation)
+      if (talking && !rig.bubble) {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: bubbleTexture(CHAT_EMOJI[Math.floor(this.rng() * CHAT_EMOJI.length)]), depthWrite: false }));
+        sp.scale.setScalar(0.42);
+        sp.position.y = 2.2;
+        rig.group.add(sp);
+        rig.bubble = sp;
+      } else if (!talking && rig.bubble) {
+        rig.bubble.removeFromParent();
+        rig.bubble.material.dispose();
+        rig.bubble = null;
+      }
     }
 
     // impostors
