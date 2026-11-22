@@ -434,6 +434,27 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Nightclub lines: a queue behind the rope, a bouncer; tip to skip the line. */
+  async clubs({ page, shot, wait }) {
+    await startLife(page, wait);
+    const name = await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.weather.force = 'clear';
+      g.state.time.total = 23 * 60;
+      const c = g.city.places.find((p) => p.type === 'club');
+      const face = Math.atan2(-c.nx, -c.nz);
+      g.player.teleport(c.doorX + c.nx * 7 - c.nz * 2.5, c.doorZ + c.nz * 7 + c.nx * 2.5, face);
+      g.cam.snapBehind(face);
+      g.cam.pitch = 0.15;
+      g.cam.dist = 5;
+      return c.name;
+    });
+    await page.waitForFunction(() => window.__game.clubs.live.size > 0, null, { timeout: 20000 });
+    await wait(1500);
+    await shot('club-queue');
+    console.log('club', name, await page.evaluate(() => [...window.__game.clubs.live.values()][0].people.length));
+  },
   /** Kids at the park playground. */
   async playground({ page, shot, wait }) {
     await startLife(page, wait);
