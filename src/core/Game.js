@@ -59,6 +59,7 @@ import { TaxiHail } from '../ui/Hail.js';
 import { Doormen } from '../world/Doormen.js';
 import { updateTaxiRide } from '../world/TaxiRide.js';
 import { RoofParties } from '../world/RoofParties.js';
+import { CityTrash } from '../world/Trash.js';
 import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -161,6 +162,7 @@ export class Game {
     this.hail = new TaxiHail(this);
     this.doormen = new Doormen(this);
     this.roofParties = new RoofParties(this);
+    this.trash = new CityTrash(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -320,6 +322,7 @@ export class Game {
     this.clubs.setCity(this.city);
     this.doormen.setCity(this.city);
     this.roofParties.setCity(this.city);
+    this.trash.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -1048,6 +1051,8 @@ export class Game {
       if (ts && (ts.front.x - p.x) ** 2 + (ts.front.z - p.z) ** 2 < 4 * 4) return { label: '🔴 Sit on the red steps and watch the lights', action: () => this.sitOn(ts.seats[18 + Math.floor(Math.random() * 12)]) };
       const br = this.city.bridge;
       if (br && (br.lookout.x - p.x) ** 2 + (br.lookout.z - p.z) ** 2 < 3.5 * 3.5) return { label: '🌉 Lean on the railing and take in the view', action: () => this.enjoyView(br) };
+      const litter = this.trash.interactable(p);
+      if (litter) return litter;
       const bench = this.nearestBench(p);
       if (bench) return { label: 'Sit on the bench', action: () => this.sitOn(bench) };
     }
@@ -1233,6 +1238,7 @@ export class Game {
     this.hail.update(dt);
     this.doormen.update(dt, this.player.pos, !!inside);
     this.roofParties.update(dt, this.player.pos, !!inside);
+    this.trash.update(dt, this.player.pos, !!inside);
     this.playerBalloon?.userData.tick?.(performance.now() / 1000);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);

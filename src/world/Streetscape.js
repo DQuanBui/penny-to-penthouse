@@ -144,6 +144,7 @@ export function buildStreetscape(ctx) {
       [x, z] = at(-16.5, 0.1);
       if (clear(x, z)) {
         bins.add(x, Y, z);
+        (ctx.bins ||= []).push({ x, z });
         colliders.add(x - 0.28, z - 0.28, x + 0.28, z + 0.28, 0.9);
       }
       if (dense && rng() < 0.6) {

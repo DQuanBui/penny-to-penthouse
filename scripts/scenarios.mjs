@@ -537,6 +537,48 @@ export const scenarios = {
     console.log('click:', await page.$eval('.map-tip', (e) => e.textContent));
     await shot('map-search');
   },
+  /** Litter, bag piles at the kerb and overflowing bins at night; pick one up. */
+  async trash({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 21.5 * 60;
+      const T = g.trash;
+      for (const p of T.piles) if (p.kind === 'kerb') T.setPile(p, true);
+      // the kerb pile nearest the home
+      const h = g.player.pos;
+      const p = T.piles.filter((q) => q.kind === 'kerb').sort((a, b) => (a.x - h.x) ** 2 + (a.z - h.z) ** 2 - ((b.x - h.x) ** 2 + (b.z - h.z) ** 2))[0];
+      const sx = p.x + p.nx * 2.2 + p.nz * 4.5;
+      const sz = p.z + p.nz * 2.2 - p.nx * 4.5;
+      g.player.teleport(sx, sz, Math.atan2(p.x - sx, p.z - sz));
+      T.refresh(g.player.pos);
+      return { litter: T.litter.length, on: T.onCount, piles: T.piles.length, bags: T.meshes[5].count, near: T.near.length };
+    });
+    console.log('trash', JSON.stringify(info));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading);
+      g.cam.pitch = 0.35;
+      g.cam.dist = 6;
+    });
+    await wait(1500);
+    await shot('trash-night');
+    // walk onto a bit of litter and pick it up
+    await page.evaluate(() => {
+      const g = window.__game;
+      const T = g.trash;
+      const p = g.player.pos;
+      const q = T.near.map((i) => T.pieces[i]).filter((q) => q.on && q.litter && q.zone === 'walk').sort((a, b) => (a.x - p.x) ** 2 + (a.z - p.z) ** 2 - ((b.x - p.x) ** 2 + (b.z - p.z) ** 2))[0];
+      g.player.teleport(q.x + 0.6, q.z, -Math.PI / 2);
+    });
+    await page.waitForFunction(() => /litter/.test(window.__game.interactable?.label || ''), null, { timeout: 30000 });
+    const before = await page.evaluate(() => window.__game.trash.onCount);
+    await page.evaluate(() => window.__game.interactable.action());
+    const after = await page.evaluate(() => window.__game.trash.onCount);
+    if (after !== before - 1) throw new Error('litter not picked up');
+    console.log('picked up litter', before, '->', after);
+  },
   /** District banners on the street lamps (and spring blossoms). */
   async banners({ page, shot, wait }) {
     await startLife(page, wait);
