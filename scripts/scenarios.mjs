@@ -434,6 +434,31 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Anime accessories: bows, cat ears, hair clips (close-up lineup). */
+  async accessories({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(async () => {
+      const g = window.__game;
+      g.state.time.total = 12 * 60;
+      const { randomAppearance } = await import('/src/characters/Customization.js');
+      const { createRig } = await import('/src/characters/CharacterFactory.js');
+      const p = g.player.pos;
+      const h = g.player.heading;
+      ['bow', 'catears', 'hairclip', 'bow'].forEach((acc, k) => {
+        const rig = createRig({ ...randomAppearance(), accessory: acc, accColor: ['#e84a6a', '#1d1f24', '#3fa0e0', '#f2c230'][k], hat: 'none' });
+        const off = (k - 1.5) * 0.7;
+        rig.group.position.set(p.x + Math.sin(h) * 2.2 + Math.cos(h) * off, p.y, p.z + Math.cos(h) * 2.2 - Math.sin(h) * off);
+        rig.group.rotation.y = h + Math.PI * 0.85;
+        g.scene.add(rig.group);
+      });
+      g.playerRig.group.visible = false;
+      g.cam.snapBehind(h);
+      g.cam.pitch = 0.05;
+      g.cam.dist = 1.2;
+    });
+    await wait(1500);
+    await shot('accessories');
+  },
   /** Nightclub lines: a queue behind the rope, a bouncer; tip to skip the line. */
   async clubs({ page, shot, wait }) {
     await startLife(page, wait);

@@ -16,11 +16,12 @@ export const FACIAL_HAIR = ['none', 'stubble', 'mustache', 'goatee', 'beard'];
 export const TOPS = ['tee', 'tank', 'shirt', 'hoodie', 'sweater', 'blazer', 'jacket', 'dress'];
 export const BOTTOMS = ['jeans', 'slacks', 'joggers', 'shorts', 'skirt'];
 export const SHOES = ['sneakers', 'boots', 'dress', 'sandals'];
-export const ACCESSORIES = ['none', 'glasses', 'sunglasses', 'cap', 'beanie', 'headphones', 'watch', 'necklace', 'backpack'];
+export const ACCESSORIES = ['none', 'glasses', 'sunglasses', 'cap', 'beanie', 'headphones', 'watch', 'necklace', 'backpack', 'bow', 'catears', 'hairclip'];
 
 export const LABELS = {
   bald: 'Bald', buzz: 'Buzz Cut', short: 'Short', sidepart: 'Side Part', quiff: 'Quiff', curly: 'Curly', afro: 'Afro', long: 'Long',
   wavy: 'Wavy', bob: 'Bob', ponytail: 'Ponytail', bun: 'Top Bun', mohawk: 'Mohawk', braids: 'Braids', spiky: 'Spiky', twintails: 'Twin Tails', hime: 'Long Straight',
+  bow: 'Hair Bow', catears: 'Cat Ears', hairclip: 'Hair Clip',
   tee: 'T-Shirt', tank: 'Tank Top', shirt: 'Button-Up', hoodie: 'Hoodie', sweater: 'Sweater', blazer: 'Blazer', jacket: 'Jacket', dress: 'Dress',
 };
 export const label = (id) => LABELS[id] || id.charAt(0).toUpperCase() + id.slice(1);

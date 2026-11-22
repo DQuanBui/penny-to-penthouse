@@ -752,6 +752,20 @@ function addAccessory(P, a, H) {
   } else if (acc === 'cap') {
     P.add(new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, 0.44 * Math.PI).scale(hx * 1.1, hy * 1.08, hz * 1.1).rotateX(-0.12).translate(0, HY + 0.012, 0), 'head', accC);
     P.add(new THREE.CylinderGeometry(0.085, 0.085, 0.012, 14).scale(1, 1, 1.25).translate(0, HY + 0.045, 0.105), 'head', shade(accC, 0.8));
+  } else if (acc === 'bow') {
+    // a big ribbon bow on the back of the head
+    for (const m of [-1, 1]) P.add(new THREE.ConeGeometry(0.05, 0.1, 8).rotateZ(m * Math.PI / 2).scale(1, 1, 0.45).translate(m * 0.05, HY + hy * 0.55, -hz * 0.92), 'head', accC);
+    P.add(sph(0.022).translate(0, HY + hy * 0.55, -hz * 0.96), 'head', shade(accC, 0.8));
+  } else if (acc === 'catears') {
+    // a headband with two cat ears
+    P.add(new THREE.TorusGeometry(hx * 1.08, 0.008, 4, 18, Math.PI).rotateY(Math.PI / 2).rotateZ(Math.PI / 2).translate(0, HY + 0.01, 0.01), 'head', '#1d1f24');
+    for (const m of [-1, 1]) {
+      P.add(new THREE.ConeGeometry(0.04, 0.08, 4).rotateZ(-m * 0.35).translate(m * hx * 0.62, HY + hy * 1.02, 0.0), 'head', accC);
+      P.add(new THREE.ConeGeometry(0.022, 0.05, 4).rotateZ(-m * 0.35).translate(m * hx * 0.62, HY + hy * 1.0, 0.012), 'head', '#f2b0c8');
+    }
+  } else if (acc === 'hairclip') {
+    P.add(bx(0.045, 0.012, 0.012).rotateZ(0.5).translate(hx * 0.62, HY + hy * 0.62, hz * 0.72), 'head', accC);
+    P.add(sph(0.014).translate(hx * 0.5, HY + hy * 0.7, hz * 0.74), 'head', '#ffd23f');
   } else if (acc === 'beanie') {
     P.add(new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, 0.5 * Math.PI).scale(hx * 1.11, hy * 1.12, hz * 1.11).rotateX(-0.2).translate(0, HY + 0.01, 0), 'head', accC);
     P.add(sph(0.03).translate(0, HY + hy * 1.13, -0.02), 'head', shade(accC, 1.25));
