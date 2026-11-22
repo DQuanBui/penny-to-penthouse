@@ -102,7 +102,8 @@ export function carGeometry(opts = {}) {
 
 /** See-through tinted glass for the separate glass geometry. */
 export function glassMaterial() {
-  return new THREE.MeshStandardMaterial({ color: '#2a3a4a', transparent: true, opacity: 0.5, roughness: 0.06, metalness: 0.5, depthWrite: false });
+  // clear, lightly tinted glass: you can see the driver (and the seats) inside
+  return new THREE.MeshStandardMaterial({ color: '#a8cfe6', transparent: true, opacity: 0.24, roughness: 0.04, metalness: 0.15, depthWrite: false });
 }
 
 function buildBody(B, low) {
@@ -275,10 +276,28 @@ function buildBody(B, low) {
   if (!low) {
     const dz = B.tail === 'box' ? ws - 0.6 : (ws + roofR) / 2 + 0.15;
     const seatY = belt - 0.32;
-    add(new THREE.BoxGeometry(0.38, 0.5, 0.26).translate(0.38, seatY + 0.3, dz - 0.1), '#2b3448');
-    add(new THREE.SphereGeometry(0.11, 10, 8).translate(0.38, seatY + 0.68, dz - 0.04), '#c99a7a');
-    add(new THREE.SphereGeometry(0.115, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.5).translate(0.38, seatY + 0.7, dz - 0.07), '#2e1f16');
+    // the cabin: two front seats, a dashboard
+    for (const x of [-0.38, 0.38]) {
+      add(new THREE.BoxGeometry(0.44, 0.12, 0.46).translate(x, seatY + 0.02, dz - 0.12), '#2b2d33');
+      add(new THREE.BoxGeometry(0.44, 0.62, 0.1).rotateX(-0.12).translate(x, seatY + 0.36, dz - 0.38), '#2b2d33');
+      add(new THREE.BoxGeometry(0.26, 0.12, 0.08).translate(x, seatY + 0.74, dz - 0.4), '#2b2d33');
+    }
+    add(new THREE.BoxGeometry(W - 0.3, 0.16, 0.3).translate(0, belt - 0.02, dz + 0.55), '#1d1f24');
+    // the driver: shoulders, arms on the wheel, an anime-style head (big eyes, hair)
+    const drv = (x, z, shirt, hair) => {
+      add(new THREE.CapsuleGeometry(0.15, 0.22, 4, 10).scale(1, 1, 0.7).translate(x, seatY + 0.38, z - 0.12), shirt);
+      for (const m of [-1, 1]) add(new THREE.CapsuleGeometry(0.045, 0.32, 3, 8).rotateX(-1.1).translate(x + m * 0.17, seatY + 0.42, z + 0.08), shirt);
+      add(new THREE.SphereGeometry(0.115, 12, 10).translate(x, seatY + 0.72, z - 0.06), '#e9b996');
+      add(new THREE.SphereGeometry(0.125, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55).rotateX(-0.25).translate(x, seatY + 0.74, z - 0.08), hair);
+      for (const m of [-1, 1]) {
+        add(new THREE.SphereGeometry(0.026, 8, 6).scale(1, 1.3, 0.5).translate(x + m * 0.042, seatY + 0.71, z + 0.05), '#fbfaf7');
+        add(new THREE.SphereGeometry(0.017, 8, 6).scale(1, 1.3, 0.5).translate(x + m * 0.042, seatY + 0.705, z + 0.058), '#1c1216');
+      }
+    };
+    drv(0.38, dz, '#3a4a6a', '#2e1f16');
     add(new THREE.TorusGeometry(0.16, 0.02, 5, 14).rotateX(-0.4).translate(0.38, seatY + 0.42, dz + 0.32), '#1d1f24');
+    // taxis carry a passenger in the back
+    if (B.extra === 'taxi') drv(-0.36, dz - 0.95, '#c53a3a', '#d8b162');
   }
   const body = mergeGeometries(parts);
   const glass = low ? null : mergeGeometries(glassParts);
