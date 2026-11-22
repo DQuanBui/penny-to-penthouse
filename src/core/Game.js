@@ -51,6 +51,7 @@ import { LiveEvents } from '../world/LiveEvents.js';
 import { SportsLife } from '../world/Sports.js';
 import { SkateLife, makeBoard } from '../world/SkatePark.js';
 import { StreetShows } from '../world/StreetShows.js';
+import { Fireworks } from '../world/Fireworks.js';
 import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -146,6 +147,7 @@ export class Game {
     this.sports = new SportsLife(this);
     this.skate = new SkateLife(this);
     this.shows = new StreetShows(this);
+    this.fireworks = new Fireworks(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -300,6 +302,7 @@ export class Game {
     this.sports.setCity(this.city);
     this.skate.setCity(this.city);
     this.shows.setCity(this.city);
+    this.fireworks.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -1197,6 +1200,7 @@ export class Game {
     this.sports.update(dt, this.player.pos, !inside);
     this.skate.update(dt, this.player.pos, !inside);
     this.shows.update(dt, this.player.pos, !!inside);
+    this.fireworks.update(dt, this.player.pos, !!inside);
     this.playerBalloon?.userData.tick?.(performance.now() / 1000);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);

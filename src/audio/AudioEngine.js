@@ -189,6 +189,11 @@ export class AudioEngine {
         this.tone(d, { f: 90, f2: 40, dur: 0.25, gain: 0.35 });
         this.burst(d, { f: 900, dur: 0.18, gain: 0.18 });
         break;
+      case 'boom':
+        this.tone(d, { f: 70, f2: 30, dur: 0.9, gain: 0.32 });
+        this.burst(d, { type: 'lowpass', f: 900, f2: 120, dur: 1.1, gain: 0.22 });
+        for (let i = 0; i < 5; i++) this.burst(d, { type: 'highpass', f: 3000 + Math.random() * 3000, t: 0.25 + i * 0.12, dur: 0.05, gain: 0.04 });
+        break;
       case 'crash':
         this.tone(d, { f: 110, f2: 40, dur: 0.4, gain: 0.4 });
         this.burst(d, { type: 'lowpass', f: 1800, f2: 200, dur: 0.7, gain: 0.35 });

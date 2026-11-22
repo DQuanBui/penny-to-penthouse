@@ -434,6 +434,29 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Fireworks over the harbor on Friday and Saturday nights. */
+  async fireworks({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.weather.force = 'clear';
+      // Friday 9:20 PM
+      g.state.time.total = 4 * 1440 + 21 * 60 + 20;
+      const b = g.city.bridge;
+      const out = Math.atan2(b.ox, b.oz);
+      const sx = b.ox ? b.ox * (b.start - 6) : b.along - 40;
+      const sz = b.ox ? b.along - 40 : b.oz * (b.start - 6);
+      g.player.teleport(sx, sz, out + 0.4);
+      g.cam.snapBehind(out + 0.4);
+      g.cam.pitch = -0.45;
+      g.cam.dist = 6;
+    });
+    await page.waitForFunction(() => window.__game.fireworks.bursts.some((b) => b.t > 0.4), null, { timeout: 60000 });
+    await wait(500);
+    await shot('fireworks');
+    console.log('bursts', await page.evaluate(() => window.__game.fireworks.bursts.length));
+  },
   /** Food trucks at the kerb by parks and plazas. */
   async trucks({ page, shot, wait }) {
     await startLife(page, wait);
