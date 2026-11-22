@@ -41,6 +41,15 @@ RESUME HERE: All 13 phases are complete and deployed. Post-launch polish round d
 - [x] District grid (cfg.districtGrid) — New York is 2 x 3 on a 15 x 15 map with Harlem and the Bronx; Borough Field ballpark landmark
 - [x] Zoo moved beyond the city edge (zooField in the backdrop loop, corridor): 11 habitats, new species (tiger, bear, hippo, rhino, monkey, kangaroo)
 
+## Fourth round (anime look, liveliness)
+- [x] Anime characters (CharacterFactory): MeshToonMaterial with a 3-step ramp, ink outline = second SkinnedMesh on the same skeleton (aOutline attribute, tiny parts skip), HEAD_SCALE 1.15, anime eyes/lashes/brows/blush, bangs + spiky/twintails/hime hair, bow/catears/hairclip accessories; far crowd (Crowd impostors) toon + ink; zoo and city animals toon + ink
+- [x] Motorbikes (CarModel buildMoto, BODIES scooter/motorbike[_solo]); player scooter/motorbike (Bikes.makeMoto, helmet on the head bone); skateboard + rental (SkatePark.js: rampY quarter pipes in groundY, SkateLife)
+- [x] Zoo: 15 habitats (pandas, gorillas, crocodiles, aviary with perched parrots), gate officer, keepers (feedingAt draws animals)
+- [x] Interiors: withUpstairs() adds a staircase + upper floor (UPSTAIRS by interior kind; stairY ramp in groundY; Game.useStairs at y > 1.3 / < -1.3); homes: spiral staircase replaces the lift pad
+- [x] Named buildings (Facades: entrances, plaques, tower names), accent colours; people: kids, cosplayers, hipsters, goths, athletes, artists
+- [x] StreetShows, Playground, NightLife (club queues), Doormen, RoofParties, Fireworks, food trucks (FoodCarts.buildFoodTrucks), waiters/cooks (NPC route), chat bubbles (Crowd), district banners + spring blossoms (Props), bus rides (ui/Bus.js), taxi hail (ui/Hail.js), garbage trucks and vans
+- [x] Performance: world/Chunks.js tiles city-wide meshes and batches (200 m) and distance-culls signs/icons
+
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night
 - [x] 2. Characters: factory (GLB hook + procedural), animations, 10 archetypes, creator UI, Random
@@ -111,7 +120,7 @@ RESUME HERE: All 13 phases are complete and deployed. Post-launch polish round d
 
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- New scenarios: collide, crowd, faces, fronts, animals, park, events, pets, hud, rooms, photo, buses, walkers, turns, people, meet, shops, zoo, campus, travel, airfield, cars, bikes, rain, food, bridge, subway, sit, emotes, times, carts, beach (CITY=Miami for others), ducks, live, sports, stairs, culture, facades, boroughs. `ROLES=a,b node scripts/smoke.mjs people` lines up chosen roles.
+- New scenarios: collide, crowd, faces, fronts, animals, park, events, pets, hud, rooms, photo, buses, walkers, turns, people, meet, shops, zoo, campus, travel, airfield, cars, bikes, rain, food, bridge, subway, sit, emotes, times, carts, beach (CITY=Miami for others), ducks, live, sports, stairs, culture, facades, boroughs, perf (draw calls / triangles; HEAVY=1 BREAKDOWN=1), motos, skate, upstairs (PLACE=restaurant...), homestairs, shows, trucks, fireworks, busride, playground, clubs, accessories, banners, hail, doormen, roofs. `ROLES=a,b node scripts/smoke.mjs people` lines up chosen roles.
 - Do not edit files under src/ while a smoke run is going: the dev server hot-reloads and the run fails (window.__game undefined).
 - Scenarios: polish (post FX, audio, debug panel), drive (dealer, driving, parking, traffic), life (tutorial, events, Goals/Rankings/Calendar), cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
