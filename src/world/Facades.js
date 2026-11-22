@@ -77,6 +77,9 @@ export function buildFacadeDetails(ctx) {
   const shrubs = new InstanceBatch(new THREE.IcosahedronGeometry(0.6, 1), new THREE.MeshStandardMaterial({ color: '#3f7a34', roughness: 0.9, flatShading: true }), { castShadow: true });
   const posts = new Bag();
   let escapes = 0;
+  const gardens = [];
+  const bulbs = [];
+  const wires = [];
   const plaques = new Map(); // texture -> plane geometries
   const entry = new Bag();
   const canopies = new Bag();
@@ -193,6 +196,16 @@ export function buildFacadeDetails(ctx) {
         planters.add(px, y, pz, { sx: 1.2, sz: 1.2 });
         shrubs.add(px, y + 0.9, pz, { sx: 0.8 + rng() * 0.6, sy: 0.9 + rng() * 0.6, sz: 0.8 + rng() * 0.6 });
       }
+      // party lights strung across the roof on two poles
+      const hw = w * 0.32;
+      for (const s of [-1, 1]) wires.push(new THREE.CylinderGeometry(0.04, 0.04, 2.6, 6).translate(cx + s * hw, y + 1.3, cz));
+      for (const dz of [-d * 0.15, d * 0.15]) {
+        for (let k = 0; k <= 10; k++) {
+          const t = k / 10;
+          bulbs.push([cx - hw + t * hw * 2, y + 2.5 - Math.sin(t * Math.PI) * 0.45, cz + dz * (1 - Math.abs(t - 0.5))]);
+        }
+      }
+      gardens.push({ x: cx, z: cz, y, w: w * 0.55, d: d * 0.45 });
     }
   }
 
@@ -227,5 +240,16 @@ export function buildFacadeDetails(ctx) {
       mat.color.set(on ? '#ff2a2a' : '#3a0a0a');
     });
   }
+  if (wires.length) group.add(new THREE.Mesh(mergeGeometries(wires), new THREE.MeshStandardMaterial({ color: '#3a3d44', roughness: 0.6 })));
+  if (bulbs.length) {
+    // the bulbs warm up at dusk (they follow the street lamps)
+    const mat = new THREE.MeshBasicMaterial({ color: '#40382c', toneMapped: false });
+    const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 6, 4), mat, bulbs.length);
+    const m = new THREE.Matrix4();
+    bulbs.forEach(([x, y, z], i) => inst.setMatrixAt(i, m.makeTranslation(x, y, z)));
+    group.add(inst);
+    ctx.animated.push(() => mat.color.copy(ctx.lampMat.color).multiplyScalar(1.3));
+  }
+  ctx.roofGardens = gardens;
   return { escapes, named, sample, beacons: warn.length, billboards: [...boards.values()].reduce((s, l) => s + l.length, 0) };
 }

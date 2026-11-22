@@ -434,6 +434,31 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Rooftop parties at night under string lights. */
+  async roofs({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 21 * 60 + 30;
+      const r = g.city.roofGardens[0];
+      if (!r) return null;
+      // out in the street beside the block, looking up at the roof
+      const c = g.city;
+      const j = Math.floor((r.z + c.half - c.K.ROAD) / c.K.PITCH);
+      const rz = c.roadCenter(j);
+      g.player.teleport(r.x + 10, rz, 0);
+      const face = Math.atan2(r.x - (r.x + 10), r.z - rz);
+      g.cam.snapBehind(face);
+      g.cam.pitch = -0.55;
+      g.cam.dist = 5;
+      return { roofs: g.city.roofGardens.length, y: r.y.toFixed(1) };
+    });
+    console.log('roof gardens', JSON.stringify(info));
+    await page.waitForFunction(() => window.__game.roofParties.live.size > 0, null, { timeout: 20000 });
+    await wait(2500);
+    await shot('roof-party');
+  },
   /** Doormen at the hotel, banks and finance towers. */
   async doormen({ page, shot, wait }) {
     await startLife(page, wait);

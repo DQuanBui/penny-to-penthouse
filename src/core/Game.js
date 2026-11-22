@@ -57,6 +57,7 @@ import { PlaygroundLife } from '../world/Playground.js';
 import { ClubQueues } from '../world/NightLife.js';
 import { TaxiHail } from '../ui/Hail.js';
 import { Doormen } from '../world/Doormen.js';
+import { RoofParties } from '../world/RoofParties.js';
 import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -158,6 +159,7 @@ export class Game {
     this.clubs = new ClubQueues(this);
     this.hail = new TaxiHail(this);
     this.doormen = new Doormen(this);
+    this.roofParties = new RoofParties(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -316,6 +318,7 @@ export class Game {
     this.playground.setCity(this.city);
     this.clubs.setCity(this.city);
     this.doormen.setCity(this.city);
+    this.roofParties.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -1226,6 +1229,7 @@ export class Game {
     this.clubs.update(dt, this.player.pos, !!inside);
     this.hail.update(dt);
     this.doormen.update(dt, this.player.pos, !!inside);
+    this.roofParties.update(dt, this.player.pos, !!inside);
     this.playerBalloon?.userData.tick?.(performance.now() / 1000);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);
