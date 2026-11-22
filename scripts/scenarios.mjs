@@ -579,6 +579,85 @@ export const scenarios = {
     if (after !== before - 1) throw new Error('litter not picked up');
     console.log('picked up litter', before, '->', after);
   },
+  /** Morning clean-up: the garbage truck crew collects a pile, the washer sprays, porters sweep. */
+  async cleanup({ page, shot, wait }) {
+    await startLife(page, wait);
+    // the headless sim crawls, so step the crews directly
+    const step = (secs, until) =>
+      page.evaluate(
+        ([secs, until]) => {
+          const g = window.__game;
+          const stop = until ? new Function('g', 'return ' + until) : () => false;
+          for (let t = 0; t < secs; t += 0.05) {
+            g.cleaning.update(0.05, g.player.pos, false);
+            g.trash.update(0.05, g.player.pos, false);
+            if (stop(g)) return t;
+          }
+          return -1;
+        },
+        [secs, until],
+      );
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 6.5 * 60;
+      const T = g.trash;
+      for (const p of T.piles) T.setPile(p, true);
+      T.dirty = true;
+      const h = g.player.pos;
+      const p = T.piles.filter((q) => q.kind === 'kerb').sort((a, b) => (a.x - h.x) ** 2 + (a.z - h.z) ** 2 - ((b.x - h.x) ** 2 + (b.z - h.z) ** 2))[0];
+      window.__pile = p;
+      const C = g.cleaning;
+      C.despawn('garbage');
+      C.despawn('washer');
+      C.cool.washer = 1e9;
+      const R = C.routeFor(p);
+      C.spawn('garbage', g.player.pos, R);
+      // watch from the same pavement, a little behind the truck
+      const sx = p.x - R.fx * 9 - p.nx * 1.2;
+      const sz = p.z - R.fz * 9 - p.nz * 1.2;
+      g.player.teleport(sx, sz, Math.atan2(p.x - sx, p.z - sz));
+    });
+    const t1 = await step(60, "g.cleaning.garbage?.crew.some((w) => w.state === 'back')");
+    console.log('crew carrying after', t1.toFixed(1), 's');
+    if (t1 < 0) throw new Error('the crew never picked up a bag');
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading + 0.25);
+      g.cam.pitch = 0.22;
+      g.cam.dist = 5;
+    });
+    await wait(1000);
+    await shot('garbage-crew');
+    const t2 = await step(120, 'window.__pile.done === g.trash.nightKey()');
+    console.log('pile collected after', t2.toFixed(1), 's more');
+    if (t2 < 0) throw new Error('pile never collected');
+    // the washer
+    await page.evaluate(() => {
+      const g = window.__game;
+      const C = g.cleaning;
+      C.despawn('garbage');
+      C.cool.garbage = 1e9;
+      C.spawn('washer', g.player.pos);
+    });
+    const t3 = await step(40, 'g.cleaning.wet.length > 3');
+    console.log('wet strips after', t3.toFixed(1), 's');
+    if (t3 < 0) throw new Error('no wet road behind the washer');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const T = g.cleaning.washer;
+      const x = T.g.position.x - T.R.rx * 8 + T.R.fx * 9;
+      const z = T.g.position.z - T.R.rz * 8 + T.R.fz * 9;
+      g.player.teleport(x, z, Math.atan2(T.g.position.x - x, T.g.position.z - z));
+      g.cam.snapBehind(g.player.heading);
+      g.cam.pitch = 0.22;
+      g.cam.dist = 6;
+    });
+    await wait(1200);
+    await shot('street-washer');
+    await step(5);
+    console.log('porters', await page.evaluate(() => window.__game.cleaning.porters.length));
+  },
   /** District banners on the street lamps (and spring blossoms). */
   async banners({ page, shot, wait }) {
     await startLife(page, wait);

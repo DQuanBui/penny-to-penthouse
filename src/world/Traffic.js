@@ -442,6 +442,12 @@ export class Traffic {
           const side = Math.abs((this.x[k] - this.x[i]) * hz - (this.z[k] - this.z[i]) * hx);
           if (ahead > 0.5 && ahead < look + this.hl[i] + this.hl[k] - 1.3 && side < 1.3 + this.hw[k]) target = 0;
         }
+        // city work vehicles stopped in the lane (the garbage truck, the street washer)
+        for (const b of this.blockers || []) {
+          const ahead = (b.x - this.x[i]) * hx + (b.z - this.z[i]) * hz;
+          const side = Math.abs((b.x - this.x[i]) * hz - (b.z - this.z[i]) * hx);
+          if (ahead > 0.5 && ahead < look + this.hl[i] + b.hl - 1.3 && side < 1.3 + b.hw) target = 0;
+        }
         {
           const ahead = (px - this.x[i]) * hx + (pz - this.z[i]) * hz;
           const side = Math.abs((px - this.x[i]) * hz - (pz - this.z[i]) * hx);

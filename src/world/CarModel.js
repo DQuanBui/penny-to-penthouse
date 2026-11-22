@@ -72,6 +72,8 @@ BODIES.motorbike_solo = { ...BODIES.motorbike, solo: true };
 BODIES.ambulance = { ...BODIES.box, extra: 'ambulance' };
 // city workhorses: a garbage truck and a delivery van
 BODIES.garbage = { ...BODIES.box, L: 3.7, extra: 'garbage' };
+// the street washer: a water tank on a flat deck, spray bar and gutter brushes
+BODIES.sweeper = { ...BODIES.box, tank: true, extra: 'sweeper' };
 BODIES.van = { ...BODIES.suv, L: 2.45, roof: 2.15, roofR: -2.3, rear: -2.4, tail: 'wagon', extra: 'van' };
 
 /** Collision half-sizes per style (hw half width, hl half length). */
@@ -182,7 +184,21 @@ function buildBody(B, low) {
     add(new THREE.BoxGeometry(W - 0.02, 0.36, 0.08).translate(0, belt + 0.18, -L + 0.04), PAINT, 1);
     add(new THREE.BoxGeometry(W - 0.02, 0.36, 0.08).translate(0, belt + 0.18, rear - 0.04), PAINT, 1);
   }
-  if (B.tail === 'box') {
+  if (B.tank) {
+    // a stainless tank on a flat deck, a hose reel at the back, a spray bar under the bumper
+    const bx0 = -L;
+    const bx1 = roofR - 0.2;
+    const zc = (bx0 + bx1) / 2;
+    add(new THREE.BoxGeometry(W, 0.16, bx1 - bx0).translate(0, sill + 0.3, zc), '#3a3f48');
+    add(new THREE.CylinderGeometry(0.92, 0.92, bx1 - bx0 - 0.3, 18).rotateX(Math.PI / 2).translate(0, sill + 1.32, zc), '#d9dee3');
+    for (const z of [bx0 + 0.45, zc, bx1 - 0.45]) add(new THREE.CylinderGeometry(0.95, 0.95, 0.07, 18).rotateX(Math.PI / 2).translate(0, sill + 1.32, z), '#9aa2ad');
+    for (const x of [-0.93, 0.93]) add(new THREE.BoxGeometry(0.02, 0.22, bx1 - bx0 - 0.6).translate(x, sill + 1.32, zc), PAINT, 1);
+    add(new THREE.CylinderGeometry(0.3, 0.3, 0.32, 14).rotateZ(Math.PI / 2).translate(0, sill + 0.68, bx0 + 0.35), '#c53a3a');
+    add(new THREE.BoxGeometry(W - 0.3, 0.08, 0.08).translate(0, 0.38, L + 0.18), '#3a3f48');
+    for (let i = 0; i < 5; i++) add(new THREE.BoxGeometry(0.06, 0.1, 0.06).translate(-W / 2 + 0.3 + (i * (W - 0.6)) / 4, 0.32, L + 0.2), '#9aa2ad');
+    for (const x of [-0.45, 0.45]) add(new THREE.BoxGeometry(0.3, 0.1, 0.24).translate(x, roof + 0.06, L - 0.9), '#ffa324', 0, 1);
+  }
+  if (B.tail === 'box' && !B.tank) {
     // cargo box: white sides with a band in the company colour
     const bx0 = -L;
     const bx1 = roofR - 0.15;

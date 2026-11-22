@@ -710,6 +710,20 @@ function addCarry(P, a, H) {
       P.add(new THREE.TorusGeometry(0.04, 0.011, 5, 10, Math.PI).rotateY(Math.PI / 2).translate(w[0] + 0.03, w[1] - 0.02, w[2] + 0.02), 'handR', c);
       break;
     }
+    case 'broomcart': {
+      // a street porter's cart pushed in front: a wheeled bin with a broom and a dustpan
+      const fz = 0.5;
+      P.add(new THREE.CylinderGeometry(0.014, 0.014, 0.5, 6).rotateZ(Math.PI / 2).translate(0, 0.98, fz), 'hips', '#2b2d33');
+      for (const m of [-1, 1]) P.add(new THREE.CylinderGeometry(0.012, 0.012, 0.6, 6).rotateX(0.5).translate(m * 0.22, 0.74, fz + 0.15), 'hips', '#2b2d33');
+      P.add(new THREE.CylinderGeometry(0.25, 0.22, 0.62, 12).translate(0, 0.44, fz + 0.42), 'hips', c);
+      P.add(new THREE.CylinderGeometry(0.265, 0.265, 0.04, 12).translate(0, 0.76, fz + 0.42), 'hips', shade(c, 0.7));
+      for (const m of [-1, 1]) P.add(new THREE.CylinderGeometry(0.09, 0.09, 0.04, 12).rotateZ(Math.PI / 2).translate(m * 0.25, 0.09, fz + 0.4), 'hips', '#1a1b1f');
+      // the broom stands in the bin, the dustpan hangs on the side
+      P.add(new THREE.CylinderGeometry(0.012, 0.012, 1.25, 6).rotateX(-0.2).translate(0.12, 1.0, fz + 0.3), 'hips', '#a67c4e');
+      P.add(bx(0.26, 0.12, 0.05).rotateX(-0.2).translate(0.12, 1.62, fz + 0.18), 'hips', '#e9a31a');
+      P.add(bx(0.2, 0.02, 0.18).rotateX(1.2).translate(-0.27, 0.5, fz + 0.42), 'hips', '#3a3f48');
+      break;
+    }
     case 'stroller': {
       // pushed in front: frame, seat, canopy and four wheels (moves with the hips)
       const fz = 0.48;
