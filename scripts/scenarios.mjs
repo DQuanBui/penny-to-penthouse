@@ -434,6 +434,34 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Hail a taxi at the kerb. */
+  async hail({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 13 * 60;
+      // the north kerb of a block well away from any door
+      const b = g.city.blocks.find((q) => q.kind === 'park' && q.j > 0);
+      g.player.teleport(b.cx + 3, b.z0 + 0.6, Math.PI);
+    });
+    await page.waitForFunction(() => /Hail a taxi/.test(window.__game.interactable?.label || ''), null, { timeout: 15000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForFunction(() => /Get in the taxi/.test(window.__game.interactable?.label || ''), null, { timeout: 30000 });
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(Math.PI + 1.3);
+      g.cam.pitch = 0.2;
+      g.cam.dist = 5;
+    });
+    await wait(1200);
+    await shot('hail-taxi');
+    await page.evaluate(() => window.__game.interactable.action());
+    await page.waitForSelector('.dialog:has-text(\"Where to\")');
+    await page.click('.dialog .btn >> nth=0');
+    await page.waitForFunction(() => !window.__game.hail.cab, null, { timeout: 15000 });
+    console.log('rode the taxi');
+  },
   /** District banners on the street lamps (and spring blossoms). */
   async banners({ page, shot, wait }) {
     await startLife(page, wait);

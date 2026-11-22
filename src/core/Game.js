@@ -55,6 +55,7 @@ import { Fireworks } from '../world/Fireworks.js';
 import { BusRides } from '../ui/Bus.js';
 import { PlaygroundLife } from '../world/Playground.js';
 import { ClubQueues } from '../world/NightLife.js';
+import { TaxiHail } from '../ui/Hail.js';
 import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -154,6 +155,7 @@ export class Game {
     this.bus = new BusRides(this);
     this.playground = new PlaygroundLife(this);
     this.clubs = new ClubQueues(this);
+    this.hail = new TaxiHail(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -1062,7 +1064,8 @@ export class Game {
         best = pl;
       }
     }
-    if (!best) return null;
+    // nothing else here: at the kerb you can wave down a cab
+    if (!best) return this.inside ? null : this.hail.interactable(p);
     if (best.minor && !shopOpen(best.type, hourOf(this.state.time.total))) return { label: `${best.icon} ${best.name} — closed · opens ${opensAt(best.type)}`, action: null };
     const mine = best.type === 'home' && best.id === 'home_' + this.state.home.districtId;
     if (best.type === 'home' && !mine) return { label: `${best.name} — you do not live here`, action: null };
@@ -1216,6 +1219,7 @@ export class Game {
     this.bus.update(dt);
     this.playground.update(dt, this.player.pos, !!inside);
     this.clubs.update(dt, this.player.pos, !!inside);
+    this.hail.update(dt);
     this.playerBalloon?.userData.tick?.(performance.now() / 1000);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);
