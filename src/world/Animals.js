@@ -45,7 +45,9 @@ export function dogGeometry() {
   S.add(new THREE.BoxGeometry(0.08, 0.07, 0.12).translate(0, 0.53, 0.42), coat, [1, 0.5, 3, 0.22]);
   S.add(new THREE.SphereGeometry(0.022, 6, 5).translate(0, 0.55, 0.485), '#151515', [1, 0.5, 3, 0.22]); // nose
   for (const m of [-1, 1]) {
-    S.add(new THREE.SphereGeometry(0.014, 6, 5).translate(m * 0.045, 0.6, 0.39), '#151515', [1, 0.5, 3, 0.22]); // eyes
+    S.add(new THREE.SphereGeometry(0.026, 8, 6).scale(1, 1.15, 0.6).translate(m * 0.046, 0.6, 0.392), '#fbfaf7', [1, 0.5, 3, 0.22]); // eyes
+    S.add(new THREE.SphereGeometry(0.018, 8, 6).scale(1, 1.15, 0.6).translate(m * 0.046, 0.598, 0.402), '#151515', [1, 0.5, 3, 0.22]);
+    S.add(new THREE.SphereGeometry(0.006, 6, 4).translate(m * 0.046 - 0.006, 0.608, 0.414), '#ffffff', [1, 0.5, 3, 0.22]);
     S.add(new THREE.BoxGeometry(0.05, 0.1, 0.03).rotateZ(m * 0.35).translate(m * 0.07, 0.63, 0.27), '#d8d8d8', [1, 0.5, 3, 0.22]); // ears
   }
   // legs swing in diagonal pairs
@@ -74,8 +76,20 @@ function duckGeometry() {
   return S.build();
 }
 
-export function animatedMaterial() {
-  const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+let ramp = null;
+const toonRamp = () => {
+  if (ramp) return ramp;
+  ramp = new THREE.DataTexture(new Uint8Array([115, 115, 115, 255, 195, 195, 195, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
+  ramp.minFilter = ramp.magFilter = THREE.NearestFilter;
+  ramp.generateMipmaps = false;
+  ramp.needsUpdate = true;
+  return ramp;
+};
+
+/** Cel-shaded animal material; ink = the outline pass (same animation, pushed out, drawn inside-out). */
+export function animatedMaterial(ink = false) {
+  const mat = ink ? new THREE.MeshBasicMaterial({ color: '#1d1418', side: THREE.BackSide }) : new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: toonRamp() });
+  mat.customProgramCacheKey = () => (ink ? 'animal-ink' : 'animal-toon');
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = worldUniforms.uTime;
     shader.vertexShader = shader.vertexShader
@@ -115,10 +129,19 @@ export function animatedMaterial() {
             transformed.y = aSwing.y + yy * cs - zz * sn;
             transformed.z = aSwing.w + yy * sn + zz * cs;
           }
-        }`,
+        }` + (ink ? '\n        transformed += normal * 0.008;' : ''),
       );
   };
   return mat;
+}
+
+/** Give an animated InstancedMesh its ink outline (shares the instance matrices). */
+export function addInk(mesh) {
+  const ink = new THREE.InstancedMesh(mesh.geometry, animatedMaterial(true), mesh.count);
+  ink.instanceMatrix = mesh.instanceMatrix;
+  ink.frustumCulled = false;
+  mesh.add(ink);
+  return ink;
 }
 
 const COAT = ['#e9dcc6', '#c9a26b', '#8a5a34', '#3a2f2a', '#f4f1ea', '#b8b8b8', '#d9b48a', '#2b2b2e'];
@@ -157,6 +180,7 @@ export class Animals {
       anim.setXYZ(i, 8, this.rng() * 6.28, 0);
     }
     mesh.instanceColor.needsUpdate = true;
+    if (castShadow || geo.userData.ink) addInk(mesh);
     this.group.add(mesh);
     return { mesh, anim };
   }

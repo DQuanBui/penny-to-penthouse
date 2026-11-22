@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { dogGeometry, animatedMaterial } from './Animals.js';
 import { BREED_BY_ID, BREEDS } from '../data/pets.js';
 import { dampAngle } from '../core/utils.js';
+import { addInk } from './Animals.js';
 
 function dogMesh(n) {
   const geo = dogGeometry();
@@ -19,6 +20,7 @@ function dogMesh(n) {
     mesh.setColorAt(i, c);
     anim.setXYZ(i, 8, i * 1.7, 0);
   }
+  addInk(mesh);
   return { mesh, anim };
 }
 
