@@ -56,6 +56,7 @@ import { BusRides } from '../ui/Bus.js';
 import { PlaygroundLife } from '../world/Playground.js';
 import { ClubQueues } from '../world/NightLife.js';
 import { TaxiHail } from '../ui/Hail.js';
+import { Doormen } from '../world/Doormen.js';
 import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -156,6 +157,7 @@ export class Game {
     this.playground = new PlaygroundLife(this);
     this.clubs = new ClubQueues(this);
     this.hail = new TaxiHail(this);
+    this.doormen = new Doormen(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -313,6 +315,7 @@ export class Game {
     this.fireworks.setCity(this.city);
     this.playground.setCity(this.city);
     this.clubs.setCity(this.city);
+    this.doormen.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -1034,6 +1037,8 @@ export class Game {
       if (bus) return bus;
       const club = this.clubs.interactable(p);
       if (club) return club;
+      const door = this.doormen.interactable(p);
+      if (door) return door;
       const ts = this.city.timesSquare;
       if (ts && (ts.front.x - p.x) ** 2 + (ts.front.z - p.z) ** 2 < 4 * 4) return { label: '🔴 Sit on the red steps and watch the lights', action: () => this.sitOn(ts.seats[18 + Math.floor(Math.random() * 12)]) };
       const br = this.city.bridge;
@@ -1220,6 +1225,7 @@ export class Game {
     this.playground.update(dt, this.player.pos, !!inside);
     this.clubs.update(dt, this.player.pos, !!inside);
     this.hail.update(dt);
+    this.doormen.update(dt, this.player.pos, !!inside);
     this.playerBalloon?.userData.tick?.(performance.now() / 1000);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);

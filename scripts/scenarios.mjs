@@ -434,6 +434,26 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Doormen at the hotel, banks and finance towers. */
+  async doormen({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = 10 * 60;
+      const s = g.doormen.spots.find((q) => q.p.type === 'hotel') || g.doormen.spots[0];
+      const face = Math.atan2(-s.p.nx, -s.p.nz);
+      g.player.teleport(s.x + s.p.nx * 1.4, s.z + s.p.nz * 1.4, face);
+      g.cam.snapBehind(face + 0.5);
+      g.cam.pitch = 0.15;
+      g.cam.dist = 3.5;
+    });
+    await page.waitForFunction(() => /doorman/.test(window.__game.interactable?.label || ''), null, { timeout: 20000 });
+    await page.evaluate(() => window.__game.interactable.action());
+    await wait(1500);
+    await shot('doorman');
+    console.log('doormen', await page.evaluate(() => window.__game.doormen.spots.map((q) => q.p.name).join(', ')));
+  },
   /** Hail a taxi at the kerb. */
   async hail({ page, shot, wait }) {
     await startLife(page, wait);
