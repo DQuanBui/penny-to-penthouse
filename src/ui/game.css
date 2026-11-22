@@ -1136,3 +1136,39 @@ input.text.amount {
   padding: 0.8em 1em;
   font-size: 1.02em;
 }
+
+/* ---------- map search + hover names ---------- */
+.map-canvas-wrap {
+  position: relative;
+}
+.map-tip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(14, 16, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 6px 10px;
+  max-width: 240px;
+  z-index: 2;
+}
+.map-tip-title {
+  font-weight: 700;
+}
+.map-tip-sub {
+  font-size: 0.82em;
+  opacity: 0.7;
+}
+.map-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6em 0.9em;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  margin-bottom: 8px;
+}
+.map-results {
+  margin-bottom: 10px;
+}

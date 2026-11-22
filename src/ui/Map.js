@@ -223,6 +223,38 @@ export class CityMap {
   isOpen() {
     return !!this.el;
   }
+  /** What is at a map point: a place, a landmark, a park, the beach... or just a street in some district. */
+  identify(x, z) {
+    const city = this.city;
+    let best = null;
+    for (const p of city.places) {
+      if (p.type === 'home' && !(this.game.state && p.id === 'home_' + this.game.state.home.districtId)) continue;
+      const d = Math.hypot(p.x - x, p.z - z);
+      if (d < 16 && (!best || d < best.d)) best = { p, d };
+    }
+    const district = city.districtAt(x, z);
+    if (best) {
+      const p = best.p;
+      return { title: `${p.icon} ${p.type === 'home' ? 'My Home' : p.name}`, sub: `${PLACE_TYPES[p.type]?.label || p.type} · ${p.district?.name || district.name}`, place: p };
+    }
+    for (const lm of city.landmarks) if (Math.hypot(lm.x - x, lm.z - z) < 30) return { title: `⭐ ${lm.name}`, sub: `Landmark · ${district.name}` };
+    const Z = city.zoo?.rect;
+    if (Z && x > Z[0] && x < Z[2] && z > Z[1] && z < Z[3]) return { title: `🦁 ${city.zoo.name}`, sub: 'Zoo · tickets at the gate', place: city.zoo.place };
+    const B = city.beach;
+    if (B) {
+      const [bx0, bz0] = B.at(B.a0, 0);
+      const [bx1, bz1] = B.at(B.a1, 60);
+      if (x > Math.min(bx0, bx1) && x < Math.max(bx0, bx1) && z > Math.min(bz0, bz1) && z < Math.max(bz0, bz1)) return { title: `🏖️ ${B.name}`, sub: 'Beach · swim, sunbathe, volleyball' };
+    }
+    const H = city.hills;
+    if (H && x > H.rect[0] && x < H.rect[2] && z > H.rect[1] && z < H.rect[3]) return { title: `⛰️ ${H.name}`, sub: 'Hiking trails · a lookout at the top' };
+    const b = city.blocks.find((q) => x > q.x0 && x < q.x1 && z > q.z0 && z < q.z1);
+    const KIND = { park: '🌳 Park', sports: '🏀 Sports courts', skate: '🛹 Skate park', campus: '🎓 Campus', school: '🏫 School', airport: '✈️ Airport' };
+    if (b && KIND[b.kind]) return { title: KIND[b.kind], sub: district.name };
+    if (Math.abs(x) > city.half + 2 || Math.abs(z) > city.half + 2) return { title: city.water.any ? `🌊 ${city.cfg.waterName || 'The water'}` : '🌾 Open land', sub: 'Outside the city' };
+    return { title: `📍 ${district.name}`, sub: b ? 'A city block' : 'A street' };
+  }
+
   toggle() {
     if (this.el) this.game.closeOverlay(this.el);
     else this.open();
@@ -234,7 +266,15 @@ export class CityMap {
     const size = Math.min(window.innerHeight * 0.8, window.innerWidth * 0.56);
     const cv = h('canvas.map-canvas', { width: size, height: size });
     const side = h('div.map-side');
-    this.el = h('div.overlay.map-overlay', h('div.map-wrap', h('div.map-left', h('div.map-title', `🗺️ ${city.cfg.name}`), cv), side));
+    const tip = h('div.map-tip');
+    tip.style.display = 'none';
+    this.el = h('div.overlay.map-overlay', h('div.map-wrap', h('div.map-left', h('div.map-title', `🗺️ ${city.cfg.name}`), h('div.map-canvas-wrap', cv, tip)), side));
+    this.query ||= '';
+    const matches = () => {
+      const q = this.query.trim().toLowerCase();
+      if (!q) return null;
+      return city.places.filter((p) => (p.type !== 'home' || (game.state && p.id === 'home_' + game.state.home.districtId)) && `${p.name} ${PLACE_TYPES[p.type]?.label || ''} ${p.district?.name || ''}`.toLowerCase().includes(q));
+    };
     const scale = size / (this.extent * 2);
     const sx = (x) => (x + this.extent) * scale;
     const draw = () => {
@@ -267,6 +307,20 @@ export class CityMap {
         }
         g.fillText(p.icon, sx(p.x), sx(p.z));
       }
+      // search results glow on the map
+      for (const p of matches() || []) {
+        g.strokeStyle = '#ffd23f';
+        g.lineWidth = 3;
+        g.beginPath();
+        g.arc(sx(p.x), sx(p.z), 11, 0, Math.PI * 2);
+        g.stroke();
+      }
+      if (this.picked) {
+        g.fillStyle = 'rgba(255,210,63,0.9)';
+        g.beginPath();
+        g.arc(sx(this.picked.x), sx(this.picked.z), 5, 0, Math.PI * 2);
+        g.fill();
+      }
       const pp = game.playerMapPos();
       if (this.waypoint) this.drawRoute(g, sx, sx, pp.x, pp.z, 0);
       g.save();
@@ -285,8 +339,37 @@ export class CityMap {
       g.stroke();
       g.restore();
     };
+    const row = (p) =>
+      h(
+        'div.map-place' + (this.waypoint?.id === p.id ? '.active' : ''),
+        {
+          onclick: () => {
+            this.setWaypoint(this.waypoint?.id === p.id ? null : p);
+            draw();
+            list();
+          },
+        },
+        h('span', p.icon),
+        h('span.grow', p.type === 'home' ? 'My Home' : p.name, h('span.muted.small', `  · ${p.district?.name || ''}`)),
+        game.state ? h('button.btn.small.taxi', { title: 'Take a taxi here', onclick: (e) => (e.stopPropagation(), takeTaxi(game, p)) }, `🚕 ${fmtMoney(taxiQuote(game, p).fare)}`) : null,
+      );
+    const search = h('input.map-search', { type: 'search', placeholder: '🔍 Search places: pizza, museum, Brooklyn…', value: this.query });
+    search.addEventListener('input', () => {
+      this.query = search.value;
+      draw();
+      results();
+    });
+    search.addEventListener('keydown', (e) => e.stopPropagation()); // typing shouldn't move you or close the map
+    const found = h('div.map-results');
+    const results = () => {
+      const m = matches();
+      found.replaceChildren(...(m ? (m.length ? [h('div.muted.small', `${m.length} found · click one to set your GPS`), ...m.slice(0, 40).map(row)] : [h('div.muted.small', 'Nothing matches.')]) : []));
+    };
     const list = () => {
+      results();
       side.replaceChildren(
+        search,
+        found,
         ...this.eventRows(game, draw, list),
         h('div.map-side-title', 'Places'),
         h('div.muted.small', 'Click a place to set a GPS waypoint, or take a taxi straight there. Transit stations are cheaper.'),
@@ -328,17 +411,27 @@ export class CityMap {
         ),
       );
     };
-    cv.addEventListener('click', (e) => {
+    // hover shows what is under the cursor; a click names it and sets the GPS there
+    const showTip = (e, info) => {
       const r = cv.getBoundingClientRect();
-      const x = (e.clientX - r.left) / scale - this.extent;
-      const z = (e.clientY - r.top) / scale - this.extent;
-      let best = null;
-      for (const p of city.places) {
-        if (!this.shows(p)) continue;
-        const d = Math.hypot(p.x - x, p.z - z);
-        if (d < 22 && (!best || d < best.d)) best = { p, d };
-      }
-      this.setWaypoint(best ? best.p : null);
+      tip.style.display = 'block';
+      tip.style.left = e.clientX - r.left + 14 + 'px';
+      tip.style.top = e.clientY - r.top + 10 + 'px';
+      tip.replaceChildren(h('div.map-tip-title', info.title), h('div.map-tip-sub', info.sub));
+    };
+    const at = (e) => {
+      const r = cv.getBoundingClientRect();
+      return [(e.clientX - r.left) * (size / r.width) / scale - this.extent, (e.clientY - r.top) * (size / r.height) / scale - this.extent];
+    };
+    cv.addEventListener('mousemove', (e) => showTip(e, this.identify(...at(e))));
+    cv.addEventListener('mouseleave', () => (tip.style.display = 'none'));
+    cv.addEventListener('click', (e) => {
+      const [x, z] = at(e);
+      const info = this.identify(x, z);
+      this.picked = { x, z };
+      showTip(e, info);
+      if (info.place) this.setWaypoint(info.place);
+      game.events.emit('toast', { icon: '📍', title: info.title, text: info.sub + (info.place ? ' · GPS set' : ''), kind: 'info' });
       draw();
       list();
     });

@@ -492,10 +492,6 @@ export const scenarios = {
     });
     await page.waitForFunction(() => /Hail a taxi/.test(window.__game.interactable?.label || ''), null, { timeout: 15000 });
     await page.evaluate(() => window.__game.interactable.action());
-    for (let i = 0; i < 4; i++) {
-      await wait(2500);
-      console.log('dbg', await page.evaluate(() => JSON.stringify({ label: window.__game.interactable?.label, cab: !!window.__game.hail.cab, t: window.__game.hail.t, spot: window.__game.hail.spot, p: [window.__game.player.pos.x, window.__game.player.pos.z] })));
-    }
     await page.waitForFunction(() => /Get in the taxi/.test(window.__game.interactable?.label || ''), null, { timeout: 60000 });
     await page.evaluate(() => {
       const g = window.__game;
@@ -508,8 +504,6 @@ export const scenarios = {
     await page.evaluate(() => window.__game.interactable.action());
     await page.waitForSelector('.dialog:has-text(\"Where to\")');
     await page.click('.dialog .btn >> nth=0');
-    await wait(3000);
-    console.log('ride?', await page.evaluate(() => JSON.stringify({ ride: !!window.__game.ride, t: window.__game.ride?.t, toasts: [...document.querySelectorAll('.toast-title')].map((e) => e.textContent) })));
     await page.waitForFunction(() => window.__game.ride && window.__game.ride.t > 2, null, { timeout: 60000 });
     await page.evaluate(() => {
       const g = window.__game;
@@ -521,6 +515,27 @@ export const scenarios = {
     await shot('taxi-ride');
     await page.waitForFunction(() => !window.__game.ride, null, { timeout: 90000 });
     console.log('rode the taxi');
+  },
+  /** Map: search for places, hover / click to name what's there. */
+  async mapsearch({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.keyboard.press('KeyM');
+    await page.waitForSelector('.map-search');
+    await page.fill('.map-search', 'pizza');
+    await wait(600);
+    const n = await page.$$eval('.map-results .map-place', (e) => e.length);
+    if (!n) throw new Error('search found nothing for pizza');
+    console.log('pizza results', n);
+    const box = await (await page.$('.map-canvas')).boundingBox();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await wait(400);
+    const tip = await page.$eval('.map-tip', (e) => e.textContent);
+    if (!tip) throw new Error('no hover name');
+    console.log('hover:', tip);
+    await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.4);
+    await wait(600);
+    console.log('click:', await page.$eval('.map-tip', (e) => e.textContent));
+    await shot('map-search');
   },
   /** District banners on the street lamps (and spring blossoms). */
   async banners({ page, shot, wait }) {
