@@ -24,6 +24,7 @@ export default {
   hotel: 'The Capitol Lodge',
   bridge: 'Lakeside Bridge',
   bridgeStyle: 'stone',
+  hills: { name: 'Live Oak Ridge' },
   waterfront: ['south'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

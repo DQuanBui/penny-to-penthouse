@@ -25,6 +25,7 @@ export default {
   hotel: 'Hotel Palisade',
   bridge: 'Pacific Point Bridge',
   bridgeStyle: 'steel',
+  hills: { name: 'Canyon Crest' },
   waterfront: ['west'],
   waterName: 'the Pacific',
   promenade: 'beach',

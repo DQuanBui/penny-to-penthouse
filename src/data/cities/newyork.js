@@ -28,6 +28,7 @@ export default {
   hotel: 'The Hudson Grand',
   bridge: 'Old Harbor Bridge',
   bridgeStyle: 'stone',
+  hills: { name: 'Palisade Ridge' },
   waterfront: ['south', 'west'],
   waterName: 'the Harbor',
   promenade: 'boardwalk',

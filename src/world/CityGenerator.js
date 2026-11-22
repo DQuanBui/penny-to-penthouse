@@ -24,6 +24,7 @@ import { chunkCity } from './Chunks.js';
 import { buildZoo } from './Zoo.js';
 import { buildCampus, buildSchool } from './Campus.js';
 import { buildAirport, airportSide } from './Airport.js';
+import { hillsSpec, buildHills, hillsY } from './Hills.js';
 import { bridgeSpec, buildBridge, onWalkway, deckY } from './Bridge.js';
 import { labelTexture, iconTexture } from './Textures.js';
 
@@ -129,6 +130,8 @@ export function generateCity(cfg, opts = {}) {
     if (s === 'west') return i < 0 && Math.abs(j - zooSpec.j) <= 1;
     return i >= N && Math.abs(j - zooSpec.j) <= 1;
   };
+  // hiking hills beyond another free edge
+  const hills = hillsSpec(cfg, { N, half, K, water, airSide: airportSide(cfg), zoo: zooSpec, blockMin });
   // a university campus where the college is, and a neighbourhood school
   const pickBlock = (d) => {
     const c = blocks.filter((b) => b.district === d && b.kind === 'build');
@@ -368,7 +371,7 @@ export function generateCity(cfg, opts = {}) {
   for (let j = -ring; j < N + ring; j++) {
     for (let i = -ring; i < N + ring; i++) {
       if (i >= 0 && i < N && j >= 0 && j < N) continue;
-      if (airfield(i, j) || zooField(i, j)) continue; // open land for the runway / the zoo grounds
+      if (airfield(i, j) || zooField(i, j) || hills?.cells(i, j)) continue; // open land for the runway / the zoo grounds
       if ((water.west && i < 0) || (water.east && i >= N) || (water.north && j < 0) || (water.south && j >= N)) continue;
       const x0 = blockMin(i);
       const z0 = blockMin(j);
@@ -426,6 +429,7 @@ export function generateCity(cfg, opts = {}) {
   buildFoodCarts(ctx);
   buildFoodTrucks(ctx, LANE_OUT);
   if (zooSpec) buildZoo(ctx, zooSpec);
+  if (hills) buildHills(ctx, hills);
   if (bridge) buildBridge(ctx, bridge);
   buildStreetscape(ctx);
   ctx.facadeStats = buildFacadeDetails(ctx);
@@ -460,6 +464,10 @@ export function generateCity(cfg, opts = {}) {
       const y = wellY(w, x, z);
       if (y != null) return K.CURB + y;
     }
+    if (ctx.hills && (Math.abs(x) > half || Math.abs(z) > half)) {
+      const y = hillsY(ctx.hills, x, z);
+      if (y != null) return K.CURB + y;
+    }
     if (Math.abs(x) > half || Math.abs(z) > half) return K.CURB;
     return inBlockAxis(x) && inBlockAxis(z) ? K.CURB : 0;
   };
@@ -467,7 +475,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, roofGardens: ctx.roofGardens || [], bins: ctx.bins || [], facadeStats: ctx.facadeStats, chunkStats: ctx.chunkStats, sports: ctx.sports || null, skatepark: ctx.skatepark || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, roofGardens: ctx.roofGardens || [], bins: ctx.bins || [], hills: ctx.hills || null, facadeStats: ctx.facadeStats, chunkStats: ctx.chunkStats, sports: ctx.sports || null, skatepark: ctx.skatepark || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */

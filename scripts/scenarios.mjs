@@ -658,6 +658,46 @@ export const scenarios = {
     await step(5);
     console.log('porters', await page.evaluate(() => window.__game.cleaning.porters.length));
   },
+  /** The hiking hills: walk to the trailhead, then the summit. */
+  async hills({ page, shot, wait }) {
+    await startLife(page, wait);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 10 * 60;
+      const H = g.city.hills;
+      if (!H) return null;
+      const t = H.trail[2];
+      g.player.teleport(t.x, t.z, Math.atan2(H.summit.x - t.x, H.summit.z - t.z));
+      return { side: H.side, top: H.top, trail: H.trail.length, y: g.city.groundY(H.summit.x, H.summit.z) };
+    });
+    if (!info) throw new Error('no hills in this city');
+    console.log('hills', JSON.stringify(info));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading);
+      g.cam.pitch = 0.18;
+      g.cam.dist = 7;
+    });
+    await wait(2500);
+    await shot('hills-trailhead');
+    await page.evaluate(() => {
+      const g = window.__game;
+      const H = g.city.hills;
+      const t = H.trail[H.trail.length - 4];
+      g.player.teleport(t.x, t.z, Math.atan2(H.trailhead.x - t.x, H.trailhead.z - t.z));
+    });
+    await page.waitForFunction(() => window.__game.state.flags.summitDay !== undefined, null, { timeout: 60000 });
+    console.log('summit reached; y', await page.evaluate(() => window.__game.player.pos.y));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading);
+      g.cam.pitch = 0.3;
+      g.cam.dist = 8;
+    });
+    await wait(1500);
+    await shot('hills-summit');
+  },
   /** District banners on the street lamps (and spring blossoms). */
   async banners({ page, shot, wait }) {
     await startLife(page, wait);

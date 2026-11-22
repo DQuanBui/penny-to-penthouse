@@ -24,6 +24,7 @@ export default {
   hotel: 'Ocean Breeze Resort',
   bridge: 'Biscayne Bay Bridge',
   bridgeStyle: 'steel',
+  hills: { name: 'Hammock Hill' },
   waterfront: ['east', 'south'],
   waterName: 'the Bay',
   promenade: 'beach',

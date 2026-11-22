@@ -24,6 +24,7 @@ export default {
   hotel: 'The Lakeview Grand',
   bridge: 'Lakefront Bridge',
   bridgeStyle: 'steel',
+  hills: { name: 'Prairie Bluffs' },
   waterfront: ['east'],
   waterName: 'the Lake',
   promenade: 'boardwalk',

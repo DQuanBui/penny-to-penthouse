@@ -23,7 +23,7 @@ export class CityMap {
     this.city = city;
     this.waypoint = null;
     const K = city.K;
-    const pad = Math.max(K.PROM + (city.beach ? 66 : 30), city.zoo?.rect ? 160 : 0);
+    const pad = Math.max(K.PROM + (city.beach ? 66 : 30), city.zoo?.rect || city.hills ? 160 : 0);
     this.extent = city.half + pad;
     const size = Math.ceil(this.extent * 2 * PX);
     const cv = (this.image = document.createElement('canvas'));
@@ -71,6 +71,38 @@ export class CityMap {
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText('🦁', X((Z[0] + Z[2]) / 2), X((Z[1] + Z[3]) / 2));
+    }
+    // the hiking hills: green slopes, contour rings around the summit, the trail
+    const H = city.hills;
+    if (H) {
+      const R = H.rect;
+      g.fillStyle = '#5a7f45';
+      g.beginPath();
+      g.roundRect(X(R[0]), X(R[1]), (R[2] - R[0]) * PX, (R[3] - R[1]) * PX, 14);
+      g.fill();
+      g.save();
+      g.beginPath();
+      g.rect(X(R[0]), X(R[1]), (R[2] - R[0]) * PX, (R[3] - R[1]) * PX);
+      g.clip();
+      g.strokeStyle = 'rgba(30,45,24,0.45)';
+      g.lineWidth = Math.max(1, 1.2 * PX);
+      for (let r = 12; r < 90; r += 13) {
+        g.beginPath();
+        g.ellipse(X(H.summit.x), X(H.summit.z), r * PX * 1.15, r * PX, 0, 0, Math.PI * 2);
+        g.stroke();
+      }
+      g.restore();
+      g.strokeStyle = '#d9b98a';
+      g.setLineDash([4 * PX, 3 * PX]);
+      g.lineWidth = Math.max(1.5, 2 * PX);
+      g.beginPath();
+      H.trail.forEach((t, i) => (i ? g.lineTo(X(t.x), X(t.z)) : g.moveTo(X(t.x), X(t.z))));
+      g.stroke();
+      g.setLineDash([]);
+      g.font = `${20 * PX}px sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('🏔️', X(H.summit.x), X(H.summit.z));
     }
     // blocks
     const tint = ['#4a5876', '#5a6a58', '#6a5a74', '#74604e', '#5a6e78', '#6e5a5a'];
@@ -247,7 +279,7 @@ export class CityMap {
       if (x > Math.min(bx0, bx1) && x < Math.max(bx0, bx1) && z > Math.min(bz0, bz1) && z < Math.max(bz0, bz1)) return { title: `🏖️ ${B.name}`, sub: 'Beach · swim, sunbathe, volleyball' };
     }
     const H = city.hills;
-    if (H && x > H.rect[0] && x < H.rect[2] && z > H.rect[1] && z < H.rect[3]) return { title: `⛰️ ${H.name}`, sub: 'Hiking trails · a lookout at the top' };
+    if (H && x > H.rect[0] && x < H.rect[2] && z > H.rect[1] && z < H.rect[3]) return { title: `⛰️ ${H.name}`, sub: 'Hiking trail · a telescope at the summit', place: city.placeById.hills };
     const b = city.blocks.find((q) => x > q.x0 && x < q.x1 && z > q.z0 && z < q.z1);
     const KIND = { park: '🌳 Park', sports: '🏀 Sports courts', skate: '🛹 Skate park', campus: '🎓 Campus', school: '🏫 School', airport: '✈️ Airport' };
     if (b && KIND[b.kind]) return { title: KIND[b.kind], sub: district.name };
