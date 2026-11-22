@@ -434,6 +434,26 @@ export const scenarios = {
     await wait(2500);
     await shot('bridge-night');
   },
+  /** Kids at the park playground. */
+  async playground({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('autoQuality', false);
+      g.settings.set('graphics', 'medium');
+      g.weather.force = 'clear';
+      g.state.time.total = 15 * 60;
+      const pg = g.playground.grounds[0];
+      g.player.teleport(pg.x + 2, pg.z + 9, Math.PI);
+      g.cam.snapBehind(Math.PI + 0.2);
+      g.cam.pitch = 0.32;
+      g.cam.dist = 7;
+    });
+    await page.waitForFunction(() => window.__game.playground.live, null, { timeout: 20000 });
+    await wait(2500);
+    await shot('playground');
+    console.log('kids', await page.evaluate(() => window.__game.playground.live.people.map((p) => p.task).join(' ')));
+  },
   /** Ride the city bus from a shelter to another district. */
   async busride({ page, shot, wait }) {
     await startLife(page, wait);
