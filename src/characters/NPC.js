@@ -171,6 +171,26 @@ export class NPCManager {
       if (!s) break;
       add(this.makeActor(n), s.x, s.z, rng() * Math.PI * 2);
     }
+    // restaurants and cafés: a waiter doing the rounds with a tray, a cook at the line
+    const items0 = interior.levelItems || interior.layout.items;
+    const tables = items0.filter((it) => ['table_small', 'dining_table', 'grill_table', 'marble_table'].includes(it.id));
+    const counter = interior.points.find((p) => p.use === 'service');
+    if (tables.length && counter) {
+      const a0 = (counter.item.r || 0) * (Math.PI / 2);
+      const start = { x: counter.ix + Math.sin(a0) * 1.0, z: counter.iz + Math.cos(a0) * 1.0 };
+      const route = [];
+      for (const t of tables.slice(0, 4)) route.push(start, { x: t.x + 0.2, z: t.z + 0.95 });
+      const waiter = this.makeActor(null, { ...roleAppearance('vendor', rng), top: 'shirt', topColor: '#f4f4f2', bottom: 'slacks', bottomColor: '#1d1f24', apron: true, apronColor: '#1d1f24', accessory: 'none', carry: 'tray', carryColor: '#c9ced6' });
+      add(waiter, start.x, start.z, a0);
+      waiter.route = route;
+      waiter.ri = 1;
+      const line = items0.find((it) => it.id === 'kitchen_line');
+      if (line) {
+        const cook = this.makeActor(null, roleAppearance('chef', rng));
+        add(cook, line.x + 0.6, line.z + 0.9, Math.PI);
+        cook.cook = true;
+      }
+    }
     // transit police keep an eye on the station hall
     if (place.type === 'station') {
       for (const [x, z] of [[10.5, 11.4], [23.5, 11.6]]) {
@@ -260,6 +280,33 @@ export class NPCManager {
 
   animate(a, dt, playerPos) {
     const g = a.rig.group;
+    if (a.route) {
+      // a waiter: walk to the next stop on the round, pause, carry on
+      const tg = a.route[a.ri];
+      const ddx = tg.x - g.position.x;
+      const ddz = tg.z - g.position.z;
+      const d = Math.hypot(ddx, ddz);
+      if (d > 0.15) {
+        const step = Math.min(d, 1.25 * dt);
+        g.position.x += (ddx / d) * step;
+        g.position.z += (ddz / d) * step;
+        a.heading = dampAngle(a.heading, Math.atan2(ddx, ddz), 8, dt);
+        g.rotation.y = a.heading;
+        animateRig(a.rig, dt, { speed: 1.25, grounded: true });
+        return;
+      }
+      a.wait = (a.wait || 0) - dt;
+      if (a.wait <= 0) {
+        a.ri = (a.ri + 1) % a.route.length;
+        a.wait = 1.8 + Math.random() * 2.5;
+      }
+      animateRig(a.rig, dt, { speed: 0, grounded: true, talking: true });
+      return;
+    }
+    if (a.cook) {
+      animateRig(a.rig, dt, { speed: 0, grounded: true, talking: true, shaking: Math.sin(performance.now() / 700) > 0.3 });
+      return;
+    }
     const dx = playerPos.x - g.position.x;
     const dz = playerPos.z - g.position.z;
     const near = dx * dx + dz * dz < 9;

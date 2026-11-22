@@ -693,6 +693,12 @@ function addCarry(P, a, H) {
       P.add(bx(0.37, 0.04, 0.27).translate(0, 1.36, -B.td - 0.16), 'chest', shade(c, 0.75));
       for (const m of [-1, 1]) P.add(bx(0.03, 0.3, 0.012).translate(m * 0.09, 1.28, B.td * 0.9), 'chest', '#1a1b1f');
       break;
+    case 'tray':
+      // a round tray held flat, with two cups on it
+      P.add(new THREE.CylinderGeometry(0.17, 0.17, 0.014, 18).translate(w[0] - 0.02, w[1] + 0.03, w[2] + 0.14), 'handR', c);
+      P.add(new THREE.CylinderGeometry(0.03, 0.025, 0.08, 10).translate(w[0] - 0.06, w[1] + 0.08, w[2] + 0.1), 'handR', '#f4f1ea');
+      P.add(new THREE.CylinderGeometry(0.03, 0.025, 0.08, 10).translate(w[0] + 0.03, w[1] + 0.08, w[2] + 0.2), 'handR', '#7a4a2a');
+      break;
     case 'bucket':
       P.add(new THREE.CylinderGeometry(0.1, 0.08, 0.2, 12, 1, true).translate(w[0], w[1] - 0.24, w[2]), 'handR', c);
       P.add(new THREE.CircleGeometry(0.08, 12).rotateX(Math.PI / 2).translate(w[0], w[1] - 0.34, w[2]), 'handR', shade(c, 0.7));
