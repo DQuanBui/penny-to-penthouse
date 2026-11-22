@@ -57,6 +57,7 @@ import { PlaygroundLife } from '../world/Playground.js';
 import { ClubQueues } from '../world/NightLife.js';
 import { TaxiHail } from '../ui/Hail.js';
 import { Doormen } from '../world/Doormen.js';
+import { updateTaxiRide } from '../world/TaxiRide.js';
 import { RoofParties } from '../world/RoofParties.js';
 import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
@@ -999,6 +1000,7 @@ export class Game {
   /** Nearest thing the player can use right now: { label, action } or null. */
   findInteractable() {
     const p = this.player.pos;
+    if (this.ride) return null; // in the back of a cab
     if (this.player.sitting) return { label: 'Stand up', action: () => this.standUp() };
     if (this.vehicles.driving) return { label: `Get out · ${this.vehicles.mph()} mph`, key: 'F', action: () => this.vehicles.exit() };
     if (this.player.riding) {
@@ -1181,7 +1183,8 @@ export class Game {
     // --- world ---
     const driving = this.vehicles.update(dt, blocked ? null : input);
     this.player.frozen = blocked || driving;
-    if (!driving) this.player.update(dt, blocked || this.photoMode.active ? null : input, this.cam.yaw);
+    if (this.ride) updateTaxiRide(this, dt);
+    else if (!driving) this.player.update(dt, blocked || this.photoMode.active ? null : input, this.cam.yaw);
     if (this.player.riding && !blocked && !(input.buttons & 7)) this.cam.yaw = dampAngle(this.cam.yaw, this.player.heading + Math.PI, 2.4, dt);
     this.cam.update(dt, blocked ? null : input, this.player.pos);
     worldUniforms.uTime.value = elapsed;

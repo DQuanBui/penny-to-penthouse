@@ -492,7 +492,11 @@ export const scenarios = {
     });
     await page.waitForFunction(() => /Hail a taxi/.test(window.__game.interactable?.label || ''), null, { timeout: 15000 });
     await page.evaluate(() => window.__game.interactable.action());
-    await page.waitForFunction(() => /Get in the taxi/.test(window.__game.interactable?.label || ''), null, { timeout: 30000 });
+    for (let i = 0; i < 4; i++) {
+      await wait(2500);
+      console.log('dbg', await page.evaluate(() => JSON.stringify({ label: window.__game.interactable?.label, cab: !!window.__game.hail.cab, t: window.__game.hail.t, spot: window.__game.hail.spot, p: [window.__game.player.pos.x, window.__game.player.pos.z] })));
+    }
+    await page.waitForFunction(() => /Get in the taxi/.test(window.__game.interactable?.label || ''), null, { timeout: 60000 });
     await page.evaluate(() => {
       const g = window.__game;
       g.cam.snapBehind(Math.PI + 1.3);
@@ -504,7 +508,18 @@ export const scenarios = {
     await page.evaluate(() => window.__game.interactable.action());
     await page.waitForSelector('.dialog:has-text(\"Where to\")');
     await page.click('.dialog .btn >> nth=0');
-    await page.waitForFunction(() => !window.__game.hail.cab, null, { timeout: 15000 });
+    await wait(3000);
+    console.log('ride?', await page.evaluate(() => JSON.stringify({ ride: !!window.__game.ride, t: window.__game.ride?.t, toasts: [...document.querySelectorAll('.toast-title')].map((e) => e.textContent) })));
+    await page.waitForFunction(() => window.__game.ride && window.__game.ride.t > 2, null, { timeout: 60000 });
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.ride.s.ry + 1.2);
+      g.cam.pitch = 0.12;
+      g.cam.dist = 4.5;
+    });
+    await wait(800);
+    await shot('taxi-ride');
+    await page.waitForFunction(() => !window.__game.ride, null, { timeout: 90000 });
     console.log('rode the taxi');
   },
   /** District banners on the street lamps (and spring blossoms). */

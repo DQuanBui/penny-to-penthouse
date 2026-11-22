@@ -4,6 +4,7 @@ import { h, btn } from '../ui/dom.js';
 import { dialog } from '../ui/Menus.js';
 import { BALANCE } from '../data/balance.js';
 import { fmtMoney } from '../core/utils.js';
+import { taxiRide, endTaxiRide } from './TaxiRide.js';
 
 /** Fare and minutes for a station-to-station ride. */
 export function transitQuote(game, from, to) {
@@ -20,8 +21,9 @@ export function taxiQuote(game, place) {
   return { fare: Math.round((BALANCE.prices.taxiBase + (BALANCE.prices.taxiPerKm * dist) / 100) * pi), minutes: Math.round(4 + dist / 45), dist };
 }
 
-function travel(game, place, minutes) {
+function travel(game, place, minutes, atBlack) {
   return game.fade(() => {
+    atBlack?.();
     game.closeAllOverlays();
     game.vehicles?.exit(true);
     if (game.inside) game.leaveInterior(true);
@@ -60,6 +62,8 @@ export async function takeTaxi(game, place) {
   const q = taxiQuote(game, place);
   if (q.dist < 25) return game.events.emit('toast', { icon: '🚕', title: 'You are already there', text: 'It is a few steps away.', kind: 'info' });
   if (!game.sim.finance.spend(q.fare, 'transit', `Taxi to ${place.type === 'home' ? 'home' : place.name}`)) return;
-  await travel(game, place, q.minutes);
+  // out on the street you ride the cab for a bit before the trip fades by
+  if (!game.inside && !game.vehicles?.driving) await taxiRide(game);
+  await travel(game, place, q.minutes, () => endTaxiRide(game));
   game.events.emit('toast', { icon: '🚕', title: 'Taxi ride', text: `${fmtMoney(q.fare)} · ${q.minutes} min. Transit is cheaper if you are not in a hurry.`, kind: 'info' });
 }
