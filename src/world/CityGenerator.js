@@ -25,6 +25,7 @@ import { buildZoo } from './Zoo.js';
 import { buildCampus, buildSchool } from './Campus.js';
 import { buildAirport, airportSide } from './Airport.js';
 import { hillsSpec, buildHills, hillsY } from './Hills.js';
+import { buildTheme } from './CityThemes.js';
 import { bridgeSpec, buildBridge, onWalkway, deckY } from './Bridge.js';
 import { labelTexture, iconTexture } from './Textures.js';
 
@@ -431,6 +432,7 @@ export function generateCity(cfg, opts = {}) {
   buildFoodTrucks(ctx, LANE_OUT);
   if (zooSpec) buildZoo(ctx, zooSpec);
   if (hills) buildHills(ctx, hills);
+  buildTheme(ctx); // each city's signature touches
   if (bridge) buildBridge(ctx, bridge);
   buildStreetscape(ctx);
   ctx.facadeStats = buildFacadeDetails(ctx);
@@ -476,7 +478,7 @@ export function generateCity(cfg, opts = {}) {
   const home = places.find((p) => p.type === 'home');
   const city = {
     cfg, group, colliders, places, districts, blocks, K, N, half, blockMin, roadCenter, groundY, districtAt, water,
-    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, roofGardens: ctx.roofGardens || [], bins: ctx.bins || [], hills: ctx.hills || null, facadeStats: ctx.facadeStats, chunkStats: ctx.chunkStats, sports: ctx.sports || null, skatepark: ctx.skatepark || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
+    lampPositions: ctx.lampPositions, benchSpots: ctx.benchSpots, busStops: ctx.busStops || [], zoo: ctx.zoo || null, campus: ctx.campus || null, school: ctx.school || null, airport: ctx.airport || null, bridge: ctx.bridge || null, timesSquare: ctx.timesSquare || null, beach: ctx.beach || null, roofGardens: ctx.roofGardens || [], bins: ctx.bins || [], hills: ctx.hills || null, themeStats: ctx.themeStats || null, facadeStats: ctx.facadeStats, chunkStats: ctx.chunkStats, sports: ctx.sports || null, skatepark: ctx.skatepark || null, parkedCars: ctx.parkedCars || [], wells: ctx.wells || [], sitters: ctx.sitters || [], bikeDocks: ctx.bikeDocks || [], landmarks: ctx.landmarks || [], vendors: ctx.vendors, buskers: ctx.buskers,
     placeById: Object.fromEntries(places.map((p) => [p.id, p])),
     spawn: { x: home.x, z: home.z, ry: Math.atan2(home.nx, home.nz) },
     /** Traffic signal phase shared with the traffic sim. Returns 'ns' | 'ew' | 'ns_y' | 'ew_y'. */

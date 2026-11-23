@@ -27,6 +27,7 @@ export default {
   // pastel Art Deco by the sea, clay-tile roofs in Little Havana, a riot of colour in Wynwood
   theme: {
     look: 'Pastel deco and neon',
+    neon: ['south_beach', 'little_havana', 'wynwood'],
     accent: ['#f48fb1', '#80deea', '#ffe082', '#a5d6a7', '#ce93d8'],
     styles: {
       houses: { palette: ['#f7c6d0', '#c8eedd', '#fbefb0', '#b8e6ef', '#fbd3b8', '#e2d3f2', '#fdfbf6', '#f4b8c8'], roofs: ['#c8683e', '#b85a36', '#d27a4a', '#e0a070'] },

@@ -27,6 +27,7 @@ export default {
   // deep red brick and cream terra-cotta, dark steel towers in the Loop
   theme: {
     look: 'Brick, steel and the lake',
+    sailboats: 7,
     accent: ['#2f6db5', '#c53a3a', '#e0d2b4', '#5a6a7a'],
     styles: {
       midrise: { palette: ['#8a3b2e', '#9a4a36', '#7a3a30', '#b0603e', '#6e4a3a', '#a85a40', '#e0d2b4', '#c8b896'] },

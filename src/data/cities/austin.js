@@ -27,6 +27,8 @@ export default {
   // pale limestone downtown, painted storefronts on South Congress, murals in East Austin
   theme: {
     look: 'Limestone, murals and string lights',
+    festoons: ['south_congress'],
+    bats: true,
     accent: ['#e07a4a', '#3fa38a', '#e9c04c', '#d86a9a'],
     styles: {
       midrise: { palette: ['#e8dcc0', '#d9c8a2', '#f2d8a8', '#e07a4a', '#3fa38a', '#f4ead6', '#c8b58e', '#e9c04c'] },

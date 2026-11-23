@@ -698,6 +698,57 @@ export const scenarios = {
     await wait(1500);
     await shot('hills-summit');
   },
+  /** A city's signature look (CITY=Miami | Los Angeles | Chicago | Austin). */
+  async themes({ page, shot, wait }) {
+    const city = process.env.CITY || 'Miami';
+    await startLife(page, wait, city);
+    const info = await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      const c = g.city;
+      const T = c.cfg.theme || {};
+      const day = Math.floor(g.state.time.total / 1440) * 1440;
+      let what = 'palette';
+      if (T.neon) {
+        g.state.time.total = day + 21 * 60;
+        const b = c.blocks.find((q) => q.district.id === T.neon[0] && q.kind === 'build');
+        g.player.teleport(b.x1 + 7, b.cz, -Math.PI / 2);
+        what = 'neon';
+      } else if (T.hillsign && c.hills) {
+        g.state.time.total = day + 17 * 60;
+        // look up at the letters from the street
+        const H = c.hills;
+        const uc = H.pu + 14 + (H.name.length - 1) * 2.7;
+        const P = (u, v) => (H.side === 'north' ? [u, -c.half - v] : H.side === 'south' ? [u, c.half + v] : H.side === 'west' ? [-c.half - v, u] : [c.half + v, u]);
+        const [px, pz] = P(uc, -30);
+        const [tx, tz] = P(uc, 40);
+        g.player.teleport(px, pz, Math.atan2(tx - px, tz - pz));
+        what = 'hillsign';
+      } else if (T.festoons) {
+        g.state.time.total = day + 19.6 * 60;
+        const b = c.blocks.find((q) => q.district.id === T.festoons[0] && q.kind === 'build');
+        g.player.teleport(b.x1 + 7, b.cz + 20, Math.PI);
+        what = 'festoons';
+      } else if (T.sailboats) {
+        g.state.time.total = day + 15 * 60;
+        const side = c.cfg.waterfront[0];
+        const e = c.half + c.K.PROM * 0.5;
+        g.player.teleport(side === 'east' ? e : side === 'west' ? -e : 0, side === 'south' ? e : side === 'north' ? -e : 0, { east: Math.PI / 2, west: -Math.PI / 2, south: 0, north: Math.PI }[side]);
+        what = 'sailboats';
+      }
+      return { what, stats: c.themeStats, styles: c.districts.map((d) => d.styleDef.palette[0]) };
+    });
+    console.log(city, JSON.stringify(info));
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.cam.snapBehind(g.player.heading);
+      const T = g.city.cfg.theme || {};
+      g.cam.pitch = T.hillsign ? -0.05 : 0.22;
+      g.cam.dist = T.neon || T.festoons ? 15 : 7;
+    });
+    await wait(2500);
+    await shot('theme-' + city.toLowerCase().replace(/ /g, ''));
+  },
   /** District banners on the street lamps (and spring blossoms). */
   async banners({ page, shot, wait }) {
     await startLife(page, wait);

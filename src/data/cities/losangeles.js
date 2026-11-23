@@ -28,6 +28,7 @@ export default {
   // sun-bleached stucco, terracotta roofs, warm sandstone in Hollywood
   theme: {
     look: 'Stucco, palms and sunsets',
+    hillsign: true,
     accent: ['#e07a4a', '#d9b44a', '#6aa6c0', '#c85a5a', '#8ab07a'],
     styles: {
       houses: { palette: ['#f3ead8', '#ead7b8', '#f6efe2', '#e8c9a6', '#dfe6d4', '#f2dcc2', '#e3d0e0'], roofs: ['#b8592f', '#c8683e', '#a84a2a', '#d07a4a'] },

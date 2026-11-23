@@ -62,6 +62,7 @@ import { RoofParties } from '../world/RoofParties.js';
 import { CityTrash } from '../world/Trash.js';
 import { CityCleaning } from '../world/Cleaning.js';
 import { HikeLife } from '../world/Hills.js';
+import { ThemeLife } from '../world/CityThemes.js';
 import { makeBike, makeMoto, helmet, OWN_BIKES, SHARE, SHARE_COLOR } from '../world/Bikes.js';
 import { setUmbrella } from '../characters/Umbrella.js';
 import { openEmotes, updateEmote, EMOTE_RATES } from '../ui/Emotes.js';
@@ -167,6 +168,7 @@ export class Game {
     this.trash = new CityTrash(this);
     this.cleaning = new CityCleaning(this);
     this.hike = new HikeLife(this);
+    this.themeLife = new ThemeLife(this);
     this.events.on('petChanged', () => this.syncPet());
     this.events.on('carBought', () => this.vehicles.sync());
     this.events.on('carSold', () => this.vehicles.sync());
@@ -329,6 +331,7 @@ export class Game {
     this.trash.setCity(this.city);
     this.cleaning.setCity(this.city);
     this.hike.setCity(this.city);
+    this.themeLife.setCity(this.city);
     this.cityEvents.setCity(this.city);
     this.vehicles.clear();
     if (this.state) this.vehicles.sync();
@@ -1250,6 +1253,7 @@ export class Game {
     this.trash.update(dt, this.player.pos, !!inside);
     this.cleaning.update(dt, this.player.pos, !!inside);
     this.hike.update(dt, this.player.pos, !!inside);
+    this.themeLife.update(dt, this.player.pos, !!inside);
     this.playerBalloon?.userData.tick?.(performance.now() / 1000);
     if (inside) this.subway.update(dt);
     this.npcs.update(dt, this.player.pos, !!inside);
