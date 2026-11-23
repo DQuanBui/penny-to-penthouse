@@ -303,6 +303,7 @@ export class CityTrash {
     }
     st.flags.litterN = (st.flags.litterN || 0) + 1;
     st.flags.litterTotal = (st.flags.litterTotal || 0) + 1;
+    if (st.flags.litterTotal === 50) game.sim.achievements?.check();
     game.audio?.play('click');
     // the first few each day lift your mood a little
     if (st.flags.litterN <= 5) {

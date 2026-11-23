@@ -456,6 +456,9 @@ export class HikeLife {
       if (st.flags.summitDay !== day) {
         st.flags.summitDay = day;
         st.stats.summits = (st.stats.summits || 0) + 1;
+        const cid = this.city.cfg.id;
+        if (!(st.flags.summitCities ||= []).includes(cid)) st.flags.summitCities.push(cid);
+        this.game.sim.achievements?.check();
         addNeed(this.game.sim, 'fun', 12);
         this.game.audio?.play('success');
         this.game.events.emit('toast', { icon: '🏔️', title: `You made it to the top of ${S.name}!`, text: st.stats.summits === 1 ? 'The whole city is spread out below you. Worth every step.' : `Summit number ${st.stats.summits}. The view never gets old.`, kind: 'good', long: true });

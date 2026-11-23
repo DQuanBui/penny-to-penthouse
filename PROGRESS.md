@@ -1,11 +1,11 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Sixth round in progress (see checklist below). Done so far: city signature features, taxi drop-off. Next: hiking/litter achievements, then the fix list (camera collision, balance, map labels, creator preview, save-failed toast), then bus riding, relocation, office interiors, touch controls, performance.
+RESUME HERE: Sixth round in progress (see checklist below). Done so far: city signature features, taxi drop-off, achievements. Next: the fix list (camera collision, balance, map labels, creator preview, save-failed toast), then bus riding, relocation, office interiors, touch controls, performance.
 
 ## Sixth round (this session)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)
 - [x] Taxi drop-off (TaxiRide.taxiArrive / updateCabOff): the cab pulls up at the kerb by the door, you step out, it drives off; kerbSpot/kerbGap shared with ui/Hail.js (`hail` scenario)
-- [ ] Achievements: two for hiking, one for litter
+- [x] Achievements: Top of the Trail (summit), Peak Bagger (summits in 3 cities, flags.summitCities), Clean Streets (50 litter, flags.litterTotal)
 - [ ] Camera collision (ray vs colliders, smoothing) + occluder fade
 - [ ] Balance (npm run sim): business curve, ER collapses, tech year 1→2
 - [ ] Map: district labels avoid icons

@@ -589,6 +589,18 @@ export const scenarios = {
     const after = await page.evaluate(() => window.__game.trash.onCount);
     if (after !== before - 1) throw new Error('litter not picked up');
     console.log('picked up litter', before, '->', after);
+    // the 50th piece earns Clean Streets
+    const ach = await page.evaluate(() => {
+      const g = window.__game;
+      g.state.flags.litterTotal = 48;
+      const T = g.trash;
+      const left = T.near.map((i) => T.pieces[i]).filter((x) => x.on && x.litter);
+      T.pickUp(left[0]);
+      T.pickUp(left[1]);
+      return { total: g.state.flags.litterTotal, unlocked: g.state.achievements.clean_streets != null };
+    });
+    console.log('clean streets', JSON.stringify(ach));
+    if (!ach.unlocked) throw new Error('Clean Streets not unlocked');
   },
   /** Morning clean-up: the garbage truck crew collects a pile, the washer sprays, porters sweep. */
   async cleanup({ page, shot, wait }) {
@@ -700,6 +712,9 @@ export const scenarios = {
     });
     await page.waitForFunction(() => window.__game.state.flags.summitDay !== undefined, null, { timeout: 60000 });
     console.log('summit reached; y', await page.evaluate(() => window.__game.player.pos.y));
+    const ach = await page.evaluate(() => ({ summit: window.__game.state.achievements.summit != null, cities: window.__game.state.flags.summitCities }));
+    console.log('summit achievement', JSON.stringify(ach));
+    if (!ach.summit) throw new Error('Top of the Trail not unlocked');
     await page.evaluate(() => {
       const g = window.__game;
       g.cam.snapBehind(g.player.heading);
