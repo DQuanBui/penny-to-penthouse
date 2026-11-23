@@ -6,6 +6,7 @@ import { dialog } from './Menus.js';
 import { fmtMoney } from '../core/utils.js';
 import { takeTaxi, taxiQuote } from '../world/Transit.js';
 import { vehicleGeometry, carMaterial, glassMaterial } from '../world/CarModel.js';
+import { kerbSpot, kerbGap } from '../world/TaxiRide.js';
 
 export class TaxiHail {
   constructor(game) {
@@ -18,22 +19,7 @@ export class TaxiHail {
   kerb(p) {
     const c = this.game.city;
     if (!c || this.game.inside || this.game.vehicles.driving || this.game.player.riding) return null;
-    const K = c.K;
-    const i = Math.floor((p.x + c.half - K.ROAD) / K.PITCH);
-    const j = Math.floor((p.z + c.half - K.ROAD) / K.PITCH);
-    if (i < 0 || j < 0 || i >= c.N || j >= c.N) return null;
-    const x0 = c.blockMin(i);
-    const z0 = c.blockMin(j);
-    const lx = p.x - x0;
-    const lz = p.z - z0;
-    if (lx < 0 || lz < 0 || lx > K.BLOCK || lz > K.BLOCK) return null;
-    // within 1.6 m of a block edge that has a road beyond it
-    const lane = 5.25;
-    if (lz < 1.6 && j > 0) return { x: p.x, z: c.roadCenter(j) + lane, ry: Math.PI / 2, nx: 0, nz: -1 };
-    if (lz > K.BLOCK - 1.6 && j < c.N - 1) return { x: p.x, z: c.roadCenter(j + 1) - lane, ry: -Math.PI / 2, nx: 0, nz: 1 };
-    if (lx < 1.6 && i > 0) return { x: c.roadCenter(i) + lane, z: p.z, ry: Math.PI, nx: -1, nz: 0 };
-    if (lx > K.BLOCK - 1.6 && i < c.N - 1) return { x: c.roadCenter(i + 1) - lane, z: p.z, ry: 0, nx: 1, nz: 0 };
-    return null;
+    return kerbSpot(c, p);
   }
 
   interactable(p) {
@@ -48,21 +34,7 @@ export class TaxiHail {
     game.player.emote = { id: 'wave', t: 2.2, held: false };
     game.audio?.play('click');
     // pull in at a free gap along the kerb, or double-park beside the parked cars
-    const parked = game.city.parkedCars || [];
-    const fx = Math.sin(k.ry);
-    const fz = Math.cos(k.ry);
-    const free = (x, z) => !parked.some((q) => (q.x - x) ** 2 + (q.z - z) ** 2 < 5.2 * 5.2);
-    let spot = null;
-    for (const o of [0, 4, -4, 8, -8, 12, -12]) {
-      const x = k.x + fx * o;
-      const z = k.z + fz * o;
-      if (free(x, z)) {
-        spot = { ...k, x, z };
-        break;
-      }
-    }
-    // (n points from the sidewalk out into the road)
-    if (!spot) spot = { ...k, x: k.x + k.nx * 2.6, z: k.z + k.nz * 2.6 };
+    const spot = kerbGap(game.city, k);
     this.spot = spot;
     k = spot;
     this.t = 3.2; // a cab spots you and pulls in

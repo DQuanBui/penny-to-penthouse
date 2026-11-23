@@ -57,7 +57,7 @@ import { PlaygroundLife } from '../world/Playground.js';
 import { ClubQueues } from '../world/NightLife.js';
 import { TaxiHail } from '../ui/Hail.js';
 import { Doormen } from '../world/Doormen.js';
-import { updateTaxiRide } from '../world/TaxiRide.js';
+import { updateTaxiRide, updateCabOff } from '../world/TaxiRide.js';
 import { RoofParties } from '../world/RoofParties.js';
 import { CityTrash } from '../world/Trash.js';
 import { CityCleaning } from '../world/Cleaning.js';
@@ -1200,6 +1200,7 @@ export class Game {
     // --- world ---
     const driving = this.vehicles.update(dt, blocked ? null : input);
     this.player.frozen = blocked || driving;
+    if (this.cabOff) updateCabOff(this, dt);
     if (this.ride) updateTaxiRide(this, dt);
     else if (!driving) this.player.update(dt, blocked || this.photoMode.active ? null : input, this.cam.yaw);
     if (this.player.riding && !blocked && !(input.buttons & 7)) this.cam.yaw = dampAngle(this.cam.yaw, this.player.heading + Math.PI, 2.4, dt);

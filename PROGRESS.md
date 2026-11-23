@@ -1,63 +1,27 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: All 13 phases are complete and deployed. Post-launch polish round done (see "Post-launch" below). Second polish round done too (businesses, roles, zoo, campus, school, airport). Next ideas: riding the bus, moving permanently to another city (relocation), interiors for more office types, mobile/touch controls, an online leaderboard provider (sim/Rankings.js interface).
+RESUME HERE: Sixth round in progress (see checklist below). Done so far: city signature features, taxi drop-off. Next: hiking/litter achievements, then the fix list (camera collision, balance, map labels, creator preview, save-failed toast), then bus riding, relocation, office interiors, touch controls, performance.
 
-## Post-launch (polish round)
-- [x] Car collisions (OBB/SAT for parked + traffic + player car) — no walking or driving through cars
-- [x] Denser crowd (signal-aware crossings, joggers, chats) and smoother procedural characters
-- [x] Storefronts per place type (data/placeTypes.js `look`, world/Storefronts.js), malls in every city
-- [x] Wildlife (world/Animals.js), streetscape + rooftops (world/Streetscape.js), realistic car model (world/CarModel.js)
-- [x] Parks + street life (world/Parks.js, world/StreetLife.js), benches you can sit on
-- [x] Weekly city events (data/cityEvents.js, world/CityEvents.js)
-- [x] 30 life events; forced/debug triggers respect each event's `needs`
-- [x] Pets: data/pets.js, sim/Pets.js (state.pet), world/Pet.js (follower + rescue dogs), ui/Pets.js; Pet Rescue place type in every city
-- [x] HUD: compass + waypoint distance, need ring meters, pet chip, dismissable toasts
-- [x] Interiors: skyline windows (day/night), curtains, wall clock, molding, set tables
-- [x] Photo mode (ui/PhotoMode.js, H): save PNG or post (POST_KINDS.photo with a subject multiplier)
-- [x] City buses (Traffic bus slots, CarModel busGeometry, city.busStops, per-city `busColor`)
-- [x] Pedestrians stay on pavements: park lawns keep a 5 m sidewalk ring; Crowd.steer() sidesteps colliders
-- [x] Traffic: planned turns (planTurn), bezier paths through intersections, blinking indicators (aSignal), body roll/pitch; player car bicycle-model steering
-- [x] Roles (Customization ROLES / roleAppearance): uniforms, vests, scrubs, coats, hats, carried items; crowd rigs matched by role; people sitting on the street (StreetLife 'sitter')
-- [x] Crowd greetings: socialize() pairs, handshake/talk/wave animation, keep-right passing
-- [x] Neighbourhood businesses: data/shops.js (minor place types), CityGenerator step 2b, ui/SmallBusiness.js, interiors pub/club/pizza/deli/pharmacy/barber/salon/bookstore/laundromat/florist/cinema/diner/arcade/bakery, NPC customers and dancers, map filters
-- [x] Zoo (world/Zoo.js, block kind 'zoo'), campus + school (world/Campus.js), airport + air traffic (world/Airport.js) and trips (sim/Trips.js, ui/Travel.js, Game.travelTo)
-- [x] Vehicles: parametric BODIES in world/CarModel.js (vehicleGeometry(type) -> body + see-through glass with a driver); Traffic one mesh pair per style; parked cars chunked + distance-culled; dealer models carry `body`
-- [x] Bicycles (world/Bikes.js): bike-share docks (city.bikeDocks), own bikes from the bike shop (state.bike, G), PlayerController.updateRide, cyclists as Traffic 'bike' slots in BIKE_LANE
-- [x] Umbrellas (characters/Umbrella.js): crowd impostors + rigs, NPCs, player when raining
-- [x] World food: 12 more shop types in data/shops.js with eatery() themed interiors
-- [x] Bigger cities (grid 12), suspension bridge (world/Bridge.js: walkable corridor, deckY ground, BridgeLife strollers), subway (world/Subway.js: platform + subwaycar interiors, trains, rides)
+## Sixth round (this session)
+- [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)
+- [x] Taxi drop-off (TaxiRide.taxiArrive / updateCabOff): the cab pulls up at the kerb by the door, you step out, it drives off; kerbSpot/kerbGap shared with ui/Hail.js (`hail` scenario)
+- [ ] Achievements: two for hiking, one for litter
+- [ ] Camera collision (ray vs colliders, smoothing) + occluder fade
+- [ ] Balance (npm run sim): business curve, ER collapses, tech year 1→2
+- [ ] Map: district labels avoid icons
+- [ ] Creator: preview faces the camera after Random / appearance changes
+- [ ] Toast when a save fails
+- [ ] Ride the city bus (board, fare, ride, get off at a chosen stop)
+- [ ] Relocation (move permanently to another city)
+- [ ] Interiors for 3+ more office workplaces
+- [ ] Mobile / touch controls
+- [ ] Performance pass
 
-## Third round (city life)
-- [x] Times Square (world/TimesSquare.js, landmark type 'times_square'): billboard towers, tickers, red steps (per-step colliders), TimesSquareLife tourists
-- [x] Food carts (world/FoodCarts.js): CART_KINDS menus, corner carts, steam; StreetLife.openCart(spot) by kind; 'vendor' role with apron
-- [x] Beaches (world/Beach.js, cfg.beach): sloped sand mesh, beachY in groundY, corridor + walls, Roads rail gap; BeachLife (sunbathers, swimmers, volleyball, frisbee, lifeguard); player swimming (floatY, swim pose) and lying (sunbathe)
-- [x] More roles: firefighter, paramedic, sanitation, rich, elderly (cane), parent (stroller), skater, musician, poor; crowd RIG_ROLES
-- [x] Ducks and swans (world/Ducks.js): instanced clusters along the waterfront, feed from the railing
-- [x] Live events (world/LiveEvents.js): kerb crashes (police/ambulance, 911, help) and purse snatchers (chase on the sidewalk lattice, return the bag); OBBs via Game.pushOutOfMovers
-- [x] Sports block (world/Sports.js, block kind 'sports'): basketball + soccer pickup games, join (emote with move: true)
-- [x] Subway stairwells (Props.js subwayEntrance): depth "punch" quad (renderOrder -1 after ground/water at -2), wellY in groundY; bigger station hall with ticket machines (state.transitPass), newsstand, maps, transit police
-- [x] New shop types: autoshow, library (skill XP via menu item xp), artmuseum, historymuseum with themed interiors and furniture
-- [x] Building details (world/Facades.js): fire escapes, rooftop billboards, warning lights, roof gardens
-- [x] District grid (cfg.districtGrid) — New York is 2 x 3 on a 15 x 15 map with Harlem and the Bronx; Borough Field ballpark landmark
-- [x] Zoo moved beyond the city edge (zooField in the backdrop loop, corridor): 11 habitats, new species (tiger, bear, hippo, rhino, monkey, kangaroo)
-
-## Fourth round (anime look, liveliness)
-- [x] Anime characters (CharacterFactory): MeshToonMaterial with a 3-step ramp, ink outline = second SkinnedMesh on the same skeleton (aOutline attribute, tiny parts skip), HEAD_SCALE 1.15, anime eyes/lashes/brows/blush, bangs + spiky/twintails/hime hair, bow/catears/hairclip accessories; far crowd (Crowd impostors) toon + ink; zoo and city animals toon + ink
-- [x] Motorbikes (CarModel buildMoto, BODIES scooter/motorbike[_solo]); player scooter/motorbike (Bikes.makeMoto, helmet on the head bone); skateboard + rental (SkatePark.js: rampY quarter pipes in groundY, SkateLife)
-- [x] Zoo: 15 habitats (pandas, gorillas, crocodiles, aviary with perched parrots), gate officer, keepers (feedingAt draws animals)
-- [x] Interiors: withUpstairs() adds a staircase + upper floor (UPSTAIRS by interior kind; stairY ramp in groundY; Game.useStairs at y > 1.3 / < -1.3); homes: spiral staircase replaces the lift pad
-- [x] Named buildings (Facades: entrances, plaques, tower names), accent colours; people: kids, cosplayers, hipsters, goths, athletes, artists
-- [x] StreetShows, Playground, NightLife (club queues), Doormen, RoofParties, Fireworks, food trucks (FoodCarts.buildFoodTrucks), waiters/cooks (NPC route), chat bubbles (Crowd), district banners + spring blossoms (Props), bus rides (ui/Bus.js), taxi hail (ui/Hail.js), garbage trucks and vans
-- [x] Performance: world/Chunks.js tiles city-wide meshes and batches (200 m) and distance-culls signs/icons
-
-## Fifth round (themes, the outdoors, a cleaner city)
-- [x] See-through car glass (CarModel glassMaterial), cabins with seats/dashboards, anime drivers; taxis carry a back-seat passenger
-- [x] Taxi ride (world/TaxiRide.js): the cab pulls out with you in the back seat before the trip fades (Transit.travel atBlack → endTaxiRide)
-- [x] Map search + identify (ui/Map.js): search box filters all places, results glow on the map; hover tooltip / click toast names the place, landmark, zoo, beach, hills, park or district
-- [x] Trash (world/Trash.js): litter pieces (paper/can/cup/wrapper/bottle) on pavements and gutters, kerb bag piles (evening → morning), overflowing bins (city.bins); litter density follows the hour (crews change it out of sight); per-kind InstancedMesh refilled with nearby pieces; pick litter up
-- [x] Cleaning (world/Cleaning.js): garbage truck (route along a road, stops at piles, two-person crew carries bags to the hopper), street washer (BODIES.sweeper: tank, spray bar, spinning brushes, spray particles, drying wet strips, clears gutter litter), porters (carry 'broomcart') clear pavement litter; Traffic.blockers make cars queue behind the trucks
-- [x] Hills (world/Hills.js): hillsSpec picks a free edge away from the zoo (ring cells reserved like zooField), analytic height (peak, shoulder, far range) in groundY, terrain mesh with vertex colours, switchback trail ribbon, pines/boulders with colliders, trail markers, benches, summit cairn/flag/telescope, corridor, 'hills' place (walk: no Enter prompt); HikeLife hikers + summit reward; map draws contours and the trail
-- [x] City themes: cfg.theme.styles repaints DISTRICT_STYLES per city, theme accents; world/CityThemes.js — Miami neon deco bands, LA hillside letters, Austin festoons + dusk bats (ThemeLife), Chicago sailboats
+## Earlier rounds (summary)
+- **Post-launch polish**: car OBB collisions, crowd + traffic behaviour, storefronts, wildlife, parks, weekly city events, 30 life events, pets, HUD compass, photo mode, buses, roles/uniforms, neighbourhood businesses (data/shops.js), zoo/campus/school/airport + trips, vehicle BODIES, bicycles, umbrellas, bigger cities, bridge, subway.
+- **Third round (city life)**: Times Square, food carts, beaches + swimming, more roles, ducks, live events (crashes, purse snatchers), sports block, subway stairwells/stations, museums/library, building details (Facades.js), NYC district grid, zoo beyond the edge.
+- **Fourth round (anime look)**: toon characters with ink outlines, motorbikes/scooters, skate park, bigger zoo, upstairs interiors, named buildings, street shows, playgrounds, clubs, doormen, roof parties, fireworks, food trucks, bus rides (ui/Bus.js), taxi hail (ui/Hail.js), world/Chunks.js culling.
+- **Fifth round**: see-through car glass + cabins, taxi ride (world/TaxiRide.js), map search/identify, trash + cleaning crews (Trash.js, Cleaning.js), hiking hills (Hills.js), city themes (cfg.theme.styles).
 
 ## Phase checklist
 - [x] 1. Setup: Vite + Three.js, loop, third-person controller + orbit camera, one procedural district, day/night

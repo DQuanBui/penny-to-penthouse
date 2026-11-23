@@ -513,8 +513,19 @@ export const scenarios = {
     });
     await wait(800);
     await shot('taxi-ride');
-    await page.waitForFunction(() => !window.__game.ride, null, { timeout: 90000 });
-    console.log('rode the taxi');
+    // at the other end the cab pulls up at the kerb and you step out
+    await page.waitForFunction(() => window.__game.ride?.arrive && window.__game.ride.t > 2.6 && !window.__game.fading, null, { timeout: 90000 });
+    await shot('taxi-dropoff');
+    await page.waitForFunction(() => !window.__game.ride, null, { timeout: 60000 });
+    const out = await page.evaluate(() => {
+      const g = window.__game;
+      const p = g.player.pos;
+      return { sitting: g.player.sitting, cabLeaving: !!g.cabOff, ground: +g.city.groundY(p.x, p.z).toFixed(2) };
+    });
+    console.log('dropped off', JSON.stringify(out));
+    if (out.sitting || !out.cabLeaving) throw new Error('taxi drop-off did not finish');
+    await wait(1500);
+    await shot('taxi-out');
   },
   /** Map: search for places, hover / click to name what's there. */
   async mapsearch({ page, shot, wait }) {
