@@ -1,8 +1,8 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Sixth round in progress (see checklist below). Fix list done (themes, taxi drop-off, achievements, balance, camera collision, map labels, creator preview, save-failed toast). Done in Step 3: bus riding, relocation, office interiors, touch controls, performance. Next: more polish (storms, transit map, ride banner, forecast, moving boxes).
+RESUME HERE: Sixth round complete and deployed (checklist below). Next ideas: an online leaderboard provider (sim/Rankings.js interface), camera collision against cars/buses (OBBs), office coworkers seated at the new desks, more seasonal city dressing (a big plaza tree), relocation in the headless sim (`npm run sim` strategy).
 
-## Sixth round (this session)
+## Sixth round (Nov 2026)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)
 - [x] Taxi drop-off (TaxiRide.taxiArrive / updateCabOff): the cab pulls up at the kerb by the door, you step out, it drives off; kerbSpot/kerbGap shared with ui/Hail.js (`hail` scenario)
 - [x] Achievements: Top of the Trail (summit), Peak Bagger (summits in 3 cities, flags.summitCities), Clean Streets (50 litter, flags.litterTotal)
@@ -103,8 +103,8 @@ RESUME HERE: Sixth round in progress (see checklist below). Fix list done (theme
 
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.
-- New scenarios: collide, crowd, faces, fronts, animals, park, events, pets, hud, rooms, photo, buses, walkers, turns, people, meet, shops, zoo, campus, travel, airfield, cars, bikes, rain, food, bridge, subway, sit, emotes, times, carts, beach (CITY=Miami for others), ducks, live, sports, stairs, culture, facades, boroughs, perf (draw calls / triangles; HEAVY=1 BREAKDOWN=1), motos, skate, upstairs (PLACE=restaurant...), homestairs, shows, trucks, fireworks, busride, playground, clubs, accessories, banners, hail, doormen, roofs, mapsearch, trash, cleanup (steps the crews directly), hills, themes (CITY=Miami | Los Angeles | Chicago | Austin). `ROLES=a,b node scripts/smoke.mjs people` lines up chosen roles.
-- Do not edit files under src/ while a smoke run is going: the dev server hot-reloads and the run fails (window.__game undefined).
+- New scenarios: collide, crowd, faces, fronts, animals, park, events, pets, hud, rooms, photo, buses, walkers, turns, people, meet, shops, zoo, campus, travel, airfield, cars, bikes, rain, food, bridge, subway, sit, emotes, times, carts, beach (CITY=Miami for others), ducks, live, sports, stairs, culture, facades, boroughs, perf (draw calls / triangles; HEAVY=1 BREAKDOWN=1), motos, skate, upstairs (PLACE=restaurant...), homestairs, shows, trucks, fireworks, busride, playground, clubs, accessories, banners, hail, doormen, roofs, mapsearch, trash, cleanup (steps the crews directly), hills, themes (CITY=Miami | Los Angeles | Chicago | Austin). `ROLES=a,b node scripts/smoke.mjs people` lines up chosen roles., themes (CITY=…), tired, camera, savefail, relocate, offices, touch, storm, holiday; perf takes CALLS=1 and SPOTS=home,zoo
+- Do not edit files under src/ while a smoke run is going: the dev server hot-reloads and the run fails (window.__game undefined). After editing src/, wait a few seconds before starting a run (the hot-reload can land mid-setup and make clicks time out).
 - Scenarios: polish (post FX, audio, debug panel), drive (dealer, driving, parking, traffic), life (tutorial, events, Goals/Rankings/Calendar), cities (all 5 cities, weather, transit, taxi — heavy, may need a rerun under software GL), build (build mode, renovation, two floors), finance (Invest, Homes, mortgage, loans, News), learn (Learn app, class, gigs, ventures, 4 mini-games), social (crowd, NPC talk, Contacts, Pulse, indoor NPCs), work (home, sleep, jobs, interview, shift, mini-games, café), core (HUD/phone/bank/map/pause/save-load), creator, default (walk + day/night shots).
 - Dev key: `]` advances the clock one hour.
 
