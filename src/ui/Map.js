@@ -2,6 +2,9 @@
 // the full-screen map (M) with district names, place icons, a waypoint and a
 // GPS line that follows the streets.
 import { SHOP_TYPES, SHOP_CATS, shopOpen } from '../data/shops.js';
+
+/** Map layers: key places, the neighbourhood business categories, and transit (stations + bus stops). */
+const MAP_CATS = [...SHOP_CATS, ['transit', '🚏 Transit']];
 import { h } from './dom.js';
 import { PLACE_TYPES } from '../data/placeTypes.js';
 import { taxiQuote, takeTaxi } from '../world/Transit.js';
@@ -127,7 +130,18 @@ export class CityMap {
   /** Map filter: key places, or one kind of neighbourhood business. */
   shows(p) {
     const f = this.filter || 'key';
+    if (f === 'transit') return !!p.station;
     return f === 'key' ? !p.minor : !!p.minor && SHOP_TYPES[p.type]?.cat === f;
+  }
+
+  /** Bus stops as map entries: { x, z, name, id, icon }, named after what is nearby. */
+  busStops() {
+    const city = this.city;
+    if (this._stopsCity !== city) {
+      this._stopsCity = city;
+      this._stops = (city.busStops || []).map((s, i) => ({ x: s.x, z: s.z, id: 'bus_' + i, icon: '🚏', name: `Bus stop · ${this.game.bus?.stopName(s) || 'Main St'}`, district: city.districtAt(s.x, s.z) }));
+    }
+    return this._stops;
   }
 
   drawMini(ctx, size, px, pz, heading, scale = 0.62) {
@@ -325,6 +339,9 @@ export class CityMap {
       if (d < 16 && (!best || d < best.d)) best = { p, d };
     }
     const district = city.districtAt(x, z);
+    if ((this.filter || 'key') === 'transit') {
+      for (const s of this.busStops()) if (Math.hypot(s.x - x, s.z - z) < 14 && (!best || best.d > 6)) return { title: `🚏 ${s.name.replace('Bus stop · ', '')}`, sub: `Bus stop · ${district.name} · wait at the shelter, pick any stop`, place: s };
+    }
     if (best) {
       const p = best.p;
       return { title: `${p.icon} ${p.type === 'home' ? 'My Home' : p.name}`, sub: `${PLACE_TYPES[p.type]?.label || p.type} · ${p.district?.name || district.name}`, place: p };
@@ -391,6 +408,19 @@ export class CityMap {
         }
         g.fillText(p.icon, sx(p.x), sx(p.z));
         icons.push(sx(p.x), sx(p.z));
+      }
+      if ((this.filter || 'key') === 'transit') {
+        // bus stops: bold yellow dots with a dark ring, easy to spot between the blocks
+        g.lineWidth = 2;
+        g.strokeStyle = 'rgba(20,22,30,0.9)';
+        g.fillStyle = '#ffd23f';
+        for (const s of this.busStops()) {
+          g.beginPath();
+          g.arc(sx(s.x), sx(s.z), 4, 0, Math.PI * 2);
+          g.fill();
+          g.stroke();
+          icons.push(sx(s.x), sx(s.z));
+        }
       }
       this.drawDistrictLabels(g, sx, icons);
       // search results glow on the map
@@ -459,13 +489,12 @@ export class CityMap {
         ...this.eventRows(game, draw, list),
         h('div.map-side-title', 'Places'),
         h('div.muted.small', 'Click a place to set a GPS waypoint, or take a taxi straight there. Transit stations are cheaper.'),
-        h('div.chips.map-filter', SHOP_CATS.map(([id, text]) => h('button.chip' + ((this.filter || 'key') === id ? '.active' : ''), { onclick: () => ((this.filter = id), draw(), list()) }, text))),
+        h('div.chips.map-filter', MAP_CATS.map(([id, text]) => h('button.chip' + ((this.filter || 'key') === id ? '.active' : ''), { onclick: () => ((this.filter = id), draw(), list()) }, text))),
         ...city.districts.map((d) =>
           h(
             'div.map-group',
             h('div.map-district', d.name),
-            city.places
-              .filter((p) => p.district === d && this.shows(p) && (p.type !== 'home' || (game.state && p.id === 'home_' + game.state.home.districtId)))
+            [...city.places.filter((p) => p.district === d && this.shows(p) && (p.type !== 'home' || (game.state && p.id === 'home_' + game.state.home.districtId))), ...((this.filter || 'key') === 'transit' ? this.busStops().filter((s) => s.district === d) : [])]
               .map((p) =>
                 h(
                   'div.map-place' + (this.waypoint?.id === p.id ? '.active' : ''),
@@ -477,8 +506,8 @@ export class CityMap {
                     },
                   },
                   h('span', p.icon),
-                  h('span.grow', p.type === 'home' ? 'My Home' : p.name, p.minor && game.state ? h('span.muted.small', shopOpen(p.type, hourOf(game.state.time.total)) ? '  · open' : '  · closed') : null),
-                  game.state
+                  h('span.grow', p.type === 'home' ? 'My Home' : p.name, p.icon === '🚏' ? h('span.muted.small', '  · bus') : null, p.minor && game.state ? h('span.muted.small', shopOpen(p.type, hourOf(game.state.time.total)) ? '  · open' : '  · closed') : null),
+                  game.state && p.type
                     ? h(
                         'button.btn.small.taxi',
                         {
@@ -490,7 +519,7 @@ export class CityMap {
                         },
                         `🚕 ${fmtMoney(taxiQuote(game, p).fare)}`,
                       )
-                    : h('span.muted.small', PLACE_TYPES[p.type].label),
+                    : h('span.muted.small', p.type ? PLACE_TYPES[p.type].label : 'GPS'),
                 ),
               ),
           ),

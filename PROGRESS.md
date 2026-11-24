@@ -19,6 +19,7 @@ RESUME HERE: Sixth round in progress (see checklist below). Fix list done (theme
 - [x] Thunderstorms: weather kind 'storm' (cfg.weather.storms = share of warm-month rain), heavier rain, lightning (Weather.updateLightning → Game .lightning screen flash, Settings reduceFlashes) and synthesized thunder delayed by distance; Weather.wet replaces rain checks (umbrellas, street life, fireworks, parties, hikers) (`storm` scenario)
 - [x] Phone home: weather for the rest of the day in 6-hour blocks (weatherAt is deterministic; 'Now' uses the live weather) and a greeting by the game clock (`storm` scenario checks it)
 - [x] Achievements: Fresh Start (stats.relocations), Regular Rider (10 bus rides), Long Distance (stats.calls: 5 calls to friends in another city); checked right after the move / ride / call
+- [x] Map transit layer: '🚏 Transit' chip (MAP_CATS) shows stations plus every bus stop (CityMap.busStops(), named via BusRides.stopName) as yellow dots, listed per district with GPS; hover names the stop (`mapsearch` scenario)
 
 ## Earlier rounds (summary)
 - **Post-launch polish**: car OBB collisions, crowd + traffic behaviour, storefronts, wildlife, parks, weekly city events, 30 life events, pets, HUD compass, photo mode, buses, roles/uniforms, neighbourhood businesses (data/shops.js), zoo/campus/school/airport + trips, vehicle BODIES, bicycles, umbrellas, bigger cities, bridge, subway.
