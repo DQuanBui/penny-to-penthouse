@@ -724,6 +724,38 @@ export const scenarios = {
     await wait(1500);
     await shot('hills-summit');
   },
+  /** Balance safety nets: sent home early, too tired for activities, woken by hunger, promotion tenure. */
+  async tired({ page, wait }) {
+    await startLife(page, wait);
+    const out = await page.evaluate(async () => {
+      const g = window.__game;
+      const sim = g.sim;
+      const st = g.state;
+      const { doActivity, sleep } = await import('/src/sim/Activities.js');
+      sim.jobs.hire('hospitality', 0);
+      // 1) a shift on an empty tank ends early instead of in the ER
+      const day = Math.floor(st.time.total / 1440);
+      const def = sim.jobs.levelDef();
+      st.time.total = day * 1440 + def.hours[0] * 60 + 5;
+      st.needs.energy = 25;
+      st.needs.hunger = 80;
+      const er0 = st.stats.fainted;
+      const shift = sim.jobs.workShift(null);
+      // 2) activities are refused when you are spent
+      st.needs.energy = 2;
+      const game = doActivity(sim, 'game', { atHome: true });
+      // 3) hunger wakes you before it hurts
+      st.needs.energy = 40;
+      st.needs.hunger = 14;
+      const slept = sleep(sim, 9, 1);
+      // 4) promotions wait for time in the role
+      st.job.perf = 120;
+      const rev = sim.jobs.review();
+      return { early: shift?.early, hours: shift?.hours?.toFixed(2), fainted: st.stats.fainted - er0, refused: !game.ok && game.reason, slept, hungerAfter: Math.round(st.needs.hunger), review: rev.blocked || rev.promoted };
+    });
+    console.log('tired', JSON.stringify(out));
+    if (!out.early || out.fainted || !out.refused || out.slept >= 9 || !String(out.review).includes('more days')) throw new Error('balance safety nets failed');
+  },
   /** A city's signature look (CITY=Miami | Los Angeles | Chicago | Austin). */
   async themes({ page, shot, wait }) {
     const city = process.env.CITY || 'Miami';

@@ -2,6 +2,9 @@
 // Plays several strategies for N in-game years (default 5) with the real
 // simulation code (no rendering) and prints net worth and key stats, so the
 // economy can be tuned with data. Tuning numbers live in src/data/balance.js.
+// Debug flags: ER_DETAIL=1 (why each collapse happened), BREAKDOWN=<strategy>
+// (net worth parts per year), TRACE=<strategy> [TRACE_DAYS=n] (day-by-day log),
+// NO_EVENTS=1 (no life events).
 import { Sim } from '../src/sim/Sim.js';
 import { installSystems } from '../src/sim/index.js';
 import { newState } from '../src/sim/State.js';
@@ -10,7 +13,7 @@ import { getCity } from '../src/data/cities/index.js';
 import { CAREER_BY_ID } from '../src/data/careers.js';
 import { PROGRAMS, ONLINE, BOOKS } from '../src/data/courses.js';
 import { BUSINESS } from '../src/data/businesses.js';
-import { doActivity, sleep, hoursUntil, buyGroceries, foodBank } from '../src/sim/Activities.js';
+import { doActivity, sleep, hoursUntil, buyGroceries, foodBank, homeComfort } from '../src/sim/Activities.js';
 import { skillLevel } from '../src/sim/Player.js';
 import { payCard } from '../src/sim/Credit.js';
 import { hourOf } from '../src/core/Clock.js';
@@ -39,9 +42,25 @@ function makeSim(strat, seed) {
   state.seed = seed;
   const sim = installSystems(new Sim(state, new Events(), city, mulberry32(seed)));
   sim.headless = true;
-  sim.events.policy = () => 0; // always the first (sensible) choice
-  sim.log = { collapses: 0, mood: 0, days: 0 };
-  sim.bus.on('collapse', () => sim.log.collapses++);
+  sim.events.policy = process.env.NO_EVENTS ? null : () => 0; // always the first (sensible) choice
+  sim.log = { collapses: 0, mood: 0, days: 0, why: {}, name: strat.name };
+  sim.bus.on('collapse', (c) => {
+    sim.log.collapses++;
+    // ER_DETAIL=1: what led to it (kind @ hour, during which activity)
+    const k = `${c.kind}@${Math.floor(hourOf(sim.state.time.total - c.hours * 60))}h/${sim.log.doing || "?"}`;
+    sim.log.why[k] = (sim.log.why[k] || 0) + 1;
+    if (process.env.TRACE && sim.state.seed === 11 && sim.day < (+process.env.TRACE_DAYS || 300) && strat.name.startsWith(process.env.TRACE)) console.log('   COLLAPSE', c.kind, new Error().stack.split('\n').slice(3, 9).map((l) => l.trim().replace(/\(.*[\/]/, '(')).join(' < '));
+  });
+  if (process.env.ER_DETAIL) {
+    const adv = sim.advance.bind(sim);
+    sim.advance = (min, act) => {
+      const prev = sim.log.doing;
+      if (!sim.log.doing) sim.log.doing = act?.sleeping ? 'sleep' : act?.rates?.energy < -3 ? 'work' : act?.rates ? 'activity' : 'idle';
+      const r = adv(min, act);
+      sim.log.doing = prev;
+      return r;
+    };
+  }
   return sim;
 }
 
@@ -60,6 +79,12 @@ function eat(sim) {
 /** Let time pass in one-hour steps, eating when hungry (a person does not sit still and starve). */
 function idle(sim, hours) {
   while (hours > 0.01) {
+    // a person who is dead on their feet goes to bed early
+    if (sim.state.needs.energy < 10) {
+      eat(sim);
+      hours -= sleep(sim, Math.min(8, Math.max(1, hours)), 1);
+      continue;
+    }
     const step = Math.min(1, hours);
     sim.advance(step * 60);
     hours -= step;
@@ -201,6 +226,8 @@ const HOME_TIER = { couch: 0, room: 1, studio: 2, apartment: 3, condo: 4, townho
 
 function playDay(sim, strat) {
   const st = sim.state;
+  const trace = process.env.TRACE && strat.name.startsWith(process.env.TRACE) && sim.state.seed === 11 && sim.day < (+process.env.TRACE_DAYS || 300);
+  if (trace) console.log(`d${sim.day} wake ${hourOf(st.time.total).toFixed(1)}h E${st.needs.energy.toFixed(0)} H${st.needs.hunger.toFixed(0)} ${st.home.type} comfort ${homeComfort(st).toFixed(2)} job ${st.job?.career || '-'}:${st.job?.level ?? '-'} enrolled ${!!st.education.enrolled}`);
   eat(sim);
   if (strat.social !== false && st.needs.hygiene < 60) doActivity(sim, 'shower', { atHome: true });
   jobHunt(sim, strat);
@@ -213,8 +240,10 @@ function playDay(sim, strat) {
     if (info.status === 'early') idle(sim, Math.max(0, info.start - 0.5 - hourOf(st.time.total)));
   }
   info = sim.jobs.shiftInfo();
+  if (trace) console.log(`   shift @${hourOf(st.time.total).toFixed(1)} E${st.needs.energy.toFixed(1)} H${st.needs.hunger.toFixed(0)} status ${info.status}`);
   if (info.status === 'ready' || info.status === 'late') sim.jobs.workShift(strat.play);
   eat(sim);
+  sim.events.decideNow(); // life events wait for a free moment, as the dialog does in the game
   // own business: put in a shift on days off or after work when there is energy
   if (strat.business) for (const b of sim.biz.list) if (!sim.biz.canWork(b) && st.needs.energy > 45) sim.biz.work(b.id);
   // evening: study, hustle, people, fun
@@ -235,6 +264,7 @@ function playDay(sim, strat) {
     idle(sim, h - 8.5);
     h = hoursUntil(st, wake);
   }
+  if (trace) console.log(`   bed ${hourOf(st.time.total).toFixed(1)}h E${st.needs.energy.toFixed(0)} sleep ${h.toFixed(1)}h ER ${sim.log.collapses}`);
   sleep(sim, h, 1);
   sim.log.mood += st.mood;
   sim.log.days++;
@@ -261,12 +291,18 @@ for (const strat of STRATEGIES) {
     for (let d = 0; d < DAYS; d++) {
       playDay(sim, strat);
       if ((d + 1) % 112 === 0) sums[(d + 1) / 112 - 1] += sim.finance.netWorth();
+      if (process.env.BREAKDOWN && (d + 1) % 112 === 0 && seed === 11 && strat.name.startsWith(process.env.BREAKDOWN)) {
+        const b = sim.finance.breakdown();
+        const biz = sim.state.businesses.filter((x) => x.active).map((x) => `L${x.level} avg ${Math.round(x.avgProfit)}/d cash ${Math.round(x.cash)}`).join('; ');
+        console.log(`   y${(d + 1) / 112}`, Object.entries(b).map(([k, v]) => `${k} ${Math.round(v / 1000)}K`).join(' '), '| salary', Math.round(sim.jobs.annualSalary() / 1000) + 'K', '|', biz);
+      }
     }
     last = sim;
     salary += sim.jobs.annualSalary();
     score += sim.state.credit.score;
     mood += sim.log.mood / sim.log.days;
     er += sim.log.collapses;
+    if (process.env.ER_DETAIL && sim.log.collapses) console.log('   ', strat.name, seed, JSON.stringify(sim.log.why));
   }
   const n = seeds.length;
   const st = last.state;

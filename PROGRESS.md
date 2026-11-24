@@ -1,13 +1,13 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Sixth round in progress (see checklist below). Done so far: city signature features, taxi drop-off, achievements. Next: the fix list (camera collision, balance, map labels, creator preview, save-failed toast), then bus riding, relocation, office interiors, touch controls, performance.
+RESUME HERE: Sixth round in progress (see checklist below). Done so far: city signature features, taxi drop-off, achievements, balance. Next: the fix list (camera collision, map labels, creator preview, save-failed toast), then bus riding, relocation, office interiors, touch controls, performance.
 
 ## Sixth round (this session)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)
 - [x] Taxi drop-off (TaxiRide.taxiArrive / updateCabOff): the cab pulls up at the kerb by the door, you step out, it drives off; kerbSpot/kerbGap shared with ui/Hail.js (`hail` scenario)
 - [x] Achievements: Top of the Trail (summit), Peak Bagger (summits in 3 cities, flags.summitCities), Clean Streets (50 litter, flags.litterTotal)
 - [ ] Camera collision (ray vs colliders, smoothing) + occluder fade
-- [ ] Balance (npm run sim): business curve, ER collapses, tech year 1→2
+- [x] Balance (npm run sim): ER collapses came from life events resolved at midnight + choices that eat hours (LifeEvents.decideNow, energy/hunger floor after long choices, stale events expire), shifts and activities that drove energy past 0 (Jobs.workShift sends you home early, doActivity refuses when exhausted), hunger during sleep (sleep wakes you); promotions need time in the role (jobs.minDaysAtLevel × level); business levelGrowth 1.45 / upgradeCost 1.0 / sellMultiple 8
 - [ ] Map: district labels avoid icons
 - [ ] Creator: preview faces the camera after Random / appearance changes
 - [ ] Toast when a save fails
@@ -89,7 +89,7 @@ RESUME HERE: Sixth round in progress (see checklist below). Done so far: city si
 - **Vehicles**: data/vehicles.js, sim/Garage.js (cash or auto loan, depreciation, upkeep billed monthly), world/Vehicles.js (F to enter/exit, arcade driving restricted to asphalt, auto-brake for pedestrians, kerb parking in the outer lanes, valet from the Homes app), world/Traffic.js (AI cars in the inner lanes, obey signals, yield to people and the player). Interactables may set key F.
 
 - **Phase 12**: src/audio (AudioEngine = synthesised SFX + optional files from public/audio, Ambience, Music = generative lo-fi from city.music). core/PostFX.js = bloom + vignette + OutputPass on Medium/High (Game.draw). ui/Debug.js = F1 panel, dynamically imported only in dev. scripts/sim.mjs = npm run sim [years] [city]: 7 bot strategies, 3 seeds each.
-- **Balance results (5 years, Austin)**: coaster ~$105K, saver ~$110K, trades+index ~$205K, tech climber ~$525K, finance+landlord ~$675K ($1.1M in NYC), entrepreneur ~$2M. Year 1 is near zero for anyone studying on loans. Raises are capped at 30% per level and reset on promotion.
+- **Balance results (10 years, Austin, Nov 2026)**: year 8 — coaster ~$160K, saver ~$165K, trades ~$210K, tech climber ~$635K ($900K y10), finance+landlord ~$1.08M, entrepreneur ~$1.14M; ER collapses ~0 for every bot. Promotions wait minDaysAtLevel × (level+1) days in the role. Raises are capped at 30% per level and reset on promotion.
 
 ## Testing
 - `npm run dev` then (second terminal) `node scripts/smoke.mjs <scenario>` — headless Edge, fails on console errors, screenshots in scripts/shots/. Scenarios live in scripts/scenarios.mjs. Headless uses software GL, so its FPS number is meaningless.

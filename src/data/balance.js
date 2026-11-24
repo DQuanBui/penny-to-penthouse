@@ -57,6 +57,7 @@ export const BALANCE = {
     skipShiftPerf: [2.5, 5.5], // auto-resolve: perf gained per shift (min,max) before multipliers
     miniGamePerf: [2, 12], // mini-game: perf by score 0..1
     seniorityDrag: 0.1, // each level makes the next review this much slower
+    minDaysAtLevel: 9, // × (level + 1): days in a role before the next promotion (L1→2 18 days ... L6→7 63)
     miniGameTipBonus: 0.5, // extra tips/bonus fraction for a perfect mini-game
     energyPerHour: 1.7, // extra drain while working (on top of normal decay)
     funPerHour: 1.2,

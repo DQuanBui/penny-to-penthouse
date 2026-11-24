@@ -54,6 +54,10 @@ export function doActivity(sim, id, opts = {}) {
   const st = sim.state;
   if (!a) return { ok: false, reason: 'Unknown activity' };
   if (a.meals && st.inventory.meals < a.meals) return { ok: false, reason: 'The fridge is empty. Buy groceries first.' };
+  // too worn out for anything but rest: refuse rather than collapse halfway through
+  const de = a.needs.energy || 0;
+  const net = de - BALANCE.needs.decay.energy * 1.4 * (a.minutes / 60);
+  if (net < 0 && st.needs.energy + net < 1.5) return { ok: false, reason: 'You are too exhausted. Get some sleep first.' };
   let cost = 0;
   if (a.price && !opts.free) {
     cost = priceOf(sim, a.price, opts.discount || 1);
@@ -76,8 +80,15 @@ export function sleep(sim, hours, q = 1) {
   const B = BALANCE.sleep;
   hours = Math.max(B.minHours, Math.min(B.maxHours, hours));
   const rate = B.energyPerHour * q * homeComfort(sim.state);
-  sim.advance(hours * 60, { sleeping: true, rates: { energy: rate } });
-  return hours;
+  // a rumbling stomach wakes you before hunger can turn into an ER trip
+  let slept = 0;
+  while (slept < hours - 1e-6) {
+    const step = Math.min(1, hours - slept);
+    sim.advance(step * 60, { sleeping: true, rates: { energy: rate } });
+    slept += step;
+    if (sim.state.needs.hunger < 6 && hours - slept > 0.01) break;
+  }
+  return slept;
 }
 
 /** Hours from now until the next time the clock shows `hour` (0..24). */

@@ -206,12 +206,18 @@ export class Jobs {
     const def = info.def;
     const c = this.career();
     const from = Math.max(info.now, info.start);
-    const hours = info.end - from;
     const full = info.end - info.start;
     const late = info.status === 'late';
 
     const mf = moodFactor(st); // mood at the start of the shift decides how it goes
-    sim.advance(Math.max(0, info.end - info.now) * 60, { rates: { energy: -J.energyPerHour, fun: -J.funPerHour, hunger: J.lunchPerHour, social: J.socialPerHour } });
+    // running on empty: the manager sends you home before you keel over on the job
+    const left = Math.max(0, info.end - info.now);
+    const drain = J.energyPerHour + BALANCE.needs.decay.energy * mod(st, 'decay_energy');
+    const stay = Math.min(left, Math.max(0, (st.needs.energy - 6) / drain));
+    const early = stay < left - 0.05;
+    sim.advance(stay * 60, { rates: { energy: -J.energyPerHour, fun: -J.funPerHour, hunger: J.lunchPerHour, social: J.socialPerHour } });
+    const hours = Math.max(0, Math.min(info.end - from, stay - Math.max(0, from - info.now)));
+    if (early) sim.bus.emit('toast', { icon: '🥱', title: 'Sent home early', text: `You were running on empty, so your manager sent you home after ${hours.toFixed(1)} hours. Get some sleep.`, kind: 'bad', long: true });
 
     const gross = (this.annualSalary() / J.paychecksPerYear / J.shiftsPerPeriod) * (hours / full);
     j.accrued += gross;
@@ -238,10 +244,17 @@ export class Jobs {
     j.lastShiftDay = calendar(st.time.total - 1).day;
     j.shifts++;
     st.stats.shifts++;
-    const out = { hours, gross, tips, perf, total: j.perf, late, score };
+    const out = { hours, gross, tips, perf, total: j.perf, late, score, early };
     Object.assign(out, this.review());
     sim.bus.emit('shiftDone', out);
     return out;
+  }
+
+  /** Days before the current role has been held long enough for a promotion. */
+  tenureLeft() {
+    const j = this.sim.state.job;
+    if (!j) return 0;
+    return Math.max(0, (j.levelDay ?? j.hiredDay) + J.minDaysAtLevel * (j.level + 1) - this.sim.day);
   }
 
   /** Promotion / raise / firing check. */
@@ -254,8 +267,15 @@ export class Jobs {
     if (j.perf >= J.promoPerf) {
       const next = c.levels[j.level + 1];
       const check = next ? this.meets(next.req) : { ok: false, missing: [] };
+      // time in the role: a promotion takes longer the higher up you are
+      const wait = next ? this.tenureLeft() : 0;
+      if (wait > 0) {
+        check.ok = false;
+        check.missing.push(`${wait} more days as ${c.levels[j.level].title}`);
+      }
       if (next && check.ok) {
         j.level++;
+        j.levelDay = sim.day;
         j.raise = 1; // the new level's salary replaces old raises
         j.perf = 15;
         j.warned = false;

@@ -114,10 +114,14 @@ export function openSleep(game, q) {
     const gain = Math.min(100 - st.needs.energy, rate * hours);
     return btn(`${label}  ·  ${hours.toFixed(1)} h  ·  ⚡ +${Math.round(gain)}`, async () => {
       game.closeOverlay(el);
-      await game.fade(() => sleep(game.sim, hours, q));
+      let slept = hours;
+      await game.fade(() => {
+        slept = sleep(game.sim, hours, q);
+      });
       game.saveNow(true);
-      game.events.emit('toast', { icon: '🌅', title: `It is ${fmtClock(st.time.total)}`, text: `You slept ${hours.toFixed(1)} hours. Game saved.`, kind: 'good' });
-      game.events.emit('slept', { hours });
+      const hungry = slept < hours - 0.01;
+      game.events.emit('toast', { icon: hungry ? '🍽️' : '🌅', title: `It is ${fmtClock(st.time.total)}`, text: hungry ? `Your rumbling stomach woke you after ${slept.toFixed(1)} hours. Eat something! Game saved.` : `You slept ${hours.toFixed(1)} hours. Game saved.`, kind: hungry ? 'info' : 'good' });
+      game.events.emit('slept', { hours: slept });
     });
   };
   const wake = [6, 7, 8, 9].map((hr) => [hr, hoursUntil(st, hr)]).filter(([, hrs]) => hrs >= 2 && hrs <= 12);

@@ -2,6 +2,7 @@
 import { BALANCE } from '../data/balance.js';
 import { LIFE_EVENTS, LIFE_EVENT_BY_ID } from '../data/events.js';
 import { fmtMoney } from '../core/utils.js';
+import { minuteOfDay } from '../core/Clock.js';
 
 export class LifeEvents {
   constructor(sim) {
@@ -18,7 +19,8 @@ export class LifeEvents {
     const p = this.e.pending;
     if (!p) return null;
     const def = LIFE_EVENT_BY_ID[p.id];
-    if (!def) {
+    // an event whose subject is gone (the dog was rehomed, the car sold) quietly expires
+    if (!def || (def.needs && !safe(() => def.needs(this.sim)))) {
       this.e.pending = null;
       return null;
     }
@@ -60,7 +62,15 @@ export class LifeEvents {
     const p = this.pending();
     if (!p) return '';
     const choice = p.def.choices[index] || p.def.choices[0];
+    const t0 = sim.state.time.total;
     const result = choice.run(sim, p.ctx) || '';
+    // a choice that took hours (jury duty, a weekend gig...) leaves you worn out,
+    // never straight into the ER: the next hour of play must not collapse you
+    if (sim.state.time.total - t0 >= 120) {
+      const n = sim.state.needs;
+      n.energy = Math.max(n.energy, 12);
+      n.hunger = Math.max(n.hunger, 12);
+    }
     this.e.pending = null;
     this.e.log.unshift({ id: p.def.id, day: sim.day, choice: choice.label, result });
     if (this.e.log.length > 30) this.e.log.length = 30;
@@ -84,9 +94,21 @@ export class LifeEvents {
     if (day < this.e.nextDay) return;
     this.e.nextDay = day + BALANCE.events.minDays + Math.floor(sim.rng() * (BALANCE.events.maxDays - BALANCE.events.minDays + 1));
     // an undecided event simply expires when the next one comes along
-    if (this.e.pending && !this.policy) this.e.pending = null;
-    const def = this.trigger();
-    if (def && this.policy) this.resolve(this.policy(def, this.e.pending.ctx));
+    if (this.e.pending) this.e.pending = null;
+    this.trigger();
+  }
+
+  /**
+   * Headless runs: decide the waiting event with the policy. The driver calls
+   * this at a free moment in the day (never inside another activity), the way
+   * a player meets the dialog between 08:00 and 22:00.
+   */
+  decideNow() {
+    const p = this.policy && this.pending();
+    if (!p) return '';
+    const h = minuteOfDay(this.sim.state.time.total) / 60;
+    if (h < 8 || h > 22) return '';
+    return this.resolve(this.policy(p.def, p.ctx));
   }
 }
 
