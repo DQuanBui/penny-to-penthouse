@@ -59,6 +59,8 @@ import { TaxiHail } from '../ui/Hail.js';
 import { Doormen } from '../world/Doormen.js';
 import { updateTaxiRide, updateCabOff } from '../world/TaxiRide.js';
 import { relocate } from '../sim/Relocation.js';
+import { FURNITURE_BY_ID } from '../data/furniture.js';
+import { canPlace } from '../build/Grid.js';
 import { TouchControls, touchWanted } from '../ui/TouchControls.js';
 import { RoofParties } from '../world/RoofParties.js';
 import { CityTrash } from '../world/Trash.js';
@@ -475,6 +477,7 @@ export class Game {
       this.leaveInterior(true);
       res = relocate(this.sim, q, opts);
       if (!res.ok) return;
+      this.placeMovingBoxes();
       this.setupLife(st);
       this.sim.advance(q.minutes, { noCollapse: true });
       this.map.setWaypoint(null);
@@ -577,6 +580,42 @@ export class Game {
     };
     if (instant) go();
     else this.fade(go);
+  }
+
+  /** After a move the new place is full of boxes: three of them, near the door. */
+  placeMovingBoxes() {
+    const st = this.state;
+    const L = (st.home.layout ||= defaultHomeLayout(st.home.type));
+    const def = FURNITURE_BY_ID.moving_box;
+    const spots = [[L.doorX - 1.4, L.d - 0.9], [L.doorX + 1.4, L.d - 0.9], [0.9, L.d - 0.9], [L.w - 0.9, L.d - 0.9], [L.doorX - 1.4, L.d - 2.2], [L.doorX + 1.4, L.d - 2.2]];
+    let n = 0;
+    for (const [x, z] of spots) {
+      if (n >= 3) break;
+      const it = { uid: `box${n}_${Date.now()}`, id: 'moving_box', x, z, r: n % 2 };
+      if (!canPlace(L, 0, def, it).ok) continue;
+      L.items.push(it);
+      n++;
+    }
+    st.flags.boxes = n;
+  }
+
+  /** Unpack one of the moving boxes: twenty minutes, a little lift in spirits; the last one makes it home. */
+  unpackBox(item) {
+    const st = this.state;
+    const L = st.home.layout;
+    if (!L) return;
+    L.items = L.items.filter((it) => it.uid !== item.uid);
+    st.flags.boxes = Math.max(0, (st.flags.boxes || 1) - 1);
+    this.fade(() => {
+      this.sim.advance(20, { rates: { energy: -3, fun: 9 } });
+      this.refreshInterior();
+    });
+    this.audio?.play('click');
+    if (st.flags.boxes > 0) this.events.emit('toast', { icon: '📦', title: 'Unpacked a box', text: `Books, mugs and the lamp you forgot you owned. ${st.flags.boxes} to go.`, kind: 'good' });
+    else {
+      st.flags.moodBoost = Math.min(12, (st.flags.moodBoost || 0) + 4);
+      this.events.emit('toast', { icon: '🏡', title: 'All unpacked!', text: 'Pictures up, kettle on. The new place finally feels like home.', kind: 'good', long: true });
+    }
   }
 
   /** Rebuild the current interior (after furniture or ownership changes). */

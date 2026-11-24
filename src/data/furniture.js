@@ -132,6 +132,7 @@ export const FURNITURE = [
   F('dance_floor', 'Dance Floor', 'shop', 0, 5, 4, 0, 0, 'danceFloor', { shop: true, p: {} }),
   F('dartboard', 'Dartboard', 'shop', 0, 1, 0.5, 0, 0, 'dartboard', { shop: true, wall: true, p: {} }),
   // ---- offices: tech floor, trading floor, real estate agency, bank hall ----
+  F('moving_box', 'Moving Boxes', 'shop', 0, 0.9, 0.7, 0.8, 0, 'movingBoxes', { shop: true, use: 'unpack', p: {} }),
   F('server_rack', 'Server Rack', 'shop', 0, 0.7, 1, 2.1, 0, 'serverRack', { shop: true, p: {} }),
   F('trading_desk', 'Trading Desk', 'shop', 0, 1.8, 0.8, 0.75, 0, 'tradingDesk', { shop: true, p: {} }),
   F('ticker_wall', 'Stock Ticker Wall', 'shop', 0, 5, 0.3, 0, 0, 'tickerWall', { shop: true, wall: true, p: {} }),

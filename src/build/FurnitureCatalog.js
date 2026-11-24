@@ -657,6 +657,17 @@ const SHAPES = {
     S.cyl(0.12, 0.12, 0.05, 0, 1.7, -0.2, '#2f8f4a', 24, Math.PI / 2);
     S.cyl(0.05, 0.05, 0.055, 0, 1.7, -0.2, '#c53a3a', 16, Math.PI / 2);
   },
+  movingBoxes(S) {
+    const card = '#c9a26b';
+    const tape = '#e8d9b0';
+    // a big box, a smaller one on top at an angle, and a flat one leaning
+    S.box(0.7, 0.45, 0.55, -0.05, 0.225, 0, card);
+    S.box(0.7, 0.012, 0.1, -0.05, 0.456, 0, tape);
+    S.box(0.5, 0.32, 0.4, 0, 0.61, 0.02, shade(card, 0.92), 0.35);
+    S.box(0.5, 0.012, 0.08, 0, 0.775, 0.02, tape, 0.35);
+    S.box(0.06, 0.5, 0.55, 0.38, 0.25, -0.02, shade(card, 1.05));
+    S.box(0.3, 0.06, 0.012, -0.05, 0.3, 0.281, '#2a2620'); // FRAGILE scrawl
+  },
   serverRack(S, f) {
     S.box(f.w, 2.05, f.d, 0, 1.025, 0, '#1c1f26');
     S.box(f.w - 0.08, 1.9, 0.02, 0, 1.05, f.d / 2 + 0.005, '#2a2f3a');

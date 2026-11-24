@@ -85,6 +85,7 @@ export function useFurniture(game, point) {
   if (use === 'service') return openService(game, game.inside.place, item.svc);
   if (use === 'work') return openShift(game, game.inside.place);
   if (use === 'board') return game.subway.board();
+  if (use === 'unpack') return game.unpackBox(item);
   if (use === 'tickets') return openTickets(game);
   if (use === 'snack') return game.streetLife.openCart({ cart: 'newsstand' });
   if (use === 'workout') return useGym(game, q);
