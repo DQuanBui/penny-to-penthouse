@@ -113,10 +113,24 @@ export class CharacterCreator {
     this.rig = createRig(this.profile.appearance, { blobShadow: false });
     this.holder.add(this.rig.group);
     this.waveT = 0.9;
+    this.faceFront();
+  }
+
+  /** Turn the preview to face the camera (after a full twirl for Random) and hold it there a moment. */
+  faceFront(turns = 0) {
+    const TAU = Math.PI * 2;
+    this.faceTarget = Math.round(this.spin / TAU) * TAU + turns * TAU;
+    this.faceT = 4;
+    this.spinVel = 0;
   }
 
   update(dt) {
-    if (!this.dragging) this.spin += dt * 0.35 + this.spinVel * dt;
+    if (this.dragging) this.faceT = 0;
+    if (this.faceT > 0) {
+      // show off the new look face-on, then go back to the slow turntable
+      this.faceT -= dt;
+      this.spin = damp(this.spin, this.faceTarget, 4.5, dt);
+    } else if (!this.dragging) this.spin += dt * 0.35 + this.spinVel * dt;
     this.spinVel = damp(this.spinVel, 0, 3, dt);
     this.holder.rotation.y = this.spin;
     this.waveT = Math.max(0, this.waveT - dt);
@@ -151,8 +165,8 @@ export class CharacterCreator {
     p.traits = shuffle(Math.random, TRAITS.filter((t) => t.id !== arch.trait)).slice(0, 2).map((t) => t.id);
     p.goals = shuffle(Math.random, GOALS).slice(0, 2).map((g) => g.id);
     this.justPicked = true;
-    this.spinVel = 6;
     this.rebuildRig();
+    this.faceFront(1); // a twirl, then face-on
     this.render();
   }
 

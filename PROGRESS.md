@@ -9,7 +9,7 @@ RESUME HERE: Sixth round in progress (see checklist below). Done so far: city si
 - [x] Camera collision: ColliderWorld.raycast (slab test, padded boxes) head→camera, fast in / slow out; world/OccluderFade.js dithers awnings, planters, shopfront trim and tree crowns inside a cone around the camera→player line (`camera` scenario)
 - [x] Balance (npm run sim): ER collapses came from life events resolved at midnight + choices that eat hours (LifeEvents.decideNow, energy/hunger floor after long choices, stale events expire), shifts and activities that drove energy past 0 (Jobs.workShift sends you home early, doActivity refuses when exhausted), hunger during sleep (sleep wakes you); promotions need time in the role (jobs.minDaysAtLevel × level); business levelGrowth 1.45 / upgradeCost 1.0 / sellMultiple 8
 - [x] Map: district labels avoid icons (CityMap.drawDistrictLabels grid search per district, labelStats checked in `mapsearch`)
-- [ ] Creator: preview faces the camera after Random / appearance changes
+- [x] Creator: preview faces the camera after Random (with a twirl) and every appearance change (CharacterCreator.faceFront, holds 4 s, then the turntable resumes)
 - [ ] Toast when a save fails
 - [ ] Ride the city bus (board, fare, ride, get off at a chosen stop)
 - [ ] Relocation (move permanently to another city)

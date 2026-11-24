@@ -4070,7 +4070,18 @@ export const scenarios = {
     await wait(900);
     await shot('p2-look');
     await page.click('text=🎲 Random');
-    await wait(500);
+    // the preview twirls, then turns to face the camera
+    await page.waitForFunction(() => {
+      const r = window.__game.creator.holder.rotation.y;
+      return Math.abs(Math.atan2(Math.sin(r), Math.cos(r))) < 0.1;
+    }, null, { timeout: 30000 }).catch(() => {});
+    const facing = await page.evaluate(() => {
+      const r = window.__game.creator.holder.rotation.y;
+      return Math.abs(Math.atan2(Math.sin(r), Math.cos(r)));
+    });
+    console.log('creator facing after Random', facing.toFixed(3));
+    if (facing > 0.15) throw new Error('creator preview not facing the camera');
+    await shot('p2-random-front');
     await page.click('.tab:nth-child(3)');
     await wait(900);
     await shot('p2-outfit');
