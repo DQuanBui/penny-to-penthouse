@@ -137,6 +137,7 @@ export function taxiRide(game, opts = {}) {
     pl.sitting = true;
     pl.emote = null;
     game.ride = { t: 0, g, s, kind, done: resolve };
+    if (opts.banner) game.hud.rideBanner(opts.banner);
     if (kind === 'bus') pullBack(game);
     game.audio?.play(kind === 'bus' ? 'hiss' : 'door');
     if (kind === 'taxi') game.hud.hint('taxi_ride', 'Sit back and watch the city go by…', 4);
@@ -182,6 +183,7 @@ export function endTaxiRide(game) {
   if (!R) return;
   R.g.removeFromParent();
   game.ride = null;
+  game.hud.rideBanner(null);
   game.player.sitting = false;
   game.playerRig.group.visible = true;
   game.playerRig.group.scale.setScalar(game.playerRig.appearance?.height || 1);
@@ -206,6 +208,7 @@ export function taxiArrive(game, place, opts = {}) {
   game.player.sitting = true;
   game.player.emote = null;
   game.ride = { arrive: true, t: 0, g, s, kind, door: { x: place.x, z: place.z }, done: null };
+  game.hud.rideBanner({ icon: kind === 'bus' ? '🚌' : '🚕', title: kind === 'bus' ? `Arriving: ${place.name || 'your stop'}` : `Pulling up at ${place.type === 'home' ? 'home' : place.name || 'the kerb'}`, sub: kind === 'bus' ? 'Doors open on the right' : 'Mind the traffic as you get out' });
   if (kind === 'bus') pullBack(game);
   updateArrival(game, game.ride, 0);
   game.cam.snapBehind(s.ry + 0.9);
@@ -250,6 +253,7 @@ function updateArrival(game, R, dt) {
   game.playerRig.group.visible = true;
   game.playerRig.group.scale.setScalar(game.playerRig.appearance?.height || 1);
   if (bus) restoreCam(game);
+  game.hud.rideBanner(null);
   const face = Math.atan2(R.door.x - ex, R.door.z - ez);
   pl.teleport(ex, ez, face);
   game.ride = null;

@@ -150,7 +150,7 @@ export class BusRides {
     const c = game.city;
     const startK = nearestKerb(c, from);
     const endK = nearestKerb(c, e.stop);
-    if (startK) await taxiRide(game, { kind: 'bus', spot: startK });
+    if (startK) await taxiRide(game, { kind: 'bus', spot: startK, banner: { icon: '🚌', title: `Next stop: ${e.name}`, sub: `${minutes} min · ${e.district.name}` } });
     await game.fade(() => {
       endTaxiRide(game);
       sim.advance(minutes, { rates: { energy: 1, fun: 1 } });

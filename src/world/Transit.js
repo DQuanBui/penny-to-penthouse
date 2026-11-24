@@ -64,7 +64,7 @@ export async function takeTaxi(game, place) {
   if (q.dist < 25) return game.events.emit('toast', { icon: '🚕', title: 'You are already there', text: 'It is a few steps away.', kind: 'info' });
   if (!game.sim.finance.spend(q.fare, 'transit', `Taxi to ${place.type === 'home' ? 'home' : place.name}`)) return;
   // out on the street you ride the cab for a bit before the trip fades by
-  if (!game.inside && !game.vehicles?.driving) await taxiRide(game);
+  if (!game.inside && !game.vehicles?.driving) await taxiRide(game, { banner: { icon: '🚕', title: `To ${place.type === 'home' ? 'home' : place.name}`, sub: `${q.minutes} min · ${fmtMoney(q.fare)} paid · sit back` } });
   // ...and at the other end it pulls up at the kerb by the door and you step out
   await travel(game, place, q.minutes, () => endTaxiRide(game), () => taxiArrive(game, place));
   game.events.emit('toast', { icon: '🚕', title: 'Taxi ride', text: `${fmtMoney(q.fare)} · ${q.minutes} min. Transit is cheaper if you are not in a hurry.`, kind: 'info' });

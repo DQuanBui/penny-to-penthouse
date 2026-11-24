@@ -97,6 +97,19 @@ export class HUD {
   }
 
   /** One-time contextual hint (remembered in the save). */
+  /** A banner across the top while you ride somewhere ({ icon, title, sub }); null hides it. */
+  rideBanner(info) {
+    if (!this.rideEl) {
+      this.rideEl = h('div.ride-banner.hidden', h('span.ride-icon'), h('div', h('div.ride-title'), h('div.ride-sub')));
+      this.el.append(this.rideEl);
+    }
+    this.rideEl.classList.toggle('hidden', !info);
+    if (!info) return;
+    this.rideEl.querySelector('.ride-icon').textContent = info.icon;
+    this.rideEl.querySelector('.ride-title').textContent = info.title;
+    this.rideEl.querySelector('.ride-sub').textContent = info.sub || '';
+  }
+
   hint(id, text, seconds = 7) {
     const flags = this.game.state?.flags;
     if (!flags || flags.hints[id]) return;

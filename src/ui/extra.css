@@ -926,3 +926,35 @@ body.touch-ui .phone {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* destination banner while riding a cab or bus (HUD.rideBanner) */
+.ride-banner {
+  position: absolute;
+  left: 50%;
+  top: 70px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.55em 1.2em;
+  border-radius: 16px;
+  background: rgba(20, 22, 30, 0.78);
+  outline: 1px solid rgba(255, 210, 63, 0.55);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  animation: rise 0.3s ease;
+  pointer-events: none;
+}
+.ride-banner.hidden {
+  display: none;
+}
+.ride-icon {
+  font-size: 1.6em;
+}
+.ride-title {
+  font-weight: 700;
+}
+.ride-sub {
+  font-size: 0.82em;
+  opacity: 0.75;
+}
