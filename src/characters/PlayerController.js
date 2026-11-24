@@ -119,6 +119,11 @@ export class PlayerController {
       if (input.isDown('KeyD') || input.isDown('ArrowRight')) mx += 1;
       running = (input.isDown('ShiftLeft') || input.isDown('ShiftRight')) && !this.swimming;
       wantJump = input.pressed('Space') && !this.swimming;
+      // the touch joystick is analog: any direction, not just eight
+      if (input.axis) {
+        mx = input.axis.x;
+        mz = input.axis.y;
+      }
     }
     const len = Math.hypot(mx, mz);
     if (len > 0 && this.emote && !this.emote.move) this.emote = null; // moving ends most actions

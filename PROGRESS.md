@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Sixth round in progress (see checklist below). Fix list done (themes, taxi drop-off, achievements, balance, camera collision, map labels, creator preview, save-failed toast). Done in Step 3: bus riding, relocation, office interiors. Next: touch controls, performance.
+RESUME HERE: Sixth round in progress (see checklist below). Fix list done (themes, taxi drop-off, achievements, balance, camera collision, map labels, creator preview, save-failed toast). Done in Step 3: bus riding, relocation, office interiors, touch controls. Next: performance pass.
 
 ## Sixth round (this session)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)
@@ -14,7 +14,7 @@ RESUME HERE: Sixth round in progress (see checklist below). Fix list done (theme
 - [x] Ride the city bus: ui/Bus.js lists real stops (named after nearby places, 4 per district), pay the fare (pass covers it), board — TaxiRide kind 'bus' pulls out with the camera pulled back — and at the chosen stop the bus pulls in and you step off by the front door (`busride` scenario)
 - [x] Relocation: Homes app → Move tab (city, district, room…condo, transfer job or quit) → sim/Relocation.js quote (movers by home size × distance, flight, first month + deposit, half-month lease break, deposit refund) → Game.relocate rebuilds world + sim; properties get p.cityId and the owned home is let out; Relationships.away()/call(): old-city friends stay in Contacts (texts, calls, no hangouts) (`relocate` scenario)
 - [x] Office interiors (Interiors.js OFFICES by place type, still kind 'office' so the upstairs floor stays): tech floor (server racks, sprint whiteboard, ping-pong, bean bags), trading floor (ticker wall, triple-screen desks, the bull), real estate agency (listings boards, architectural model), bank hall (teller counter = service, vault door, rope queue); 10 new shop furniture shapes (`offices` scenario)
-- [ ] Mobile / touch controls
+- [x] Touch controls (ui/TouchControls.js; settings 'touch' auto|on|off, ?touch=1): floating joystick → Input.axis (analog walk) + WASD/Shift, right-side drag looks / pinch zooms, contextual Use pill (E or F with the prompt text), Jump, Run toggle, Actions, Bike, top Phone/Map/Menu, ✕ closes any open menu; body.touch-ui shrinks the HUD, hides key hints/compass, phone fills the screen on small displays (`touch` scenario)
 - [ ] Performance pass
 
 ## Earlier rounds (summary)

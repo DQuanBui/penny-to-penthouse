@@ -59,6 +59,7 @@ import { TaxiHail } from '../ui/Hail.js';
 import { Doormen } from '../world/Doormen.js';
 import { updateTaxiRide, updateCabOff } from '../world/TaxiRide.js';
 import { relocate } from '../sim/Relocation.js';
+import { TouchControls, touchWanted } from '../ui/TouchControls.js';
 import { RoofParties } from '../world/RoofParties.js';
 import { CityTrash } from '../world/Trash.js';
 import { CityCleaning } from '../world/Cleaning.js';
@@ -198,6 +199,8 @@ export class Game {
     this.ui.append(this.fpsEl);
     this.map = new CityMap(this);
     this.hud = new HUD(this);
+    this.touch = new TouchControls(this);
+    this.touch.enable(touchWanted(this.settings));
     this.photoMode = new PhotoMode(this);
     this.phone = new Phone(this);
     registerApps(this.phone, this);
@@ -222,6 +225,7 @@ export class Game {
 
   applySettings() {
     const s = this.settings;
+    this.touch?.enable(touchWanted(s));
     const q = s.get('graphics');
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO[q] || 1));
     this.renderer.shadowMap.enabled = q !== 'low';
@@ -1165,6 +1169,7 @@ export class Game {
     a.driving = !!this.vehicles.driving;
     a.musicOn = this.mode !== 'boot';
     this.audio.update(dt, a);
+    this.touch.update();
     input.endFrame();
   }
 

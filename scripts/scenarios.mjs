@@ -761,6 +761,56 @@ export const scenarios = {
     console.log('tired', JSON.stringify(out));
     if (!out.early || out.fainted || !out.refused || out.slept >= 9 || !String(out.review).includes('more days')) throw new Error('balance safety nets failed');
   },
+  /** Touch controls on a phone-sized screen: joystick walks, drag looks, Use enters, phone opens and closes. */
+  async touch({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.settings.set('touch', 'on');
+      g.applySettings();
+      g.weather.force = 'clear';
+    });
+    await page.setViewportSize({ width: 844, height: 390 });
+    await wait(800);
+    const on = await page.evaluate(() => document.body.classList.contains('touch-ui') && !!document.querySelector('.touch .tbtn.t-use'));
+    if (!on) throw new Error('touch UI not shown');
+    await shot('touch-hud');
+    // joystick: press on the left, push up
+    const p0 = await page.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z, yaw: window.__game.cam.yaw }));
+    await page.mouse.move(150, 290);
+    await page.mouse.down();
+    await page.mouse.move(150, 225, { steps: 4 });
+    await wait(2500);
+    const walked = await page.evaluate((p) => Math.hypot(window.__game.player.pos.x - p.x, window.__game.player.pos.z - p.z), p0);
+    await shot('touch-walk');
+    await page.mouse.up();
+    // drag on the right to look around
+    await page.mouse.move(600, 150);
+    await page.mouse.down();
+    await page.mouse.move(700, 150, { steps: 5 });
+    await page.mouse.up();
+    await wait(300);
+    const turned = await page.evaluate((p) => Math.abs(window.__game.cam.yaw - p.yaw), p0);
+    // walk up to a door and tap Use
+    await page.evaluate(() => {
+      const g = window.__game;
+      const p = g.homePlace();
+      g.player.teleport(p.x + p.nx * 1.0, p.z + p.nz * 1.0, Math.atan2(-p.nx, -p.nz));
+    });
+    await page.waitForFunction(() => document.querySelector('.touch .tbtn.t-use.ready'), null, { timeout: 20000 });
+    const label = await page.$eval('.touch .tbtn.t-use', (e) => e.textContent);
+    await page.click('.touch .tbtn.t-use');
+    await page.waitForFunction(() => !!window.__game.inside && !window.__game.fading, null, { timeout: 30000 });
+    // phone button opens the phone; the close button shuts it
+    await page.click('.touch .tbtn.t-phone');
+    await page.waitForFunction(() => window.__game.phone.isOpen(), null, { timeout: 10000 });
+    await wait(500);
+    await shot('touch-phone');
+    await page.click('.touch .tbtn.t-close');
+    await page.waitForFunction(() => !window.__game.phone.isOpen(), null, { timeout: 10000 });
+    console.log('touch', JSON.stringify({ walked: +walked.toFixed(1), turned: +turned.toFixed(2), label, inside: true }));
+    if (walked < 1 || turned < 0.05) throw new Error('joystick or look drag did nothing');
+  },
   /** Workplaces with their own interiors: tech floor, trading floor, real estate agency, bank hall. */
   async offices({ page, shot, wait }) {
     await startLife(page, wait);

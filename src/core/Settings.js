@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS = {
   sfx: 0.8,
   uiScale: 1,
   autosave: true,
+  touch: 'auto', // on-screen controls: auto (touch screens) | on | off
 };
 
 export class Settings {
