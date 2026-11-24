@@ -958,3 +958,9 @@ body.touch-ui .phone {
   font-size: 0.82em;
   opacity: 0.75;
 }
+
+/* toasts with a button (e.g. a failed save: Manage saves) */
+.toast-act {
+  margin-top: 6px;
+  pointer-events: auto;
+}

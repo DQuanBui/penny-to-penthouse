@@ -22,6 +22,7 @@ RESUME HERE: Sixth round in progress (see checklist below). Fix list done (theme
 - [x] Map transit layer: '🚏 Transit' chip (MAP_CATS) shows stations plus every bus stop (CityMap.busStops(), named via BusRides.stopName) as yellow dots, listed per district with GPS; hover names the stop (`mapsearch` scenario)
 - [x] Ride banner (HUD.rideBanner): '🚕 To X · 12 min · $14 paid' or '🚌 Next stop: X' while you ride, 'Pulling up at…' / 'Arriving…' on the way in; cleared when you step out (`hail`, `busride` scenarios)
 - [x] Holiday lights: in winter Props wraps every street tree crown (and palm trunk) in a spiral of coloured bulbs (one unlit InstancedMesh, ~22k bulbs in NYC, chunked); ctx.nightGlow brightens them past 1 after dark for the bloom (`holiday` scenario)
+- [x] Toasts can carry a button (HUD.toast action): a failed save offers '💾 Manage saves' (storage full → openSlots) or '⬇ Export to file' (storage blocked) (`savefail` scenario)
 
 ## Earlier rounds (summary)
 - **Post-launch polish**: car OBB collisions, crowd + traffic behaviour, storefronts, wildlife, parks, weekly city events, 30 life events, pets, HUD compass, photo mode, buses, roles/uniforms, neighbourhood businesses (data/shops.js), zoo/campus/school/airport + trips, vehicle BODIES, bicycles, umbrellas, bigger cities, bridge, subway.

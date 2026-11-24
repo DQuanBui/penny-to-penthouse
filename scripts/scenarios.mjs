@@ -965,6 +965,10 @@ export const scenarios = {
     console.log('save results', JSON.stringify(r), /browser storage is full/.test(text) ? 'toast shown' : 'no toast');
     if (r.ok || !r.ok2 || !/Save failed — browser storage is full/.test(text)) throw new Error('save-failed toast missing');
     await shot('save-failed');
+    // the toast offers a way out: Manage saves opens the save slots
+    await page.click('.toast-act');
+    await page.waitForFunction(() => window.__game.overlays.length > 0, null, { timeout: 15000 });
+    console.log('manage saves opened');
   },
   /** Camera collision (ray against the colliders) and awnings fading out of the way. */
   async camera({ page, shot, wait }) {

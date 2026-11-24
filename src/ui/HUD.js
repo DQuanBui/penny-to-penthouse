@@ -120,9 +120,9 @@ export class HUD {
     this._hintT = setTimeout(() => this.hintEl.classList.add('hidden'), seconds * 1000);
   }
 
-  toast({ icon = 'ℹ️', title, text = '', kind = 'info', long = false }) {
-    const life = long ? 9000 : 5200;
-    const t = h('div.toast.' + kind, { title: 'Click to dismiss', onclick: () => t.classList.add('out') }, h('div.toast-icon', icon), h('div', h('div.toast-title', title), text ? h('div.toast-text', text) : null), h('div.toast-timer', { style: { animationDuration: life + 'ms' } }));
+  toast({ icon = 'ℹ️', title, text = '', kind = 'info', long = false, action = null }) {
+    const life = action ? 15000 : long ? 9000 : 5200;
+    const t = h('div.toast.' + kind, { title: 'Click to dismiss', onclick: () => t.classList.add('out') }, h('div.toast-icon', icon), h('div', h('div.toast-title', title), text ? h('div.toast-text', text) : null, action ? h('button.btn.small.toast-act', { onclick: (e) => { e.stopPropagation(); t.classList.add('out'); action.run(); } }, action.label) : null), h('div.toast-timer', { style: { animationDuration: life + 'ms' } }));
     this.toastEl.prepend(t);
     this.game.audio?.play(kind === 'bad' ? 'error' : kind === 'good' ? 'success' : 'notify');
     while (this.toastEl.children.length > 5) this.toastEl.lastChild.remove();

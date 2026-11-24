@@ -6,7 +6,7 @@ import { Loop } from './Loop.js';
 import { Input } from './Input.js';
 import { Settings } from './Settings.js';
 import { hourOf, calendar, fmtClock } from './Clock.js';
-import { saveSlot, loadSlot, latestSlot, firstFreeSlot, lastSaveError } from './SaveSystem.js';
+import { saveSlot, loadSlot, latestSlot, firstFreeSlot, lastSaveError, exportSave } from './SaveSystem.js';
 import { BALANCE } from '../data/balance.js';
 import { getCity } from '../data/cities/index.js';
 import { HOME_BY_ID } from '../data/homes.js';
@@ -842,9 +842,10 @@ export class Game {
       this.events.emit('toast', {
         icon: '⚠️',
         title: full ? 'Save failed — browser storage is full' : 'Save failed — browser storage is unavailable',
-        text: full ? 'Delete an old save slot (Esc → Load Game) or clear some site data, then save again.' : 'This browser is blocking storage (a private window?). Your progress will be lost when you close the tab.',
+        text: full ? 'Free some room: delete an old slot, or export this game to a file.' : 'This browser is blocking storage (a private window?). Export your game to a file so it is not lost.',
         kind: 'bad',
         long: true,
+        action: { label: full ? '💾 Manage saves' : '⬇ Export to file', run: () => (full ? openSlots(this, 'save') : exportSave(this.state, this.saveMeta())) },
       });
     }
     this.events.emit('slotsChanged');
