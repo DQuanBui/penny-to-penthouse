@@ -17,6 +17,8 @@ export const DEFAULT_SETTINGS = {
   autosave: true,
   reduceFlashes: false, // lightning dims to a soft glow
   touch: 'auto', // on-screen controls: auto (touch screens) | on | off
+  touchLook: 1, // look speed when dragging on a touch screen
+  haptics: true, // vibrate on touch buttons
 };
 
 export class Settings {

@@ -24,6 +24,7 @@ RESUME HERE: Sixth round in progress (see checklist below). Fix list done (theme
 - [x] Holiday lights: in winter Props wraps every street tree crown (and palm trunk) in a spiral of coloured bulbs (one unlit InstancedMesh, ~22k bulbs in NYC, chunked); ctx.nightGlow brightens them past 1 after dark for the bloom (`holiday` scenario)
 - [x] Toasts can carry a button (HUD.toast action): a failed save offers '💾 Manage saves' (storage full → openSlots) or '⬇ Export to file' (storage blocked) (`savefail` scenario)
 - [x] Moving boxes: after a relocation Game.placeMovingBoxes puts three 'moving_box' items (use 'unpack') by the door of the new home; Game.unpackBox takes 20 min, lifts fun, and the last one gives a mood boost (`relocate` scenario)
+- [x] Touch: buttons tick the vibration motor (Settings 'haptics'), 'Touch look speed' slider (touchLook) for drag-to-look (`touch` scenario counts the vibrations)
 
 ## Earlier rounds (summary)
 - **Post-launch polish**: car OBB collisions, crowd + traffic behaviour, storefronts, wildlife, parks, weekly city events, 30 life events, pets, HUD compass, photo mode, buses, roles/uniforms, neighbourhood businesses (data/shops.js), zoo/campus/school/airport + trips, vehicle BODIES, bicycles, umbrellas, bigger cities, bridge, subway.

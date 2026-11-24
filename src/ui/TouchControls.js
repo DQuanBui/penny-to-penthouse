@@ -59,6 +59,7 @@ export class TouchControls {
       const b = h('button.tbtn.' + cls, { title }, label);
       const press = (e) => {
         e.preventDefault();
+        this.buzz();
         const c = typeof code === 'function' ? code() : code;
         if (!c) return;
         b._code = c;
@@ -83,6 +84,7 @@ export class TouchControls {
     this.runBtn = h('button.tbtn.t-run', { title: 'Run' }, '🏃');
     this.runBtn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      this.buzz();
       this.run = !this.run;
       this.runBtn.classList.toggle('down', this.run);
       if (!this.run) this.input.down.delete('ShiftLeft');
@@ -99,6 +101,16 @@ export class TouchControls {
     );
     this.base.style.display = 'none';
     document.body.append(this.el);
+  }
+
+  /** A short tick from the vibration motor on button presses (Settings: Vibrate on touch buttons). */
+  buzz(ms = 12) {
+    if (this.game.settings.get('haptics') === false) return;
+    try {
+      navigator.vibrate?.(ms);
+    } catch {
+      /* not supported */
+    }
   }
 
   startStick(e) {
@@ -133,7 +145,7 @@ export class TouchControls {
       this.pinch = d;
       return;
     }
-    const s = 2.2;
+    const s = 2.2 * (this.game.settings.get('touchLook') || 1);
     this.input.mouseDX += (e.clientX - p.x) * s;
     this.input.mouseDY += (e.clientY - p.y) * s;
     p.x = e.clientX;

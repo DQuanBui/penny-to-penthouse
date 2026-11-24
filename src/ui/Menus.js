@@ -142,6 +142,8 @@ export function openSettings(game) {
       line('Mouse sensitivity', slider('sensitivity', 0.3, 2.5, 0.05, (v) => v.toFixed(2) + '×')),
       line('Invert Y', toggle('invertY')),
       line('Touch controls', sel('touch', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']])),
+      line('Touch look speed', slider('touchLook', 0.4, 2.5, 0.1, (v) => v.toFixed(1) + '×')),
+      line('Vibrate on touch buttons', toggle('haptics')),
       h('div.set-group', 'Game'),
       line('Time speed', sel('timeSpeed', [[0.5, 'Relaxed'], [1, 'Normal'], [2, 'Fast'], [4, 'Very fast']])),
       line('Autosave each day', toggle('autosave')),
