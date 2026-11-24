@@ -532,6 +532,11 @@ export const scenarios = {
     await startLife(page, wait);
     await page.keyboard.press('KeyM');
     await page.waitForSelector('.map-search');
+    await wait(500);
+    const labels = await page.evaluate(() => window.__game.map.labelStats);
+    console.log('district labels', JSON.stringify(labels));
+    if (!labels || labels.covered > 0) throw new Error('district labels cover map icons');
+    await shot('map-labels');
     await page.fill('.map-search', 'pizza');
     await wait(600);
     const n = await page.$$eval('.map-results .map-place', (e) => e.length);

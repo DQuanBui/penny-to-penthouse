@@ -195,6 +195,66 @@ export class CityMap {
     ];
   }
 
+  /**
+   * District names in the clearest spot of each district: candidates on a grid
+   * inside the district, scored by how much they cover icons (and each other),
+   * with a gentle pull toward the district's centre.
+   */
+  drawDistrictLabels(g, sx, icons) {
+    const city = this.game.city;
+    if (!this._dBounds || this._dBoundsCity !== city) {
+      this._dBoundsCity = city;
+      this._dBounds = city.districts.map(() => ({ x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity }));
+      for (const b of city.blocks) {
+        const B = this._dBounds[b.district.index];
+        if (!B) continue;
+        B.x0 = Math.min(B.x0, b.x0);
+        B.z0 = Math.min(B.z0, b.z0);
+        B.x1 = Math.max(B.x1, b.x1);
+        B.z1 = Math.max(B.z1, b.z1);
+      }
+    }
+    g.font = '700 15px Outfit, sans-serif';
+    const H = 24;
+    const IC = 11; // half size of an emoji icon
+    const placed = [];
+    const overlap = (ax, ay, aw, ah, bx, by, bw, bh) => Math.max(0, Math.min(ax + aw, bx + bw) - Math.max(ax, bx)) * Math.max(0, Math.min(ay + ah, by + bh) - Math.max(ay, by));
+    for (const d of city.districts) {
+      const B = this._dBounds[d.index];
+      const w = g.measureText(d.name).width + 16;
+      const X0 = sx(B.x0) + w / 2 - 14;
+      const X1 = sx(B.x1) - w / 2 + 14;
+      const Y0 = sx(B.z0) + H / 2 - 10;
+      const Y1 = sx(B.z1) - H / 2 + 10;
+      let best = { x: sx(d.cx), y: sx(d.cz), cost: Infinity };
+      const S = 18;
+      for (let gy = 0; gy <= S; gy++) {
+        for (let gx = 0; gx <= S; gx++) {
+          const x = X1 > X0 ? X0 + ((X1 - X0) * gx) / S : sx(d.cx);
+          const y = Y1 > Y0 ? Y0 + ((Y1 - Y0) * gy) / S : sx(d.cz);
+          const lx = x - w / 2 - 3;
+          const ly = y - H / 2 - 3;
+          let cost = Math.hypot(x - sx(d.cx), y - sx(d.cz)) * 0.3;
+          for (let i = 0; i < icons.length; i += 2) cost += overlap(lx, ly, w + 6, H + 6, icons[i] - IC, icons[i + 1] - IC, IC * 2, IC * 2) * 4;
+          for (const r of placed) cost += overlap(lx, ly, w + 6, H + 6, r[0], r[1], r[2], r[3]) * 8;
+          if (cost < best.cost) best = { x, y, cost };
+        }
+      }
+      placed.push([best.x - w / 2 - 3, best.y - H / 2 - 3, w + 6, H + 6]);
+      g.fillStyle = 'rgba(0,0,0,0.55)';
+      g.beginPath();
+      g.roundRect(best.x - w / 2, best.y - H / 2, w, H, 12);
+      g.fill();
+      g.fillStyle = '#fff';
+      g.fillText(d.name, best.x, best.y + 1);
+    }
+    // (smoke tests read how many icons a label still covers)
+    let covered = 0;
+    for (let i = 0; i < icons.length; i += 2) if (placed.some((r) => overlap(r[0] + 3, r[1] + 3, r[2] - 6, r[3] - 6, icons[i] - IC + 2, icons[i + 1] - IC + 2, IC * 2 - 4, IC * 2 - 4) > 0)) covered++;
+    this.labelStats = { labels: placed.length, icons: icons.length / 2, covered };
+    g.font = '17px "Segoe UI Emoji", sans-serif';
+  }
+
   drawRoute(ctx, sx, sz, px, pz, clipR) {
     const pts = this.routePoints(px, pz);
     ctx.save();
@@ -315,17 +375,9 @@ export class CityMap {
       g.drawImage(this.image, 0, 0, size, size);
       g.textAlign = 'center';
       g.textBaseline = 'middle';
-      g.font = '700 15px Outfit, sans-serif';
-      for (const d of city.districts) {
-        g.fillStyle = 'rgba(0,0,0,0.45)';
-        const w = g.measureText(d.name).width + 16;
-        g.beginPath();
-        g.roundRect(sx(d.cx) - w / 2, sx(d.cz) - 12, w, 24, 12);
-        g.fill();
-        g.fillStyle = '#fff';
-        g.fillText(d.name, sx(d.cx), sx(d.cz) + 1);
-      }
       g.font = '17px "Segoe UI Emoji", sans-serif';
+      const icons = []; // screen positions of every icon drawn, so the district labels can keep clear
+      for (const lm of city.landmarks) icons.push(sx(lm.x), sx(lm.z));
       for (const p of city.places) {
         const mine = game.state && p.id === 'home_' + game.state.home.districtId;
         if (p.type === 'home' && !mine) continue;
@@ -338,7 +390,9 @@ export class CityMap {
           continue;
         }
         g.fillText(p.icon, sx(p.x), sx(p.z));
+        icons.push(sx(p.x), sx(p.z));
       }
+      this.drawDistrictLabels(g, sx, icons);
       // search results glow on the map
       for (const p of matches() || []) {
         g.strokeStyle = '#ffd23f';
