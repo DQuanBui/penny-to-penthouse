@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Sixth round in progress (see checklist below). Fix list done (themes, taxi drop-off, achievements, balance, camera collision, map labels, creator preview, save-failed toast). Done in Step 3: bus riding, relocation, office interiors, touch controls. Next: performance pass.
+RESUME HERE: Sixth round in progress (see checklist below). Fix list done (themes, taxi drop-off, achievements, balance, camera collision, map labels, creator preview, save-failed toast). Done in Step 3: bus riding, relocation, office interiors, touch controls, performance. Next: more polish (storms, transit map, ride banner, forecast, moving boxes).
 
 ## Sixth round (this session)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)
@@ -15,7 +15,7 @@ RESUME HERE: Sixth round in progress (see checklist below). Fix list done (theme
 - [x] Relocation: Homes app → Move tab (city, district, room…condo, transfer job or quit) → sim/Relocation.js quote (movers by home size × distance, flight, first month + deposit, half-month lease break, deposit refund) → Game.relocate rebuilds world + sim; properties get p.cityId and the owned home is let out; Relationships.away()/call(): old-city friends stay in Contacts (texts, calls, no hangouts) (`relocate` scenario)
 - [x] Office interiors (Interiors.js OFFICES by place type, still kind 'office' so the upstairs floor stays): tech floor (server racks, sprint whiteboard, ping-pong, bean bags), trading floor (ticker wall, triple-screen desks, the bull), real estate agency (listings boards, architectural model), bank hall (teller counter = service, vault door, rope queue); 10 new shop furniture shapes (`offices` scenario)
 - [x] Touch controls (ui/TouchControls.js; settings 'touch' auto|on|off, ?touch=1): floating joystick → Input.axis (analog walk) + WASD/Shift, right-side drag looks / pinch zooms, contextual Use pill (E or F with the prompt text), Jump, Run toggle, Actions, Bike, top Phone/Map/Menu, ✕ closes any open menu; body.touch-ui shrinks the HUD, hides key hints/compass, phone fills the screen on small displays (`touch` scenario)
-- [ ] Performance pass
+- [x] Performance pass (`perf` scenario now prints FPS, per-system CPU ms/frame and, with CALLS=1, meshes per system; SPOTS=home,zoo limits the tour): street-cleaning crews/porters reuse pooled rigs and shared truck/cab/bus geometry + materials (no clone per spawn, no leak) — cleaning 4.5 → 0.9 ms/frame; zoo animals culled beyond 150 m, beach and Times Square crowds beyond ~300 m; small signs/sprites cull at 160 m and the LOD pass only re-runs after 3 m of movement; chat bubbles share one material per emoji. Draw calls: home 768 → 740, Times Square 581 → 566, zoo 974 → 789 (tris 3.05M → 2.36M). Headless FPS stays ~0.7 (SwiftShader-bound)
 
 ## Earlier rounds (summary)
 - **Post-launch polish**: car OBB collisions, crowd + traffic behaviour, storefronts, wildlife, parks, weekly city events, 30 life events, pets, HUD compass, photo mode, buses, roles/uniforms, neighbourhood businesses (data/shops.js), zoo/campus/school/airport + trips, vehicle BODIES, bicycles, umbrellas, bigger cities, bridge, subway.

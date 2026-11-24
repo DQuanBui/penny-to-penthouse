@@ -214,9 +214,10 @@ export class TimesSquareLife {
   update(dt, playerPos, visible) {
     const ts = this.ts;
     if (!ts) return;
-    this.group.visible = visible;
-    if (!visible) return;
-    const near = (playerPos.x - ts.x) ** 2 + (playerPos.z - ts.z) ** 2 < 140 * 140;
+    const d2 = (playerPos.x - ts.x) ** 2 + (playerPos.z - ts.z) ** 2;
+    this.group.visible = visible && d2 < 300 * 300;
+    if (!this.group.visible) return;
+    const near = d2 < 140 * 140;
     if (!near) return;
     if (!this.people.length) this.spawn();
     const col = this.city.colliders;

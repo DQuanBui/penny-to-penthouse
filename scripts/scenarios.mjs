@@ -513,6 +513,12 @@ export const scenarios = {
     });
     await wait(800);
     await shot('taxi-ride');
+    const banner = await page.evaluate(() => {
+      const b = document.querySelector('.ride-banner');
+      return b && !b.classList.contains('hidden') ? b.textContent : '';
+    });
+    console.log('ride banner:', banner);
+    if (!/To /.test(banner)) throw new Error('no destination banner during the taxi ride');
     // at the other end the cab pulls up at the kerb and you step out
     await page.waitForFunction(() => window.__game.ride?.arrive && window.__game.ride.t > 2.6 && !window.__game.fading, null, { timeout: 90000 });
     await shot('taxi-dropoff');
@@ -537,6 +543,14 @@ export const scenarios = {
     console.log('district labels', JSON.stringify(labels));
     if (!labels || labels.covered > 0) throw new Error('district labels cover map icons');
     await shot('map-labels');
+    // the transit layer: stations plus every bus stop, named after what is nearby
+    await page.click('.map-filter .chip:has-text("Transit")');
+    await wait(500);
+    const stops = await page.$$eval('.map-place', (e) => e.filter((x) => x.textContent.includes('🚏')).length);
+    console.log('transit: bus stops listed', stops, JSON.stringify(await page.evaluate(() => window.__game.map.labelStats)));
+    if (!stops) throw new Error('no bus stops on the transit layer');
+    await shot('map-transit');
+    await page.click('.map-filter .chip:has-text("Key places")');
     await page.fill('.map-search', 'pizza');
     await wait(600);
     const n = await page.$$eval('.map-results .map-place', (e) => e.length);
@@ -761,6 +775,32 @@ export const scenarios = {
     console.log('tired', JSON.stringify(out));
     if (!out.early || out.fainted || !out.refused || out.slept >= 9 || !String(out.review).includes('more days')) throw new Error('balance safety nets failed');
   },
+  /** Thunderstorms: heavy rain, lightning flashes and thunder; the phone shows the forecast. */
+  async storm({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'storm';
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 17 * 60;
+      g.cam.pitch = 0.1;
+    });
+    await wait(2500);
+    // the next bolt now, then catch the flash on screen
+    await page.evaluate(() => (window.__game.weather.boltT = 0));
+    await page.waitForFunction(() => window.__game.weather.flash > 0.2, null, { timeout: 30000 });
+    await shot('storm-flash');
+    const r = await page.evaluate(() => {
+      const g = window.__game;
+      return { wet: g.weather.wet, bolts: g.weather.bolts, rain: +g.weather.rainAmt.toFixed(2), label: g.locationLabel() };
+    });
+    await page.waitForFunction(() => window.__game.weather.thunders.length === 0, null, { timeout: 30000 });
+    await page.evaluate(() => window.__game.phone.open());
+    await page.waitForSelector('.forecast .fc');
+    const fc = await page.$$eval('.forecast .fc', (e) => e.map((x) => x.textContent));
+    await shot('phone-forecast');
+    console.log('storm', JSON.stringify(r), 'forecast', fc.join(' | '));
+    if (!r.wet || !r.bolts || fc.length !== 4 || !/Thunderstorm/.test(fc[0])) throw new Error('storm or forecast missing');
+  },
   /** Touch controls on a phone-sized screen: joystick walks, drag looks, Use enters, phone opens and closes. */
   async touch({ page, shot, wait }) {
     await startLife(page, wait);
@@ -872,6 +912,15 @@ export const scenarios = {
     console.log('relocate', JSON.stringify(before), '->', JSON.stringify(after));
     if (after.city === before.city || after.simCity !== after.city || !after.inside || !after.friendAway || !after.called || after.job !== before.job || after.inv < before.inv * 0.8) throw new Error('relocation incomplete');
     await shot('relocate-home');
+    // the new place is full of moving boxes: unpack them all
+    const boxes = await page.evaluate(() => {
+      const g = window.__game;
+      const before = g.state.flags.boxes;
+      for (const it of g.state.home.layout.items.filter((x) => x.id === 'moving_box')) g.unpackBox(it);
+      return { before, after: g.state.flags.boxes, left: g.state.home.layout.items.filter((x) => x.id === 'moving_box').length };
+    });
+    console.log('boxes', JSON.stringify(boxes));
+    if (!boxes.before || boxes.after || boxes.left) throw new Error('moving boxes missing or not unpacked');
   },
   /** A save that cannot be written (storage full) says so, even for an autosave. */
   async savefail({ page, shot, wait }) {
@@ -1391,7 +1440,8 @@ export const scenarios = {
       return out;
     });
     console.log('chunks', JSON.stringify(await page.evaluate(() => window.__game.city.chunkStats)));
-    for (const [name, x, z] of spots) {
+    // SPOTS=home,zoo limits the tour
+    for (const [name, x, z] of spots.filter(([n]) => !process.env.SPOTS || process.env.SPOTS.split(',').includes(n))) {
       await page.evaluate(([x2, z2]) => {
         const g = window.__game;
         g.player.teleport(x2, z2, 0);
@@ -1409,7 +1459,73 @@ export const scenarios = {
         info.autoReset = true;
         return out;
       });
-      console.log('perf', name, JSON.stringify(info));
+      // frame rate and where the CPU time goes (each system's update, ms per frame)
+      const prof = await page.evaluate(async () => {
+        const g = window.__game;
+        const acc = {};
+        const undo = [];
+        for (const k of Object.keys(g)) {
+          const o = g[k];
+          if (!o || typeof o !== 'object' || typeof o.update !== 'function' || k === 'loop') continue;
+          const orig = o.update;
+          o.update = function (...args) {
+            const t0 = performance.now();
+            const r = orig.apply(this, args);
+            acc[k] = (acc[k] || 0) + performance.now() - t0;
+            return r;
+          };
+          undo.push(() => (o.update = orig));
+        }
+        const draw = g.draw;
+        g.draw = function (...args) {
+          const t0 = performance.now();
+          const r = draw.apply(this, args);
+          acc.render = (acc.render || 0) + performance.now() - t0;
+          return r;
+        };
+        const heap0 = performance.memory?.usedJSHeapSize || 0;
+        let frames = 0;
+        const t0 = performance.now();
+        await new Promise((res) => {
+          const tick = () => (++frames >= 40 ? res() : requestAnimationFrame(tick));
+          requestAnimationFrame(tick);
+        });
+        const ms = performance.now() - t0;
+        for (const u of undo) u();
+        g.draw = draw;
+        const per = Object.entries(acc).map(([k, v]) => [k, v / frames]).sort((x, y) => y[1] - x[1]);
+        return { fps: +((frames * 1000) / ms).toFixed(1), heapKB: Math.round(((performance.memory?.usedJSHeapSize || 0) - heap0) / 1024), top: per.slice(0, 9).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(' | ') };
+      });
+      console.log('perf', name, JSON.stringify(info), 'fps', prof.fps, 'heap+', prof.heapKB + 'KB');
+      console.log('  cpu ms/frame:', prof.top);
+      if (process.env.CALLS) {
+        // visible meshes (≈ draw calls before shadows) per system group
+        const rows = await page.evaluate(() => {
+          const g = window.__game;
+          const owner = new Map();
+          for (const k of Object.keys(g)) if (g[k]?.group?.isObject3D) owner.set(g[k].group, k);
+          if (g.city?.group) owner.set(g.city.group, 'city');
+          const agg = {};
+          g.scene.traverseVisible((o) => {
+            if (!o.isMesh && !o.isPoints && !o.isLine && !o.isSprite) return;
+            let p = o;
+            let key = null;
+            while (p && !key) {
+              key = owner.get(p) || null;
+              if (!key && p.parent === g.scene) key = p.name || p.type;
+              p = p.parent;
+            }
+            if (key === 'city') {
+              let q = o;
+              while (q.parent && q.parent !== g.city.group) q = q.parent;
+              key = 'city/' + (q.name || q.userData?.kind || q.type);
+            }
+            agg[key] = (agg[key] || 0) + 1;
+          });
+          return Object.entries(agg).sort((x, y) => y[1] - x[1]).slice(0, 14).map(([k, n]) => k + ' ' + n).join(' | ');
+        });
+        console.log('  meshes:', rows);
+      }
       if (process.env.HEAVY && name === 'home') {
         const top = await page.evaluate(() => {
           const g = window.__game;

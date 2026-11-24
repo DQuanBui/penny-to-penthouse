@@ -97,6 +97,21 @@ export function vehicleGeometry(type = 'sedan', { low = false } = {}) {
   return { body: c.body.clone(), glass: c.glass ? c.glass.clone() : null, dims: BODY_DIMS[type] || BODY_DIMS.sedan };
 }
 
+/**
+ * The cached geometry itself, for one-off vehicles (taxi rides, street cleaners)
+ * that come and go: no clone to upload each time, and nothing to dispose.
+ */
+export function sharedVehicleGeometry(type = 'sedan') {
+  vehicleGeometry(type); // builds the cache entry if needed (the clone is dropped)
+  const c = cache.get(type);
+  return { body: c.body, glass: c.glass || null, dims: BODY_DIMS[type] || BODY_DIMS.sedan };
+}
+let busShared = null;
+/** One bus geometry shared by every single-bus mesh (never dispose it). */
+export function sharedBusGeometry() {
+  return (busShared ||= busGeometry());
+}
+
 /** Back-compat: a single sedan geometry (glass merged in). */
 export function carGeometry(opts = {}) {
   return vehicleGeometry(opts.type || 'sedan', { low: true }).body;

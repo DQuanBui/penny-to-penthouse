@@ -435,10 +435,12 @@ export class BeachLife {
     const B = this.beach;
     if (!B) return;
     this.updatePlayer(dt);
-    this.group.visible = visible;
-    if (!visible) return;
     const [cx, cz] = B.at(B.ac, 20);
-    const near = (playerPos.x - cx) ** 2 + (playerPos.z - cz) ** 2 < 190 * 190;
+    const d2 = (playerPos.x - cx) ** 2 + (playerPos.z - cz) ** 2;
+    // a hundred-odd beachgoers are not drawn from across town
+    this.group.visible = visible && d2 < 320 * 320;
+    if (!this.group.visible) return;
+    const near = d2 < 190 * 190;
     if (!near) return;
     if (!this.people.length) this.spawn();
     this.playBall(this.volley, dt);

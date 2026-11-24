@@ -33,6 +33,12 @@ const BOTTOMS = ['#1d2433', '#2b3448', '#3a3f48', '#5c6370', '#8a7a62', '#c9b9a0
 // little speech bubbles over people chatting on the sidewalk
 const CHAT_EMOJI = ['💬', '😂', '❤️', '👍', '☕', '🎉', '🤔', '😮', '😊', '🍕', '🙌', '💯'];
 const bubbleTex = new Map();
+const bubbleMat = new Map();
+/** One sprite material per emoji, shared by every chat bubble. */
+function bubbleMaterial(e) {
+  if (!bubbleMat.has(e)) bubbleMat.set(e, new THREE.SpriteMaterial({ map: bubbleTexture(e), depthWrite: false }));
+  return bubbleMat.get(e);
+}
 function bubbleTexture(e) {
   if (bubbleTex.has(e)) return bubbleTex.get(e);
   const c = document.createElement('canvas');
@@ -656,14 +662,13 @@ export class Crowd {
       animateRig(rig, dt, { speed: this.cur[a], grounded: true, umbrella: umb && carry !== 'stroller', pushing: carry === 'stroller', cane: carry === 'cane', shaking: met && mt > 0.15 && mt < 2.0, waving: met && mt > 0 && this.pause[a] < 1.1, talking });
       // a speech bubble pops up while they chat (a new emoji each conversation)
       if (talking && !rig.bubble) {
-        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: bubbleTexture(CHAT_EMOJI[Math.floor(this.rng() * CHAT_EMOJI.length)]), depthWrite: false }));
+        const sp = new THREE.Sprite(bubbleMaterial(CHAT_EMOJI[Math.floor(this.rng() * CHAT_EMOJI.length)]));
         sp.scale.setScalar(0.42);
         sp.position.y = 2.2;
         rig.group.add(sp);
         rig.bubble = sp;
       } else if (!talking && rig.bubble) {
         rig.bubble.removeFromParent();
-        rig.bubble.material.dispose();
         rig.bubble = null;
       }
     }

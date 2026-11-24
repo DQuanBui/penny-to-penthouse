@@ -638,6 +638,10 @@ export class ZooLife {
     if (!this.group.visible || d2 > 200 * 200) return;
     const t = performance.now() / 1000;
     for (const a of this.animals) {
+      // each animal is several meshes: only the ones within sight of you are drawn (and animated)
+      const far = (a.x - playerPos.x) ** 2 + (a.z - playerPos.z) ** 2 > 150 * 150;
+      a.g.visible = !far;
+      if (far) continue;
       const sp = SPECIES[a.kind];
       if (sp.perch) {
         // birds on their perches: bob, turn, flutter

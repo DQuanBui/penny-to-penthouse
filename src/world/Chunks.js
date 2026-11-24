@@ -112,7 +112,7 @@ export function chunkCity(ctx) {
   for (const o of [...group.children]) {
     if (inLod.has(o) || o.renderOrder < 0) continue;
     if (o.isSprite) {
-      lod.push({ mesh: o, x: o.position.x, z: o.position.z, r: 10 });
+      lod.push({ mesh: o, x: o.position.x, z: o.position.z, r: 10, small: true });
       stats.culled++;
       continue;
     }
@@ -140,7 +140,7 @@ export function chunkCity(ctx) {
     } else if (r < 25) {
       // a small static thing (a sign, a logo): hide it when far away
       const c = bs.center.clone().applyMatrix4(_m.compose(o.position, o.quaternion, o.scale));
-      lod.push({ mesh: o, x: c.x, z: c.z, r: Math.max(6, r) });
+      lod.push({ mesh: o, x: c.x, z: c.z, r: Math.max(6, r), small: true });
       stats.culled++;
     }
   }

@@ -7,7 +7,7 @@
 //  · porters push a cart and broom along the pavements, sweeping up litter
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { vehicleGeometry, carMaterial, glassMaterial, BODIES } from './CarModel.js';
+import { vehicleGeometry, sharedVehicleGeometry, carMaterial, glassMaterial, BODIES } from './CarModel.js';
 import { LANE_IN } from './Vehicles.js';
 import { createRig } from '../characters/CharacterFactory.js';
 import { animateRig } from '../characters/Animation.js';
@@ -23,25 +23,37 @@ const inHours = (h, [a, b]) => h >= a && h < b;
 
 function truckGroup(type, color) {
   const g = new THREE.Group();
-  const { body, glass } = vehicleGeometry(type);
-  const m = new THREE.InstancedMesh(body, carMaterial(), 1);
+  const { body, glass } = sharedVehicleGeometry(type);
+  TRUCK_MATS ||= { car: carMaterial(), glass: glassMaterial() };
+  const m = new THREE.InstancedMesh(body, TRUCK_MATS.car, 1);
   m.setMatrixAt(0, new THREE.Matrix4());
   m.setColorAt(0, new THREE.Color(color));
   m.castShadow = true;
   g.add(m);
   if (glass) {
-    const gm = new THREE.InstancedMesh(glass, glassMaterial(), 1);
+    const gm = new THREE.InstancedMesh(glass, TRUCK_MATS.glass, 1);
     gm.setMatrixAt(0, new THREE.Matrix4());
     g.add(gm);
   }
   return g;
 }
+let TRUCK_MATS = null;
 
 /** A rotating gutter brush: a disc with bristle tufts. */
+let BRUSH = null;
 function brushMesh() {
-  const parts = [new THREE.CylinderGeometry(0.16, 0.16, 0.08, 10)];
-  for (let i = 0; i < 10; i++) parts.push(new THREE.BoxGeometry(0.42, 0.05, 0.05).translate(0.24, -0.02, 0).rotateY((i / 10) * Math.PI * 2));
-  return new THREE.Mesh(mergeGeometries(parts), new THREE.MeshStandardMaterial({ color: '#e9a31a', roughness: 0.8 }));
+  if (!BRUSH) {
+    const parts = [new THREE.CylinderGeometry(0.16, 0.16, 0.08, 10)];
+    for (let i = 0; i < 10; i++) parts.push(new THREE.BoxGeometry(0.42, 0.05, 0.05).translate(0.24, -0.02, 0).rotateY((i / 10) * Math.PI * 2));
+    BRUSH = { geo: mergeGeometries(parts), mat: new THREE.MeshStandardMaterial({ color: '#e9a31a', roughness: 0.8 }) };
+  }
+  return new THREE.Mesh(BRUSH.geo, BRUSH.mat);
+}
+let BAG = null;
+/** The bag a crew member carries (shared geometry and material). */
+function bagMesh() {
+  BAG ||= { geo: new THREE.SphereGeometry(0.3, 8, 6).scale(1, 0.85, 0.9), mat: new THREE.MeshStandardMaterial({ roughness: 0.32 }) };
+  return new THREE.Mesh(BAG.geo, BAG.mat);
 }
 
 export class CityCleaning {
@@ -50,6 +62,21 @@ export class CityCleaning {
     this.group = new THREE.Group();
     this.wetMat = new THREE.MeshStandardMaterial({ color: '#05070a', transparent: true, opacity: 0.4, roughness: 0.08, metalness: 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     this.wetGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+    // crews and porters come and go all morning: their rigs are kept and reused
+    this.rigPool = { crew: [], porter: [] };
+  }
+
+  takeRig(kind) {
+    const pooled = this.rigPool[kind].pop();
+    if (pooled) return pooled;
+    const app = kind === 'porter' ? { ...roleAppearance('sanitation', Math.random), carry: 'broomcart', carryColor: '#3f6e4a' } : roleAppearance('sanitation', Math.random);
+    return createRig(app);
+  }
+
+  giveRig(kind, rig) {
+    rig.group.removeFromParent();
+    if (this.rigPool[kind].length < 4) this.rigPool[kind].push(rig);
+    else rig.dispose();
   }
 
   setCity(city) {
@@ -141,9 +168,9 @@ export class CityCleaning {
     const T = { kind, R, g, v: 0, L: BODIES[kind === 'garbage' ? 'garbage' : 'sweeper'].L, pile: null, blocker: { x: 0, z: 0, hw: 1.15, hl: 3.8 } };
     if (kind === 'garbage') {
       T.crew = [-1, 1].map((slot) => {
-        const rig = createRig(roleAppearance('sanitation', Math.random));
+        const rig = this.takeRig('crew');
         this.group.add(rig.group);
-        const held = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6).scale(1, 0.85, 0.9), new THREE.MeshStandardMaterial({ roughness: 0.32 }));
+        const held = bagMesh();
         held.visible = false;
         this.group.add(held);
         return { rig, slot, state: 'ride', held, x: 0, z: 0, ry: 0, t: 0 };
@@ -168,8 +195,7 @@ export class CityCleaning {
     if (!T) return;
     T.g.removeFromParent();
     for (const w of T.crew || []) {
-      w.rig.group.removeFromParent();
-      w.rig.dispose();
+      this.giveRig('crew', w.rig);
       w.held.removeFromParent();
     }
     if (T.spray) T.spray.removeFromParent();
@@ -338,13 +364,18 @@ export class CityCleaning {
   // ---- the street washer -----------------------------------------------------
   makeSpray(T) {
     const N = 160;
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
-    const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: '#d8ecff', size: 0.1, transparent: true, opacity: 0.75, depthWrite: false }));
-    pts.frustumCulled = false;
+    if (!this.spray) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+      this.spray = new THREE.Points(geo, new THREE.PointsMaterial({ color: '#d8ecff', size: 0.1, transparent: true, opacity: 0.75, depthWrite: false }));
+      this.spray.frustumCulled = false;
+      this.drops = Array.from({ length: N }, () => ({ x: 0, y: -1, z: 0, vx: 0, vy: 0, vz: 0 }));
+    }
+    const pts = this.spray;
     this.group.add(pts);
     T.spray = pts;
-    T.drops = Array.from({ length: N }, () => ({ x: 0, y: -1, z: 0, vx: 0, vy: 0, vz: 0 }));
+    for (const d of this.drops) d.y = -1;
+    T.drops = this.drops;
     T.wetFrom = null;
   }
 
@@ -424,8 +455,7 @@ export class CityCleaning {
     const b = blocks[Math.floor(Math.random() * blocks.length)];
     const m = 2.6;
     const pts = [[b.x0 + m, b.z0 + m], [b.x1 - m, b.z0 + m], [b.x1 - m, b.z1 - m], [b.x0 + m, b.z1 - m]];
-    const app = { ...roleAppearance('sanitation', Math.random), carry: 'broomcart', carryColor: '#3f6e4a' };
-    const rig = createRig(app);
+    const rig = this.takeRig('porter');
     this.group.add(rig.group);
     const k = Math.floor(Math.random() * 4);
     const u = Math.random();
@@ -436,8 +466,7 @@ export class CityCleaning {
   }
 
   dropPorter(P) {
-    P.rig.group.removeFromParent();
-    P.rig.dispose();
+    this.giveRig('porter', P.rig);
   }
 
   updatePorter(P, dt, pos) {

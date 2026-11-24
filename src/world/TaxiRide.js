@@ -5,7 +5,7 @@
 // City buses use the same ride (kind 'bus'): you sit inside out of sight, the
 // camera pulls back to follow the bus, and you step off by the front door.
 import * as THREE from 'three';
-import { vehicleGeometry, busGeometry, carMaterial, glassMaterial } from './CarModel.js';
+import { sharedVehicleGeometry, sharedBusGeometry, carMaterial, glassMaterial } from './CarModel.js';
 import { animateRig } from '../characters/Animation.js';
 
 const RIDE = 6.5; // seconds of driving you watch
@@ -46,10 +46,12 @@ export function kerbGap(c, k) {
   return { ...k, x: k.x + k.nx * 2.6, z: k.z + k.nz * 2.6, dbl: 2.6 };
 }
 
+const MATS = {}; // one material set for every cab and bus you ride
 function makeCab(s, kind = 'taxi', game = null) {
   const g = new THREE.Group();
   if (kind === 'bus') {
-    const m = new THREE.InstancedMesh(busGeometry(), carMaterial({ roughness: 0.4, metalness: 0.25 }), 1);
+    MATS.bus ||= carMaterial({ roughness: 0.4, metalness: 0.25 });
+    const m = new THREE.InstancedMesh(sharedBusGeometry(), MATS.bus, 1);
     m.setMatrixAt(0, new THREE.Matrix4());
     m.setColorAt(0, new THREE.Color(game?.city?.cfg.busColor || '#1f6fb2'));
     m.castShadow = true;
@@ -58,14 +60,16 @@ function makeCab(s, kind = 'taxi', game = null) {
     g.rotation.y = s.ry;
     return g;
   }
-  const { body, glass } = vehicleGeometry('taxi');
-  const m = new THREE.InstancedMesh(body, carMaterial(), 1);
+  const { body, glass } = sharedVehicleGeometry('taxi');
+  MATS.car ||= carMaterial();
+  MATS.glass ||= glassMaterial();
+  const m = new THREE.InstancedMesh(body, MATS.car, 1);
   m.setMatrixAt(0, new THREE.Matrix4());
   m.setColorAt(0, new THREE.Color('#f2c230'));
   m.castShadow = true;
   g.add(m);
   if (glass) {
-    const gm = new THREE.InstancedMesh(glass, glassMaterial(), 1);
+    const gm = new THREE.InstancedMesh(glass, MATS.glass, 1);
     gm.setMatrixAt(0, new THREE.Matrix4());
     g.add(gm);
   }

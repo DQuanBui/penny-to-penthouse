@@ -487,8 +487,13 @@ export function generateCity(cfg, opts = {}) {
       return p < 12 ? 'ns' : p < 14 ? 'ns_y' : p < 26 ? 'ew' : 'ew_y';
     },
     update(elapsed, night, px, pz) {
-      // distance culling for chunked props (parked cars)
-      if (px != null) for (const l of ctx.lod || []) l.mesh.visible = (l.x - px) ** 2 + (l.z - pz) ** 2 < (l.r + 240) ** 2;
+      // distance culling for chunked props (parked cars); small signs and labels go sooner.
+      // Only re-run when you have moved a few metres: thousands of entries per pass.
+      if (px != null && (this._lodX == null || (px - this._lodX) ** 2 + (pz - this._lodZ) ** 2 > 9)) {
+        this._lodX = px;
+        this._lodZ = pz;
+        for (const l of ctx.lod || []) l.mesh.visible = (l.x - px) ** 2 + (l.z - pz) ** 2 < (l.r + (l.small ? 160 : 240)) ** 2;
+      }
       // the bridge's lamps and cable lights come on at dusk
       for (const m of ctx.bridge?.glow || []) m.emissiveIntensity = 0.15 + night * 2.6;
       const ph = this.signalPhase(elapsed);
