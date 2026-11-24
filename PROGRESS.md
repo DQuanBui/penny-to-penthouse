@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Sixth round in progress (see checklist below). Done so far: city signature features, taxi drop-off, achievements, balance, camera collision, map labels. Next: the fix list ( creator preview, save-failed toast), then bus riding, relocation, office interiors, touch controls, performance.
+RESUME HERE: Sixth round in progress (see checklist below). Fix list done (themes, taxi drop-off, achievements, balance, camera collision, map labels, creator preview, save-failed toast). Next: bus riding, relocation, office interiors, touch controls, performance.
 
 ## Sixth round (this session)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)
@@ -10,7 +10,7 @@ RESUME HERE: Sixth round in progress (see checklist below). Done so far: city si
 - [x] Balance (npm run sim): ER collapses came from life events resolved at midnight + choices that eat hours (LifeEvents.decideNow, energy/hunger floor after long choices, stale events expire), shifts and activities that drove energy past 0 (Jobs.workShift sends you home early, doActivity refuses when exhausted), hunger during sleep (sleep wakes you); promotions need time in the role (jobs.minDaysAtLevel × level); business levelGrowth 1.45 / upgradeCost 1.0 / sellMultiple 8
 - [x] Map: district labels avoid icons (CityMap.drawDistrictLabels grid search per district, labelStats checked in `mapsearch`)
 - [x] Creator: preview faces the camera after Random (with a twirl) and every appearance change (CharacterCreator.faceFront, holds 4 s, then the turntable resumes)
-- [ ] Toast when a save fails
+- [x] Toast when a save fails (SaveSystem.lastSaveError 'full' | 'unavailable'; Game.saveNow returns ok and toasts even for autosaves, at most every 90 s; `savefail` scenario)
 - [ ] Ride the city bus (board, fare, ride, get off at a chosen stop)
 - [ ] Relocation (move permanently to another city)
 - [ ] Interiors for 3+ more office workplaces

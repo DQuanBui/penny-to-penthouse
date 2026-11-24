@@ -118,9 +118,9 @@ export function openSleep(game, q) {
       await game.fade(() => {
         slept = sleep(game.sim, hours, q);
       });
-      game.saveNow(true);
+      const saved = game.saveNow(true);
       const hungry = slept < hours - 0.01;
-      game.events.emit('toast', { icon: hungry ? '🍽️' : '🌅', title: `It is ${fmtClock(st.time.total)}`, text: hungry ? `Your rumbling stomach woke you after ${slept.toFixed(1)} hours. Eat something! Game saved.` : `You slept ${hours.toFixed(1)} hours. Game saved.`, kind: hungry ? 'info' : 'good' });
+      game.events.emit('toast', { icon: hungry ? '🍽️' : '🌅', title: `It is ${fmtClock(st.time.total)}`, text: hungry ? `Your rumbling stomach woke you after ${slept.toFixed(1)} hours. Eat something!${saved ? ' Game saved.' : ''}` : `You slept ${hours.toFixed(1)} hours.${saved ? ' Game saved.' : ''}`, kind: hungry ? 'info' : 'good' });
       game.events.emit('slept', { hours: slept });
     });
   };

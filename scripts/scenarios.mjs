@@ -761,6 +761,26 @@ export const scenarios = {
     console.log('tired', JSON.stringify(out));
     if (!out.early || out.fainted || !out.refused || out.slept >= 9 || !String(out.review).includes('more days')) throw new Error('balance safety nets failed');
   },
+  /** A save that cannot be written (storage full) says so, even for an autosave. */
+  async savefail({ page, shot, wait }) {
+    await startLife(page, wait);
+    const r = await page.evaluate(() => {
+      const g = window.__game;
+      const real = Storage.prototype.setItem;
+      Storage.prototype.setItem = function () {
+        throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      };
+      const ok = g.saveNow(true);
+      Storage.prototype.setItem = real;
+      const ok2 = g.saveNow(true);
+      return { ok, ok2 };
+    });
+    await wait(600);
+    const text = await page.evaluate(() => document.body.innerText);
+    console.log('save results', JSON.stringify(r), /browser storage is full/.test(text) ? 'toast shown' : 'no toast');
+    if (r.ok || !r.ok2 || !/Save failed — browser storage is full/.test(text)) throw new Error('save-failed toast missing');
+    await shot('save-failed');
+  },
   /** Camera collision (ray against the colliders) and awnings fading out of the way. */
   async camera({ page, shot, wait }) {
     await startLife(page, wait);

@@ -33,11 +33,16 @@ export function listSlots() {
   return SLOTS.map((slot) => ({ slot, meta: read(slot)?.meta || null }));
 }
 
+/** Write a slot. Returns true, or false with lastSaveError set to 'full' | 'unavailable'. */
+export let lastSaveError = null;
 export function saveSlot(slot, state, extra) {
   try {
     localStorage.setItem(PREFIX + slot, JSON.stringify({ meta: makeMeta(state, extra), state }));
+    lastSaveError = null;
     return true;
-  } catch {
+  } catch (e) {
+    const full = e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014);
+    lastSaveError = full ? 'full' : 'unavailable';
     return false;
   }
 }

@@ -224,7 +224,7 @@ export function openSlots(game, mode, onPick) {
               try {
                 const state = await importSave();
                 const free = listSlots().find((s) => !s.meta)?.slot || 3;
-                saveSlot(free, state, { netWorth: 0 });
+                if (!saveSlot(free, state, { netWorth: 0 })) throw new Error('Save failed — browser storage is full. Delete a slot and try again.');
                 game.events.emit('toast', { icon: '📂', title: 'Save imported', text: `Stored in slot ${free}.`, kind: 'good' });
                 render();
                 game.events.emit('slotsChanged');

@@ -6,7 +6,7 @@ import { Loop } from './Loop.js';
 import { Input } from './Input.js';
 import { Settings } from './Settings.js';
 import { hourOf, calendar, fmtClock } from './Clock.js';
-import { saveSlot, loadSlot, latestSlot, firstFreeSlot } from './SaveSystem.js';
+import { saveSlot, loadSlot, latestSlot, firstFreeSlot, lastSaveError } from './SaveSystem.js';
 import { BALANCE } from '../data/balance.js';
 import { getCity } from '../data/cities/index.js';
 import { HOME_BY_ID } from '../data/homes.js';
@@ -794,9 +794,24 @@ export class Game {
     // inside a building the save point is the pavement outside its door
     this.state.pos = this.inside ? { x: this.inside.place.x, z: this.inside.place.z, heading: Math.atan2(this.inside.place.nx, this.inside.place.nz) } : { x: p.x, z: p.z, heading: this.player.heading };
     const ok = saveSlot(this.slot, this.state, this.saveMeta());
-    recordHallOfFame(this.state, this.sim.rankings.me());
-    if (!quiet) this.events.emit('toast', ok ? { icon: '💾', title: 'Game saved', text: `Slot ${this.slot}`, kind: 'good' } : { icon: '⚠️', title: 'Save failed', text: 'Browser storage is unavailable.', kind: 'bad' });
+    if (ok) recordHallOfFame(this.state, this.sim.rankings.me());
+    if (ok) {
+      this.saveFailedAt = 0;
+      if (!quiet) this.events.emit('toast', { icon: '💾', title: 'Game saved', text: `Slot ${this.slot}`, kind: 'good' });
+    } else if (!quiet || performance.now() - (this.saveFailedAt || -1e9) > 90000) {
+      // even an autosave says so when it fails (but not every minute)
+      this.saveFailedAt = performance.now();
+      const full = lastSaveError === 'full';
+      this.events.emit('toast', {
+        icon: '⚠️',
+        title: full ? 'Save failed — browser storage is full' : 'Save failed — browser storage is unavailable',
+        text: full ? 'Delete an old save slot (Esc → Load Game) or clear some site data, then save again.' : 'This browser is blocking storage (a private window?). Your progress will be lost when you close the tab.',
+        kind: 'bad',
+        long: true,
+      });
+    }
     this.events.emit('slotsChanged');
+    return ok;
   }
 
   onCollapse(c) {
