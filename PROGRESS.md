@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Sixth round in progress (see checklist below). Fix list done (themes, taxi drop-off, achievements, balance, camera collision, map labels, creator preview, save-failed toast). Next: bus riding, relocation, office interiors, touch controls, performance.
+RESUME HERE: Sixth round in progress (see checklist below). Fix list done (themes, taxi drop-off, achievements, balance, camera collision, map labels, creator preview, save-failed toast). Done in Step 3: bus riding. Next: relocation, office interiors, touch controls, performance.
 
 ## Sixth round (this session)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)
@@ -11,7 +11,7 @@ RESUME HERE: Sixth round in progress (see checklist below). Fix list done (theme
 - [x] Map: district labels avoid icons (CityMap.drawDistrictLabels grid search per district, labelStats checked in `mapsearch`)
 - [x] Creator: preview faces the camera after Random (with a twirl) and every appearance change (CharacterCreator.faceFront, holds 4 s, then the turntable resumes)
 - [x] Toast when a save fails (SaveSystem.lastSaveError 'full' | 'unavailable'; Game.saveNow returns ok and toasts even for autosaves, at most every 90 s; `savefail` scenario)
-- [ ] Ride the city bus (board, fare, ride, get off at a chosen stop)
+- [x] Ride the city bus: ui/Bus.js lists real stops (named after nearby places, 4 per district), pay the fare (pass covers it), board — TaxiRide kind 'bus' pulls out with the camera pulled back — and at the chosen stop the bus pulls in and you step off by the front door (`busride` scenario)
 - [ ] Relocation (move permanently to another city)
 - [ ] Interiors for 3+ more office workplaces
 - [ ] Mobile / touch controls

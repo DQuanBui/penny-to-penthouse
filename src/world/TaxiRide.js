@@ -2,8 +2,10 @@
 // and drives off down the street (you are visible through the windows, the
 // camera rides along), then the trip itself passes in a fade. At the other end
 // the cab pulls up at the kerb by the door, you step out and it drives away.
+// City buses use the same ride (kind 'bus'): you sit inside out of sight, the
+// camera pulls back to follow the bus, and you step off by the front door.
 import * as THREE from 'three';
-import { vehicleGeometry, carMaterial, glassMaterial } from './CarModel.js';
+import { vehicleGeometry, busGeometry, carMaterial, glassMaterial } from './CarModel.js';
 import { animateRig } from '../characters/Animation.js';
 
 const RIDE = 6.5; // seconds of driving you watch
@@ -44,8 +46,18 @@ export function kerbGap(c, k) {
   return { ...k, x: k.x + k.nx * 2.6, z: k.z + k.nz * 2.6, dbl: 2.6 };
 }
 
-function makeCab(s) {
+function makeCab(s, kind = 'taxi', game = null) {
   const g = new THREE.Group();
+  if (kind === 'bus') {
+    const m = new THREE.InstancedMesh(busGeometry(), carMaterial({ roughness: 0.4, metalness: 0.25 }), 1);
+    m.setMatrixAt(0, new THREE.Matrix4());
+    m.setColorAt(0, new THREE.Color(game?.city?.cfg.busColor || '#1f6fb2'));
+    m.castShadow = true;
+    g.add(m);
+    g.position.set(s.x, 0, s.z);
+    g.rotation.y = s.ry;
+    return g;
+  }
   const { body, glass } = vehicleGeometry('taxi');
   const m = new THREE.InstancedMesh(body, carMaterial(), 1);
   m.setMatrixAt(0, new THREE.Matrix4());
@@ -63,7 +75,14 @@ function makeCab(s) {
 }
 
 /** Keep the player in the back seat of a cab (the back right, behind the passenger seat). */
-function seat(game, g, ry, dt, talking = false) {
+function seat(game, g, ry, dt, talking = false, kind = 'taxi') {
+  if (kind === 'bus') {
+    // a seat somewhere inside: out of sight, the camera follows the bus
+    game.player.pos.set(g.position.x, 0, g.position.z);
+    game.player.heading = ry;
+    game.playerRig.group.visible = false;
+    return;
+  }
   const fx = Math.sin(ry);
   const fz = Math.cos(ry);
   const sx = 0.36;
@@ -101,20 +120,33 @@ function startSpot(game) {
   return best;
 }
 
-export function taxiRide(game) {
+/** opts: { kind: 'taxi' | 'bus', spot } (spot = the kerb spot to pull out from). */
+export function taxiRide(game, opts = {}) {
   return new Promise((resolve) => {
     if (game.inside || !game.city) return resolve();
-    const s = startSpot(game);
-    const g = makeCab(s);
+    const kind = opts.kind || 'taxi';
+    const s = opts.spot || startSpot(game);
+    const g = makeCab(s, kind, game);
     game.scene.add(g);
-    game.hail?.dismiss();
+    if (kind === 'taxi') game.hail?.dismiss();
     const pl = game.player;
     pl.sitting = true;
     pl.emote = null;
-    game.ride = { t: 0, g, s, done: resolve };
-    game.audio?.play('door');
-    game.hud.hint('taxi_ride', 'Sit back and watch the city go by…', 4);
+    game.ride = { t: 0, g, s, kind, done: resolve };
+    if (kind === 'bus') pullBack(game);
+    game.audio?.play(kind === 'bus' ? 'hiss' : 'door');
+    if (kind === 'taxi') game.hud.hint('taxi_ride', 'Sit back and watch the city go by…', 4);
   });
+}
+
+/** The camera pulls back far enough to see a whole bus (restored when you step off). */
+function pullBack(game) {
+  if (game.cam.busDist == null) game.cam.busDist = game.cam.dist;
+  game.cam.dist = Math.max(game.cam.dist, 14);
+}
+function restoreCam(game) {
+  if (game.cam.busDist != null) game.cam.dist = game.cam.busDist;
+  game.cam.busDist = null;
 }
 
 /** Per frame while riding: drive the cab, keep you in the back seat, follow with the camera. */
@@ -132,7 +164,7 @@ export function updateTaxiRide(game, dt) {
   // pull out of the kerb lane into the traffic lane (3.5 m toward the middle of the road)
   const out = 3.5 * Math.min(1, R.t / 1.6) ** 2 * (3 - 2 * Math.min(1, R.t / 1.6));
   g.position.set(s.x + fx * R.dist + (s.nx || 0) * out, 0, s.z + fz * R.dist + (s.nz || 0) * out);
-  seat(game, g, s.ry, dt, R.t > 3 && R.t < 4.5);
+  seat(game, g, s.ry, dt, R.t > 3 && R.t < 4.5, R.kind);
   // after a while the trip itself fades by (the cab keeps driving under the fade)
   if (R.t > RIDE && !R.ending) {
     R.ending = true;
@@ -147,6 +179,7 @@ export function endTaxiRide(game) {
   R.g.removeFromParent();
   game.ride = null;
   game.player.sitting = false;
+  game.playerRig.group.visible = true;
   game.playerRig.group.scale.setScalar(game.playerRig.appearance?.height || 1);
 }
 
@@ -154,23 +187,36 @@ export function endTaxiRide(game) {
  * After the trip (at black): the cab is a little way up the street, carrying you
  * to the kerb beside the place's door. Returns false where no kerb is near.
  */
-export function taxiArrive(game, place) {
+export function taxiArrive(game, place, opts = {}) {
   const c = game.city;
   if (!c || game.inside || !place) return false;
-  let k = null;
+  const kind = opts.kind || 'taxi';
+  let k = opts.spot || null;
   const nx = place.nx || 0;
   const nz = place.nz || 0;
   for (let d = 0; d <= 14 && !k; d += 0.5) k = kerbSpot(c, { x: place.x + nx * d, z: place.z + nz * d });
   if (!k) return false;
-  const s = kerbGap(c, k);
-  const g = makeCab(s);
+  const s = kind === 'bus' ? { ...k, dbl: 0 } : kerbGap(c, k);
+  const g = makeCab(s, kind, game);
   game.scene.add(g);
   game.player.sitting = true;
   game.player.emote = null;
-  game.ride = { arrive: true, t: 0, g, s, door: { x: place.x, z: place.z }, done: null };
+  game.ride = { arrive: true, t: 0, g, s, kind, door: { x: place.x, z: place.z }, done: null };
+  if (kind === 'bus') pullBack(game);
   updateArrival(game, game.ride, 0);
   game.cam.snapBehind(s.ry + 0.9);
   return true;
+}
+
+/** The kerb lane beside a point on the pavement, searching out from it in every direction. */
+export function nearestKerb(c, p) {
+  for (let d = 0; d <= 6; d += 0.5) {
+    for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const k = kerbSpot(c, { x: p.x + ux * d, z: p.z + uz * d });
+      if (k) return k;
+    }
+  }
+  return null;
 }
 
 function updateArrival(game, R, dt) {
@@ -183,23 +229,28 @@ function updateArrival(game, R, dt) {
   const w = Math.min(1, Math.max(0, (R.t - ARRIVE * 0.25) / (ARRIVE * 0.65)));
   const out = (3.5 + (s.dbl ? -2.6 : 0)) * (1 - w * w * (3 - 2 * w));
   g.position.set(s.x - fx * back + s.nx * Math.max(0, out), Math.sin(R.t * 9) * 0.008 * (1 - u), s.z - fz * back + s.nz * Math.max(0, out));
-  seat(game, g, s.ry, dt, R.t > ARRIVE - 0.4 && R.t < ARRIVE + 0.3);
+  seat(game, g, s.ry, dt, R.t > ARRIVE - 0.4 && R.t < ARRIVE + 0.3, R.kind);
   if (R.t > ARRIVE + 0.15 && !R.opened) {
     R.opened = true;
-    game.audio?.play('door');
+    game.audio?.play(R.kind === 'bus' ? 'hiss' : 'door');
   }
-  if (R.t < ARRIVE + 0.7) return;
-  // step out onto the pavement beside the cab, facing the door
-  const off = 1.75 + (s.dbl || 0) + 1.1;
-  const ex = g.position.x - s.nx * off - fx * 0.65;
-  const ez = g.position.z - s.nz * off - fz * 0.65;
+  if (R.t < ARRIVE + (R.kind === 'bus' ? 1.1 : 0.7)) return;
+  // step out onto the pavement beside the cab (the bus: by its front door), facing the door
+  const bus = R.kind === 'bus';
+  const off = (bus ? 1.3 : 1.75) + (s.dbl || 0) + 1.1;
+  const along = bus ? 3.6 : -0.65;
+  const ex = g.position.x - s.nx * off + fx * along;
+  const ez = g.position.z - s.nz * off + fz * along;
   const pl = game.player;
   pl.sitting = false;
+  game.playerRig.group.visible = true;
   game.playerRig.group.scale.setScalar(game.playerRig.appearance?.height || 1);
+  if (bus) restoreCam(game);
   const face = Math.atan2(R.door.x - ex, R.door.z - ez);
   pl.teleport(ex, ez, face);
   game.ride = null;
   game.cabOff = { g, s, t: 0, x0: g.position.x, z0: g.position.z, d: 0 };
+  if (bus) game.events.emit('busArrived', {});
 }
 
 /** The cab that dropped you off pulls away and is gone. */

@@ -963,12 +963,35 @@ export const scenarios = {
       return g.city.districtAt(st.x, st.z).name;
     });
     await page.waitForFunction(() => /Wait for the bus/.test(window.__game.interactable?.label || ''), null, { timeout: 10000 });
-    await page.evaluate(() => window.__game.interactable.action());
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.interactable.action();
+      g.bus.wait.t = 24; // software GL runs slowly: the timetable catches up
+    });
     await page.waitForSelector('.dialog:has-text("The bus pulls in")', { timeout: 90000 });
     await shot('bus-dialog');
-    await page.click('.dialog .btn >> nth=0');
-    await page.waitForFunction(() => (window.__game.state.stats.busRides || 0) > 0, null, { timeout: 20000 });
-    console.log('rode from', from, 'to', await page.evaluate(() => window.__game.city.districtAt(window.__game.player.pos.x, window.__game.player.pos.z).name));
+    const stops = await page.$$eval('.bus-stops .btn', (e) => e.map((x) => x.textContent));
+    console.log('stops', stops.length, stops.slice(0, 3).join(' | '));
+    if (stops.length < 3) throw new Error('too few bus stops to pick from');
+    const cash0 = await page.evaluate(() => window.__game.state.money.checking);
+    await page.click('.bus-stops .btn >> nth=2');
+    // you board and the bus pulls out of the stop
+    await page.waitForFunction(() => window.__game.ride?.kind === 'bus' && window.__game.ride.t > 2, null, { timeout: 60000 });
+    await shot('bus-board');
+    // ...and at the other end it pulls in and you step off by the front door
+    await page.waitForFunction(() => window.__game.ride?.arrive && window.__game.ride.kind === 'bus' && window.__game.ride.t > 2.4 && !window.__game.fading, null, { timeout: 90000 });
+    await shot('bus-arrive');
+    await page.waitForFunction(() => !window.__game.ride, null, { timeout: 60000 });
+    const r = await page.evaluate(() => {
+      const g = window.__game;
+      const p = g.player.pos;
+      const near = Math.min(...g.city.busStops.map((s) => Math.hypot(s.x - p.x, s.z - p.z)));
+      return { to: g.city.districtAt(p.x, p.z).name, near: +near.toFixed(1), visible: g.playerRig.group.visible, camDist: g.cam.dist, rides: g.state.stats.busRides, paid: g.state.money.checking };
+    });
+    console.log('rode from', from, JSON.stringify(r), 'fare', (cash0 - r.paid).toFixed(2));
+    if (!r.visible || r.near > 8 || r.camDist > 13 || !r.rides) throw new Error('bus ride did not finish at the stop');
+    await wait(1200);
+    await shot('bus-stepoff');
   },
   /** Fireworks over the harbor on Friday and Saturday nights. */
   async fireworks({ page, shot, wait }) {
