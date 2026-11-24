@@ -482,6 +482,7 @@ export class Game {
     });
     card.remove();
     if (!res?.ok) return this.events.emit('toast', { icon: '🚚', title: 'Move cancelled', text: res?.reason || '', kind: 'bad' });
+    this.sim.achievements?.check();
     const jobLine = st.job ? `Your job transferred with you (${this.sim.jobs.title()}).` : 'Find work in the Jobs app — your experience counts.';
     this.events.emit('toast', { icon: '🏙️', title: `Welcome to your new life in ${q.to.name}!`, text: `${res.type.name} in ${q.district.name}. ${jobLine} Old friends are a text or a call away.`, kind: 'good', long: true });
     this.saveNow(true);

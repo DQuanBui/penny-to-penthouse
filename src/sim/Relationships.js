@@ -89,8 +89,11 @@ export class Relationships {
     if (!r || r.callDay === day) return false;
     r.callDay = day;
     r.lastDay = day;
+    const st = this.sim.state;
+    st.stats.calls = (st.stats.calls || 0) + 1;
     this.add(id, 2.5);
     this.sim.advance(20, { rates: { social: 18, fun: 6 } });
+    this.sim.achievements?.check();
     return true;
   }
   /** Relationship record (created on first contact). */

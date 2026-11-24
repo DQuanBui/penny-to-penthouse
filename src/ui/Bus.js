@@ -155,6 +155,7 @@ export class BusRides {
       endTaxiRide(game);
       sim.advance(minutes, { rates: { energy: 1, fun: 1 } });
       game.state.stats.busRides = (game.state.stats.busRides || 0) + 1;
+      sim.achievements?.check();
       // stand at the shelter, then ride the last stretch in and step off
       const n = endK ? { nx: -endK.nx, nz: -endK.nz } : { nx: 0, nz: 1 };
       const place = { x: e.stop.x, z: e.stop.z, nx: -n.nx, nz: -n.nz, name: e.name, district: e.district };
