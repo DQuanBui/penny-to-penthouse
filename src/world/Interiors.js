@@ -160,6 +160,71 @@ const UPSTAIRS = {
   ],
 };
 
+/** Workplaces with their own look (the east strip x > w - 2, z 0.6..6.2 stays clear for the stairs). */
+const OFFICES = {
+  // an open-plan tech floor: desk pods, a server corner, a sprint board, ping-pong and bean bags
+  office_tech: (L) => {
+    const items = [
+      { id: 'reception', x: 10.4, z: 8.6, r: 2 },
+      { id: 'whiteboard', x: 6, z: 0.25, r: 0 },
+      { id: 'server_rack', x: 0.6, z: 0.75, r: 0 },
+      { id: 'server_rack', x: 1.4, z: 0.75, r: 0 },
+      { id: 'pingpong', x: 3.2, z: 7.9, r: 0 },
+      { id: 'beanbag', x: 6.6, z: 8.4, r: 0 },
+      { id: 'beanbag', x: 7.8, z: 8.0, r: 0 },
+      { id: 'plant_tree', x: 0.6, z: 9.3, r: 0 },
+      { id: 'plant_floor', x: 11.4, z: 0.5, r: 0 },
+      { id: 'tv_big', x: 9.2, z: 0.3, r: 0, use: '' },
+    ];
+    for (const x of [3.2, 5.6, 8.0]) for (const z of [2.4, 4.9]) items.push({ id: 'work_desk', x, z, r: 0 }, { id: 'office_chair', x, z: z + 0.85, r: 2 });
+    return L(14, 10, 'wood', '#eef1f4', items);
+  },
+  // a trading floor under a wall of live prices, a glass-walled meeting table and the bull
+  office_finance: (L) => {
+    const items = [
+      { id: 'ticker_wall', x: 6, z: 0.25, r: 0 },
+      { id: 'reception', x: 7, z: 9, r: 2 },
+      { id: 'bull_statue', x: 1.6, z: 8.6, r: 1 },
+      { id: 'marble_table', x: 10.8, z: 8.2, r: 0, use: '' },
+      { id: 'office_chair', x: 9.2, z: 8.2, r: 1 },
+      { id: 'office_chair', x: 12.4, z: 8.2, r: 3 },
+      { id: 'plant_tree', x: 0.6, z: 0.7, r: 0 },
+    ];
+    for (const x of [1.8, 4.2, 6.6, 9.0]) for (const z of [2.6, 5.0]) items.push({ id: 'trading_desk', x, z, r: 0 }, { id: 'office_chair', x, z: z + 0.8, r: 2 });
+    return L(14, 10, 'carpet', '#dfe3ea', items);
+  },
+  // a bright agency: listings on the walls, the model of the next development, agent desks and a sofa for clients
+  realestate: (L) => L(12, 9, 'wood', '#efe8dc', [
+    { id: 'listing_board', x: 2.6, z: 0.25, r: 0 },
+    { id: 'listing_board', x: 6.4, z: 0.25, r: 0 },
+    { id: 'model_city', x: 4.6, z: 4.6, r: 0 },
+    { id: 'reception', x: 7.6, z: 7.9, r: 2 },
+    { id: 'desk_wood', x: 1.6, z: 2.4, r: 0, use: '' },
+    { id: 'office_chair', x: 1.6, z: 3.2, r: 2 },
+    { id: 'desk_wood', x: 8.2, z: 2.4, r: 0, use: '' },
+    { id: 'office_chair', x: 8.2, z: 3.2, r: 2 },
+    { id: 'sofa', x: 1.9, z: 8.2, r: 2 },
+    { id: 'rug_large', x: 4.6, z: 4.6, r: 0 },
+    { id: 'plant_floor', x: 0.5, z: 0.5, r: 0 },
+    { id: 'plant_tree', x: 0.6, z: 6.4, r: 0 },
+  ]),
+  // a marble banking hall: teller windows, a rope queue, the vault and loan officers' desks
+  bank: (L) => L(13, 10, 'tile', '#efe9dc', [
+    { id: 'teller_counter', x: 5.4, z: 2.4, r: 0 },
+    { id: 'vault_door', x: 9.4, z: 0.25, r: 0 },
+    { id: 'stanchion', x: 4.2, z: 4.6, r: 0 },
+    { id: 'stanchion', x: 6.6, z: 4.6, r: 0 },
+    { id: 'desk_exec', x: 2.0, z: 7.2, r: 0, use: '' },
+    { id: 'office_chair', x: 2.0, z: 8.0, r: 2 },
+    { id: 'desk_exec', x: 8.8, z: 7.2, r: 0, use: '' },
+    { id: 'office_chair', x: 8.8, z: 8.0, r: 2 },
+    { id: 'rug_persian', x: 5.4, z: 6.6, r: 0 },
+    { id: 'plant_tree', x: 0.6, z: 0.7, r: 0 },
+    { id: 'plant_tree', x: 0.6, z: 9.3, r: 0 },
+    { id: 'painting_fine', x: 2.4, z: 0.25, r: 0 },
+  ]),
+};
+
 /** A staircase along the east wall, and the upper floor it leads to. */
 function withUpstairs(l, kind) {
   const up = UPSTAIRS[kind];
@@ -597,6 +662,7 @@ function baseLayout(place, kind) {
         { id: 'plant_floor', x: 0.5, z: 9.4, r: 0 },
       ]);
     case 'office': {
+      if (OFFICES[place.type]) return OFFICES[place.type](L);
       const desks = [];
       for (let a = 0; a < 3; a++)
         for (let c = 0; c < 2; c++) {

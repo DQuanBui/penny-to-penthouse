@@ -761,6 +761,34 @@ export const scenarios = {
     console.log('tired', JSON.stringify(out));
     if (!out.early || out.fainted || !out.refused || out.slept >= 9 || !String(out.review).includes('more days')) throw new Error('balance safety nets failed');
   },
+  /** Workplaces with their own interiors: tech floor, trading floor, real estate agency, bank hall. */
+  async offices({ page, shot, wait }) {
+    await startLife(page, wait);
+    const SIG = { office_tech: 'server_rack', office_finance: 'ticker_wall', realestate: 'model_city', bank: 'vault_door' };
+    for (const [type, sig] of Object.entries(SIG)) {
+      const r = await page.evaluate(
+        ([t, s]) => {
+          const g = window.__game;
+          g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 11 * 60;
+          if (g.inside) g.leaveInterior(true);
+          const p = g.city.places.find((q) => q.type === t);
+          g.enterPlace(p, true);
+          const L = g.inside.layout;
+          const ids = L.items.map((it) => it.id);
+          g.player.teleport(L.w / 2, L.d - 1.2, Math.PI);
+          g.cam.snapBehind(Math.PI);
+          g.cam.pitch = 0.75;
+          g.cam.dist = 9;
+          return { type: t, w: L.w, d: L.d, items: ids.length, sig: ids.includes(s), service: L.items.some((it) => (it.use ?? '') === 'service' || ['reception', 'teller_counter'].includes(it.id)), stairs: !!L.stairs };
+        },
+        [type, sig],
+      );
+      console.log('office', JSON.stringify(r));
+      if (!r.sig || !r.service) throw new Error(`${type} interior is missing its furniture`);
+      await wait(1800);
+      await shot('office-' + type);
+    }
+  },
   /** Relocation: move from New York to Chicago with a job transfer; money, investments and friends come along. */
   async relocate({ page, shot, wait }) {
     await startLife(page, wait);

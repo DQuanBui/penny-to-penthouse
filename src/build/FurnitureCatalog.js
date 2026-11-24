@@ -657,6 +657,119 @@ const SHAPES = {
     S.cyl(0.12, 0.12, 0.05, 0, 1.7, -0.2, '#2f8f4a', 24, Math.PI / 2);
     S.cyl(0.05, 0.05, 0.055, 0, 1.7, -0.2, '#c53a3a', 16, Math.PI / 2);
   },
+  serverRack(S, f) {
+    S.box(f.w, 2.05, f.d, 0, 1.025, 0, '#1c1f26');
+    S.box(f.w - 0.08, 1.9, 0.02, 0, 1.05, f.d / 2 + 0.005, '#2a2f3a');
+    for (let i = 0; i < 12; i++) S.box(f.w - 0.16, 0.06, 0.02, 0, 0.25 + i * 0.15, f.d / 2 + 0.02, '#3a404c');
+    // blinking status lights
+    const leds = [];
+    for (let i = 0; i < 12; i++) for (let k = 0; k < 3; k++) leds.push(new THREE.BoxGeometry(0.025, 0.025, 0.01).translate(-f.w / 2 + 0.14 + k * 0.05, 0.25 + i * 0.15, f.d / 2 + 0.035));
+    S.glow(mergeGeometries(leds), '#5fe08a', 1.4);
+  },
+  tradingDesk(S, f) {
+    S.box(f.w, 0.05, f.d, 0, 0.74, 0, '#e8e6e1');
+    for (const x of [-f.w / 2 + 0.06, f.w / 2 - 0.06]) S.box(0.05, 0.72, f.d - 0.1, x, 0.36, 0, '#7a8494');
+    // three screens on arms
+    const screens = [];
+    for (const [x, ry] of [[-0.55, 0.35], [0, 0], [0.55, -0.35]]) {
+      S.box(0.05, 0.3, 0.05, x, 0.92, -0.25, '#2a2f3a');
+      S.box(0.52, 0.32, 0.03, x, 1.12, -0.24, '#15181e', ry);
+      screens.push(new THREE.PlaneGeometry(0.48, 0.28).rotateY(ry).translate(x, 1.12, -0.22));
+    }
+    S.glow(mergeGeometries(screens), '#3fb88a', 0.9);
+    S.box(0.45, 0.02, 0.15, 0, 0.775, 0.12, '#2a2f3a');
+  },
+  tickerWall(S, f) {
+    S.box(f.w, 1.3, 0.08, 0, 2.0, -0.18, '#0d0f14');
+    // green and red price bars and a running strip
+    const up = [];
+    const down = [];
+    for (let i = 0; i < 10; i++) {
+      const hgt = 0.15 + ((i * 37) % 7) * 0.08;
+      (i % 3 === 1 ? down : up).push(new THREE.BoxGeometry(0.28, hgt, 0.01).translate(-f.w / 2 + 0.45 + i * ((f.w - 0.9) / 9), 1.65 + hgt / 2, -0.13));
+    }
+    S.glow(mergeGeometries(up), '#3fdc7a', 1.3);
+    S.glow(mergeGeometries(down), '#ff5a5a', 1.3);
+    S.glow(new THREE.BoxGeometry(f.w - 0.2, 0.12, 0.01).translate(0, 2.5, -0.13), '#ffd23f', 1.1);
+  },
+  pingpong(S, f) {
+    S.box(f.w, 0.04, f.d, 0, 0.74, 0, '#1f5aa8');
+    S.box(f.w, 0.045, 0.02, 0, 0.745, 0, '#f4f4f2');
+    S.box(0.02, 0.045, f.d, 0, 0.745, 0, '#f4f4f2');
+    S.box(0.02, 0.16, f.d + 0.1, 0, 0.84, 0, '#e8e8e2');
+    for (const x of [-f.w / 2 + 0.2, f.w / 2 - 0.2]) for (const z of [-f.d / 2 + 0.15, f.d / 2 - 0.15]) S.box(0.06, 0.72, 0.06, x, 0.36, z, '#2a2f3a');
+    S.cyl(0.08, 0.08, 0.015, 0.6, 0.77, 0.3, '#c53a3a', 12);
+    S.sph(0.02, -0.4, 0.78, -0.2, '#ff9a3c');
+  },
+  whiteboard(S, f) {
+    S.box(f.w, 1.2, 0.04, 0, 1.6, -0.18, '#c9ced6');
+    S.box(f.w - 0.08, 1.12, 0.05, 0, 1.6, -0.16, '#fbfbf8');
+    S.box(f.w - 0.3, 0.04, 0.08, 0, 0.98, -0.12, '#aab2bc');
+    // a sprint board: sticky notes and a boxes-and-arrows sketch
+    const notes = ['#ffd23f', '#7fd1ff', '#ff9ac2', '#9be38a'];
+    for (let i = 0; i < 9; i++) S.box(0.14, 0.14, 0.01, -f.w / 2 + 0.3 + (i % 3) * 0.2, 1.95 - Math.floor(i / 3) * 0.22, -0.13, notes[i % 4]);
+    for (let i = 0; i < 3; i++) S.box(0.3, 0.18, 0.006, 0.2 + i * 0.4, 1.7, -0.13, '#3a5a9a');
+    S.box(0.9, 0.015, 0.006, 0.6, 1.6, -0.13, '#c53a3a');
+  },
+  tellerCounter(S, f) {
+    S.box(f.w, 1.05, f.d - 0.2, 0, 0.525, -0.05, '#d9cfbd');
+    S.box(f.w + 0.06, 0.07, f.d, 0, 1.08, -0.05, '#3a2c22');
+    S.box(f.w, 0.18, 0.03, 0, 0.3, f.d / 2 - 0.13, '#c9a24a');
+    // glass partitions with brass frames between the teller windows
+    const n = 4;
+    for (let i = 0; i <= n; i++) S.box(0.05, 0.85, 0.05, -f.w / 2 + 0.05 + (i * (f.w - 0.1)) / n, 1.55, -0.05, '#c9a24a');
+    S.box(f.w, 0.05, 0.05, 0, 1.98, -0.05, '#c9a24a');
+    S.add(new THREE.BoxGeometry(f.w - 0.1, 0.8, 0.015).translate(0, 1.53, -0.05), '#cfe3ee');
+    for (let i = 0; i < n; i++) S.box(0.45, 0.1, 0.02, -f.w / 2 + 0.05 + ((i + 0.5) * (f.w - 0.1)) / n, 1.16, -0.03, '#3a2c22');
+  },
+  vaultDoor(S, f) {
+    S.box(f.w, 2.6, 0.1, 0, 1.3, -0.2, '#5a5f68');
+    S.add(new THREE.CylinderGeometry(1.0, 1.0, 0.28, 32).rotateX(Math.PI / 2).translate(0, 1.3, -0.05), '#9aa3ad');
+    S.add(new THREE.TorusGeometry(1.0, 0.07, 8, 32).translate(0, 1.3, 0.1), '#c9ced6');
+    S.add(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 18).rotateX(Math.PI / 2).translate(0, 1.3, 0.12), '#c9a24a');
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      S.add(new THREE.CylinderGeometry(0.025, 0.025, 0.55, 6).rotateZ(a).translate(Math.cos(a + Math.PI / 2) * 0.27, 1.3 + Math.sin(a + Math.PI / 2) * 0.27, 0.17), '#c9a24a');
+    }
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      S.cyl(0.05, 0.05, 0.12, Math.cos(a) * 0.82, 1.3 + Math.sin(a) * 0.82, 0.1, '#7a8494', 8, Math.PI / 2);
+    }
+  },
+  listingBoard(S, f) {
+    S.box(f.w, 1.5, 0.05, 0, 1.65, -0.18, '#2f3a4a');
+    // photos of homes for sale with price tags
+    const walls = ['#f2e3c8', '#cfe0ec', '#f4d0c0', '#dfe8d0', '#e9e2f2', '#f6efe2'];
+    const roofs = ['#b8592f', '#3a3f4c', '#6b4a32', '#7a2230'];
+    for (let i = 0; i < 6; i++) {
+      const x = -f.w / 2 + 0.5 + (i % 3) * ((f.w - 1) / 2);
+      const y = 2.0 - Math.floor(i / 3) * 0.68;
+      S.box(0.72, 0.5, 0.01, x, y, -0.15, '#8fc0e8');
+      S.box(0.36, 0.22, 0.012, x, y - 0.1, -0.143, walls[i]);
+      S.add(new THREE.ConeGeometry(0.26, 0.14, 4).rotateY(Math.PI / 4).scale(1, 1, 0.05).translate(x, y + 0.08, -0.14), roofs[i % 4]);
+      S.box(0.72, 0.1, 0.012, x, y - 0.3, -0.145, '#f4f4f2');
+      S.box(0.3, 0.04, 0.014, x - 0.12, y - 0.3, -0.14, '#c53a3a');
+    }
+  },
+  modelCity(S, f) {
+    S.box(f.w, 0.9, f.d, 0, 0.45, 0, '#f4f4f2');
+    S.box(f.w + 0.04, 0.03, f.d + 0.04, 0, 0.915, 0, '#3a3f4c');
+    S.box(f.w - 0.1, 0.01, f.d - 0.1, 0, 0.935, 0, '#9bc47a');
+    // little white towers, a park and a river: the next big development
+    const blocks = [[-0.6, -0.35, 0.18, 0.5], [-0.3, -0.35, 0.16, 0.32], [0.05, -0.3, 0.2, 0.7], [0.4, -0.35, 0.18, 0.42], [-0.55, 0.2, 0.2, 0.25], [0.35, 0.2, 0.22, 0.55], [0.65, 0.25, 0.16, 0.3]];
+    for (const [x, z, s, hgt] of blocks) S.box(s, hgt, s, x, 0.94 + hgt / 2, z, '#fbfbf8');
+    S.box(f.w - 0.1, 0.012, 0.16, 0, 0.94, 0.02, '#7fb0d8');
+    for (const x of [-0.15, -0.05]) S.sph(0.05, x, 1.0, 0.32, '#4f9d5d');
+  },
+  bull(S) {
+    const bronze = '#7a5a32';
+    S.box(1.2, 0.08, 0.6, 0, 0.04, 0, '#3a3f4c');
+    S.sph(0.42, 0.05, 0.62, 0, bronze, 1.45, 0.8, 0.75);
+    S.sph(0.25, 0.62, 0.55, 0, bronze, 1.0, 0.85, 0.8);
+    for (const z of [-0.12, 0.12]) S.add(new THREE.ConeGeometry(0.04, 0.3, 6).rotateZ(-1.2).rotateX(z > 0 ? 0.5 : -0.5).translate(0.72, 0.78, z * 1.8), '#d9c79a');
+    for (const [x, z] of [[-0.35, -0.15], [-0.35, 0.15], [0.35, -0.15], [0.35, 0.15]]) S.cyl(0.06, 0.05, 0.4, x, 0.27, z, bronze, 8);
+    S.cyl(0.02, 0.03, 0.45, -0.62, 0.62, 0, bronze, 6, 0, -0.9);
+  },
   displayCase(S, f, p) {
     const { w } = f;
     S.box(w, 0.85, 0.7, 0, 0.425, -0.1, p.color);
