@@ -836,7 +836,12 @@ export const scenarios = {
     });
     await page.setViewportSize({ width: 844, height: 390 });
     await wait(800);
-    const on = await page.evaluate(() => document.body.classList.contains('touch-ui') && !!document.querySelector('.touch .tbtn.t-use'));
+    const on = await page.evaluate(() => {
+      // count vibration ticks from the buttons
+      window.__buzz = 0;
+      navigator.vibrate = () => (window.__buzz++, true);
+      return document.body.classList.contains('touch-ui') && !!document.querySelector('.touch .tbtn.t-use');
+    });
     if (!on) throw new Error('touch UI not shown');
     await shot('touch-hud');
     // joystick: press on the left, push up
@@ -872,7 +877,9 @@ export const scenarios = {
     await shot('touch-phone');
     await page.click('.touch .tbtn.t-close');
     await page.waitForFunction(() => !window.__game.phone.isOpen(), null, { timeout: 10000 });
-    console.log('touch', JSON.stringify({ walked: +walked.toFixed(1), turned: +turned.toFixed(2), label, inside: true }));
+    const buzz = await page.evaluate(() => window.__buzz);
+    console.log('touch', JSON.stringify({ walked: +walked.toFixed(1), turned: +turned.toFixed(2), label, inside: true, buzz }));
+    if (!buzz) throw new Error('touch buttons did not vibrate');
     if (walked < 1 || turned < 0.05) throw new Error('joystick or look drag did nothing');
   },
   /** Workplaces with their own interiors: tech floor, trading floor, real estate agency, bank hall. */
@@ -921,6 +928,9 @@ export const scenarios = {
     await page.click('.seg-btn:has-text("Move")');
     await wait(600);
     await shot('relocate-tab');
+    const cmp = await page.evaluate(() => document.querySelector('.phone')?.innerText.match(/vs New York[\s\S]{0,160}/i)?.[0] || '');
+    console.log('compare:', cmp.replace(/\s+/g, ' '));
+    if (!/Salaries/.test(cmp)) throw new Error('no city comparison in the Move tab');
     await page.click('.btn:has-text("Move to")');
     await page.waitForSelector('.dialog:has-text("Move to")');
     await page.click('.dialog .btn:has-text("Move")');

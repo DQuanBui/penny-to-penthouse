@@ -155,6 +155,26 @@ export const HomesApp = {
   },
 
   /** Listing detail with the mortgage calculator. */
+  /** How the city you might move to compares with home: prices, pay, rent for the same home, weather. */
+  compare(here, to, sim, state) {
+    const pct = (r) => {
+      const d = Math.round((r - 1) * 100);
+      return d === 0 ? 'about the same' : `${d > 0 ? '+' : ''}${d}%`;
+    };
+    const tone = (r, goodHigh) => (Math.abs(r - 1) < 0.02 ? '' : (r > 1) === goodHigh ? 'good' : 'bad');
+    const pr = (to.priceIndex || 1) / (here.priceIndex || 1);
+    const sr = (to.salaryIndex || 1) / (here.salaryIndex || 1);
+    const pay = state.job ? sim.jobs.annualSalary() * sr : 0;
+    return section(
+      `${to.name} vs ${here.name}`,
+      to.tagline ? h('div.muted.small', `“${to.tagline}”`) : null,
+      kv('Prices and rent', pct(pr), tone(pr, false)),
+      kv('Salaries', pct(sr), tone(sr, true)),
+      state.job ? kv(`Your pay as ${sim.jobs.title()}`, `${fmtMoney(pay)} / yr`, tone(sr, true)) : null,
+      kv('Weather', to.weather?.summary || '—'),
+    );
+  },
+
   /** Move tab: pick a city, a district and a home there, see what the move costs, go. */
   relocation(root, game, sim, state, refresh) {
     const others = CITIES.filter((c) => c.id !== state.cityId);
@@ -169,6 +189,7 @@ export const HomesApp = {
     root.append(
       h('div.muted.small', 'Move to another city for good. Your savings, investments, properties, businesses, cars and pet come along; old friends stay in your phone.'),
       section('City', h('div.chips', others.map((c) => h('button.chip' + (c.id === to.id ? '.active' : ''), { onclick: () => ((this.moveTo = c.id), refresh()) }, c.name)))),
+      this.compare(sim.city, to, sim, state),
       section('Neighbourhood', h('div.chips', to.districts.map((d) => h('button.chip' + (d.id === this.moveDistrict ? '.active' : ''), { onclick: () => ((this.moveDistrict = d.id), refresh()) }, d.name)))),
       section('Home', h('div.chips', MOVE_TYPES.map((id) => h('button.chip' + (id === this.moveType ? '.active' : ''), { onclick: () => ((this.moveType = id), refresh()) }, `${HOME_BY_ID[id].icon} ${HOME_BY_ID[id].name}`)))),
       state.job ? section('Your job', h('div.chips', h('button.chip' + (this.keepJob ? '.active' : ''), { onclick: () => ((this.keepJob = true), refresh()) }, `Transfer as ${sim.jobs.title()}`), h('button.chip' + (!this.keepJob ? '.active' : ''), { onclick: () => ((this.keepJob = false), refresh()) }, 'Hand in my notice'))) : null,
