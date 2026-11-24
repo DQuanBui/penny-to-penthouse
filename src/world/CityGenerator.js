@@ -496,6 +496,11 @@ export function generateCity(cfg, opts = {}) {
       }
       // the bridge's lamps and cable lights come on at dusk
       for (const m of ctx.bridge?.glow || []) m.emissiveIntensity = 0.15 + night * 2.6;
+      for (const g of ctx.nightGlow || []) {
+        const v = g.day + night * (g.night - g.day);
+        if (g.mat.isMeshBasicMaterial) g.mat.color.setScalar(v);
+        else g.mat.emissiveIntensity = v;
+      }
       const ph = this.signalPhase(elapsed);
       if (ph !== this._ph) {
         this._ph = ph;

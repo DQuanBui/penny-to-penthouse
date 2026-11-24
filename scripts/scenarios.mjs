@@ -775,6 +775,30 @@ export const scenarios = {
     console.log('tired', JSON.stringify(out));
     if (!out.early || out.fainted || !out.refused || out.slept >= 9 || !String(out.review).includes('more days')) throw new Error('balance safety nets failed');
   },
+  /** Winter is the holiday season: lights wrapped round the street trees, glowing after dark. */
+  async holiday({ page, shot, wait }) {
+    await startLife(page, wait, process.env.CITY || 'New York');
+    const r = await page.evaluate(async () => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      // the first evening of winter: the city redresses for the season
+      g.state.time.total = 84 * 1440 + 21 * 60;
+      g.checkSeason?.();
+      for (let i = 0; i < 240 && (g.city.season !== 'winter' || g.fading); i++) await new Promise((res) => setTimeout(res, 500));
+      let bulbs = 0;
+      g.city.group.traverse((o) => {
+        if (o.isInstancedMesh && o.geometry.type === 'OctahedronGeometry' && o.geometry.parameters?.radius === 0.11) bulbs += o.count;
+      });
+      const p = g.player.pos;
+      g.cam.pitch = 0.12;
+      g.cam.dist = 8;
+      return { season: g.city.season, bulbs, x: Math.round(p.x) };
+    });
+    console.log('holiday', JSON.stringify(r));
+    if (!r.bulbs) throw new Error('no holiday lights in winter');
+    await wait(2000);
+    await shot('holiday-lights');
+  },
   /** Thunderstorms: heavy rain, lightning flashes and thunder; the phone shows the forecast. */
   async storm({ page, shot, wait }) {
     await startLife(page, wait);

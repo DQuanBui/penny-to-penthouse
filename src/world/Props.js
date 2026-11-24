@@ -90,6 +90,23 @@ export function buildProps(ctx) {
   }
   const leaves = new InstanceBatch(leafGeo, leafMat, { castShadow: true });
   ctx.leafBatchColors = [];
+  // winter is the holiday season: every street tree (and palm) is wrapped in lights that glow after dark
+  const holiday = ctx.season === 'winter';
+  // unlit so each bulb keeps its own colour; brightened past 1 after dark so the bloom picks them up
+  const bulbMat = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false });
+  const xmas = holiday ? new InstanceBatch(new THREE.OctahedronGeometry(0.11, 0), bulbMat) : null;
+  if (holiday) (ctx.nightGlow ||= []).push({ mat: bulbMat, day: 0.7, night: 2.4 });
+  const BULB_SETS = [['#ffd27a'], ['#ffd27a'], ['#ff5a5a', '#5ad1ff', '#9bff6a', '#ffd23f'], ['#ffffff', '#9fd6ff'], ['#ff5a5a', '#ffffff']];
+  /** A spiral of bulbs around a cylinder (radius r) from y0 to y1. */
+  const wrap = (x, z, y0, y1, r, n) => {
+    const set = pick(rng, BULB_SETS);
+    const a0 = rng() * 6.28;
+    for (let i = 0; i < n; i++) {
+      const u = i / (n - 1);
+      const a = a0 + u * 6.28 * 2.2;
+      xmas.add(x + Math.cos(a) * r * (1 - u * 0.35), y0 + (y1 - y0) * u, z + Math.sin(a) * r * (1 - u * 0.35), { color: set[i % set.length] });
+    }
+  };
 
   const benchGeo = mergeGeometries([
     box(1.7, 0.07, 0.5, 0, 0.45, 0),
@@ -126,6 +143,7 @@ export function buildProps(ctx) {
       const h = (6.5 + rng() * 3) * scale;
       trunks.add(x, Y, z, { sy: h });
       leaves.add(x, Y + h, z, { ry: rng() * 6, sx: scale, sy: scale, sz: scale, color: pick(rng, ['#3f8f4a', '#4a9a52', '#5aa85a']) });
+      if (holiday) wrap(x, z, Y + 0.6, Y + h - 0.3, 0.24, 12); // lights up the trunk
     } else {
       const h = (2.2 + rng() * 1.2) * scale;
       trunks.add(x, Y, z, { sy: h });
@@ -140,6 +158,7 @@ export function buildProps(ctx) {
         // bare winter branches: a thin crown
         leaves.add(x, Y + h + r * 0.4, z, { sx: r * 0.5, sy: r * 0.7, sz: r * 0.5, ry: rng() * 6, color: '#7a6a5a' });
       }
+      if (holiday) wrap(x, z, Y + h - 0.2, Y + h + r * (bare ? 1.0 : 1.5), bare ? r * 0.78 : r * 1.08, 10);
     }
     colliders.add(x - 0.25, z - 0.25, x + 0.25, z + 0.25, 3);
   };
@@ -304,7 +323,7 @@ export function buildProps(ctx) {
     mat.userData.ownMap = true;
     group.add(new THREE.Mesh(mergeGeometries(geos), mat));
   }
-  for (const b of [lamps, bulbs, trunks, leaves, benches, grass, paths, fountains, waterDisc, tl, ...Object.values(lights)]) {
+  for (const b of [lamps, bulbs, trunks, leaves, ...(xmas ? [xmas] : []), benches, grass, paths, fountains, waterDisc, tl, ...Object.values(lights)]) {
     const m = b.build();
     if (m) group.add(m);
   }
