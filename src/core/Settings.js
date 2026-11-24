@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS = {
   sfx: 0.8,
   uiScale: 1,
   autosave: true,
+  reduceFlashes: false, // lightning dims to a soft glow
   touch: 'auto', // on-screen controls: auto (touch screens) | on | off
 };
 

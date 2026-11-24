@@ -54,7 +54,7 @@ export class RoofParties {
   update(dt, pos, inside) {
     if (!this.roofs?.length) return;
     const hr = hourOf(this.game.state.time.total);
-    const on = !inside && (hr >= 20 || hr < 2) && this.game.weather.kind !== 'rain' && this.game.weather.kind !== 'snow';
+    const on = !inside && (hr >= 20 || hr < 2) && !this.game.weather.wet && this.game.weather.kind !== 'snow';
     // the nearest few roofs host a party
     const want = on
       ? this.roofs

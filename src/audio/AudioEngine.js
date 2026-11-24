@@ -127,7 +127,7 @@ export class AudioEngine {
   }
 
   /** Play a named sound effect. Unknown names are ignored. */
-  play(name) {
+  play(name, opts = {}) {
     if (!this.ctx || this.ctx.state !== 'running') return;
     const d = this.sfx;
     const buf = this.buffers[name];
@@ -174,6 +174,15 @@ export class AudioEngine {
           this.burst(d, { type: 'bandpass', f: 700, q: 2, t, dur: 0.09, gain: 0.12 });
         }
         break;
+      case 'thunder': {
+        // a crack, then a long low rumble that rolls away
+        const loud = opts.gain ?? 1;
+        this.burst(d, { type: 'highpass', f: 2200, f2: 600, dur: 0.18, gain: 0.16 * loud });
+        this.tone(d, { f: 55, f2: 28, dur: 2.4, gain: 0.3 * loud });
+        this.burst(d, { type: 'lowpass', f: 420, f2: 70, dur: 3.2, gain: 0.32 * loud });
+        for (let i = 0; i < 4; i++) this.burst(d, { type: 'lowpass', f: 300, f2: 90, t: 0.4 + i * 0.45 + Math.random() * 0.2, dur: 0.9, gain: 0.12 * loud });
+        break;
+      }
       case 'hiss':
         // bus air brakes / kneeling
         this.burst(d, { type: 'highpass', f: 3200, f2: 1800, dur: 0.7, gain: 0.09 });

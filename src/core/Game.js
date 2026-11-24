@@ -135,6 +135,10 @@ export class Game {
     this.npcs = new NPCManager(this);
     this.build = new BuildMode(this);
     this.weather = new Weather(this.scene, this.sky);
+    // lightning lights up the whole screen; the thunder rolls in after it
+    this.flashEl = h('div.lightning');
+    this.ui.append(this.flashEl);
+    this.weather.onThunder = (loud) => this.audio?.play('thunder', { gain: loud });
     this.vehicles = new VehicleManager(this);
     this.traffic = new Traffic(this.scene);
     this.traffic.onStop = (x, z) => {
@@ -1262,9 +1266,11 @@ export class Game {
       this.updateLampLights(dt);
     }
     this.weather.update(dt, this.city.cfg, st.time.total, this.camera.position, !inside);
+    const fl = Math.round(this.weather.flash * (this.settings.get('reduceFlashes') ? 8 : 50)) / 100;
+    if (fl !== this._flash) this.flashEl.style.opacity = this._flash = fl;
     this.crowd.densityMul = this.weather.info.crowd;
     // rainy days: umbrellas up (yours too, while walking outside)
-    const raining = this.weather.kind === 'rain' && !inside;
+    const raining = this.weather.wet && !inside;
     this.crowd.raining = raining;
     this.npcs.raining = raining;
     this.player.umbrella = raining && !driving && !this.player.riding && !this.player.sitting;

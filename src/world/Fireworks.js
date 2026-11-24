@@ -60,7 +60,7 @@ export class Fireworks {
     const day = Math.floor(st.time.total / 1440);
     const wd = day % 7; // 0 Monday
     const hr = hourOf(st.time.total);
-    return (wd === 4 || wd === 5 || this.forced) && hr >= 21 && hr < 22 && this.game.weather.kind !== 'rain';
+    return (wd === 4 || wd === 5 || this.forced) && hr >= 21 && hr < 22 && !this.game.weather.wet;
   }
 
   launch() {

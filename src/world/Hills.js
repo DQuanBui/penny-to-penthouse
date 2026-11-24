@@ -409,7 +409,7 @@ export class HikeLife {
     const [u, v] = toUV(S, pos.x, pos.z);
     const near = !inside && v > -60 && v < S.D + 40 && u > S.u0 - 60 && u < S.u1 + 60;
     const hr = hourOf(this.game.state.time.total);
-    const want = near && hr > 6 && hr < 20 && this.game.weather.kind !== 'rain' ? 5 : 0;
+    const want = near && hr > 6 && hr < 20 && !this.game.weather.wet ? 5 : 0;
     while (this.hikers.length > want) {
       const h = this.hikers.pop();
       h.rig.group.removeFromParent();

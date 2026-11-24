@@ -17,7 +17,7 @@ export default {
   topIndustries: ['Finance', 'Media'],
   industries: { finance: 1.25, creative: 1.15, realestate: 1.1 },
   transit: { name: 'Subway', fare: 2.9, icon: '🚇', kind: 'subway', line: '#e05a2a' },
-  weather: { summary: 'Four seasons, snowy winters', rain: 0.22, snowInWinter: 0.45, haze: 0, sunny: 0.5 },
+  weather: { summary: 'Four seasons, snowy winters', rain: 0.22, snowInWinter: 0.45, haze: 0, storms: 0.25, sunny: 0.5 },
   treeType: 'leafy',
   busColor: '#1f5fa8', // city bus livery
   taxiMul: 2.4, // yellow cabs everywhere

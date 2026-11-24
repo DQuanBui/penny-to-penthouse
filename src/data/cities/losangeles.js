@@ -15,7 +15,7 @@ export default {
   industries: { creative: 1.3, hospitality: 1.05, tech: 1.05 },
   transit: { name: 'Metro Bus', fare: 1.75, icon: '🚌', kind: 'bus', line: '#e9a33a' },
   carCentric: true,
-  weather: { summary: 'Sunny almost every day', rain: 0.05, snowInWinter: 0, haze: 0.18, sunny: 0.8 },
+  weather: { summary: 'Sunny almost every day', rain: 0.05, snowInWinter: 0, haze: 0.18, storms: 0.1, sunny: 0.8 },
   treeType: 'palm',
   busColor: '#d9822b', // city bus livery
   zoo: 'Sunset Canyon Zoo',

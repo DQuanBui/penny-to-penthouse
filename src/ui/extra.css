@@ -886,3 +886,15 @@ body.touch-ui .phone {
     grid-template-columns: repeat(3, 48px);
   }
 }
+
+/* ---------- lightning (world/Weather.js storms) ---------- */
+#ui > .lightning,
+.lightning {
+  position: fixed;
+  inset: 0;
+  background: #e9f1ff;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+}

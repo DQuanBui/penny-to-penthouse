@@ -139,7 +139,7 @@ export class StreetShows {
     }
     this.group.visible = true;
     const hr = hourOf(this.game.state.time.total);
-    const on = hr >= 11 && hr < 21 && this.game.weather.kind !== 'rain' && this.game.weather.kind !== 'snow';
+    const on = hr >= 11 && hr < 21 && !this.game.weather.wet && this.game.weather.kind !== 'snow';
     const t = performance.now() / 1000;
     for (const s of this.shows) {
       const near = (s.x - pos.x) ** 2 + (s.z - pos.z) ** 2 < SHOW_DIST * SHOW_DIST;

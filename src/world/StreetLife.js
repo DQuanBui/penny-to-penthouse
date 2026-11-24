@@ -98,7 +98,7 @@ export class StreetLife {
   active(spot) {
     const hr = hourOf(this.game.state.time.total);
     if (spot.kind === 'sitter') return true;
-    if (this.game.weather.kind === 'rain' || this.game.weather.kind === 'snow') return spot.kind === 'vendor' && hr >= 8 && hr < 20;
+    if (this.game.weather.wet || this.game.weather.kind === 'snow') return spot.kind === 'vendor' && hr >= 8 && hr < 20;
     return spot.kind === 'vendor' ? hr >= 8 && hr < 21 : hr >= 10 && hr < 22;
   }
 

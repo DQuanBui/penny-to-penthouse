@@ -39,14 +39,14 @@ export class Ambience {
     const out = s.active && s.outside;
     const day = 1 - s.night;
     this.hum.gain.setTargetAtTime(!s.active ? 0.02 : out ? 0.05 + 0.05 * day + (s.driving ? 0.06 : 0) : 0.012, t, 0.4);
-    this.rain.gain.setTargetAtTime(s.active && s.weather === 'rain' ? (out ? 0.07 : 0.018) : 0, t, 0.8);
+    this.rain.gain.setTargetAtTime(s.active && s.weather === 'storm' ? (out ? 0.11 : 0.03) : s.weather === 'rain' ? (out ? 0.07 : 0.018) : 0, t, 0.8);
     if (!out) return;
 
     // birds: short chirps in the daytime when it is dry
     this.birdT -= dt;
     if (this.birdT <= 0) {
       this.birdT = 1.5 + Math.random() * 5;
-      if (day > 0.6 && s.weather !== 'rain' && s.weather !== 'snow') {
+      if (day > 0.6 && s.weather !== 'rain' && s.weather !== 'storm' && s.weather !== 'snow') {
         const n = 2 + Math.floor(Math.random() * 3);
         const base = 2600 + Math.random() * 1800;
         for (let i = 0; i < n; i++) e.tone(e.ambGain, { f: base * (1 + Math.random() * 0.2), f2: base * (0.75 + Math.random() * 0.6), t: i * 0.11, dur: 0.08, gain: 0.035 });

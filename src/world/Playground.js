@@ -61,7 +61,7 @@ export class PlaygroundLife {
   update(dt, pos, inside) {
     if (!this.city || inside) return;
     const hr = hourOf(this.game.state.time.total);
-    const day = hr >= 9 && hr < 19 && this.game.weather.kind !== 'rain' && this.game.weather.kind !== 'snow';
+    const day = hr >= 9 && hr < 19 && !this.game.weather.wet && this.game.weather.kind !== 'snow';
     let best = null;
     let bd = NEAR * NEAR;
     for (const g of this.grounds) {

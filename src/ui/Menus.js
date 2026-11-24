@@ -145,6 +145,7 @@ export function openSettings(game) {
       h('div.set-group', 'Game'),
       line('Time speed', sel('timeSpeed', [[0.5, 'Relaxed'], [1, 'Normal'], [2, 'Fast'], [4, 'Very fast']])),
       line('Autosave each day', toggle('autosave')),
+      line('Reduce flashing (lightning)', toggle('reduceFlashes')),
       h('div.set-group', 'Audio'),
       line('Master volume', slider('master', 0, 1, 0.05)),
       line('Music', slider('music', 0, 1, 0.05)),

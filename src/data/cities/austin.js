@@ -14,7 +14,7 @@ export default {
   topIndustries: ['Tech', 'Music & Media'],
   industries: { tech: 1.25, creative: 1.1, entrepreneur: 1.1 },
   transit: { name: 'CapMetro Bus', fare: 1.25, icon: '🚌', kind: 'bus', line: '#c53a3a' },
-  weather: { summary: 'Long hot summers, mild winters', rain: 0.12, snowInWinter: 0, haze: 0.2, sunny: 0.7 },
+  weather: { summary: 'Long hot summers, mild winters', rain: 0.12, snowInWinter: 0, haze: 0.2, storms: 0.5, sunny: 0.7 },
   treeType: 'leafy',
   busColor: '#b5461a', // city bus livery
   zoo: 'Hill Country Zoo',

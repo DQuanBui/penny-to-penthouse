@@ -1,5 +1,6 @@
-// Weather per city and season: clear, cloudy, rain, snow (snowy-winter cities)
-// and heat haze (humid cities in summer). Deterministic per day so the sim
+// Weather per city and season: clear, cloudy, rain, thunderstorms (warm months,
+// cfg.weather.storms = share of rain that turns stormy), snow (snowy-winter
+// cities) and heat haze (humid cities in summer). Deterministic per day so the sim
 // and the visuals always agree. Particles follow the camera.
 import * as THREE from 'three';
 import { mulberry32, hashStr, damp } from '../core/utils.js';
@@ -14,6 +15,7 @@ export const WEATHER_INFO = {
   clear: { icon: '☀️', label: 'Clear', overcast: 0, fog: 0, crowd: 1 },
   cloudy: { icon: '⛅', label: 'Cloudy', overcast: 0.45, fog: 0.05, crowd: 1 },
   rain: { icon: '🌧️', label: 'Rain', overcast: 0.85, fog: 0.4, crowd: 0.72 },
+  storm: { icon: '⛈️', label: 'Thunderstorm', overcast: 0.97, fog: 0.55, crowd: 0.5 },
   snow: { icon: '🌨️', label: 'Snow', overcast: 0.7, fog: 0.55, crowd: 0.66 },
   haze: { icon: '🥵', label: 'Heat haze', overcast: 0.1, fog: 0.35, crowd: 0.85 },
 };
@@ -31,8 +33,10 @@ export function weatherAt(cityCfg, total) {
     p += w.snowInWinter;
     if (r < p) return 'snow';
   }
+  const p0 = p;
   p += (w.rain || 0) * (summer && w.haze ? 1.3 : 1) * (winter && w.snowInWinter ? 0.3 : 1);
-  if (r < p) return 'rain';
+  // in the warm months some of that rain comes with thunder and lightning
+  if (r < p) return !winter && w.storms && (r - p0) / (p - p0) < w.storms * (summer ? 1 : 0.5) ? 'storm' : 'rain';
   if ((summer || cal.seasonId === 'spring') && w.haze) {
     p += w.haze * (summer ? 1.2 : 0.4);
     if (r < p && block >= 1 && block <= 2) return 'haze';
@@ -44,6 +48,10 @@ export class Weather {
   constructor(scene, sky) {
     this.sky = sky;
     this.kind = 'clear';
+    this.flash = 0; // lightning, 0..1 (Game shows it as a screen flash)
+    this.boltT = 3;
+    this.thunders = [];
+    this.onThunder = null; // (loudness) => play the rumble
     this.rainAmt = 0;
     this.snowAmt = 0;
     this.hazeAmt = 0;
@@ -89,7 +97,8 @@ export class Weather {
     const sky = this.sky;
     sky.overcast = damp(sky.overcast, info.overcast, 0.5, dt);
     sky.fogBoost = damp(sky.fogBoost, info.fog, 0.5, dt);
-    this.rainAmt = damp(this.rainAmt, this.kind === 'rain' ? 1 : 0, 0.8, dt);
+    this.rainAmt = damp(this.rainAmt, this.wet ? 1 : 0, 0.8, dt);
+    this.updateLightning(dt, outside);
     this.snowAmt = damp(this.snowAmt, this.kind === 'snow' ? 1 : 0, 0.8, dt);
     this.hazeAmt = damp(this.hazeAmt, this.kind === 'haze' ? 1 : 0, 0.5, dt);
     sky.tint.copy(this._white).lerp(this._haze, this.hazeAmt * 0.6);
@@ -97,7 +106,7 @@ export class Weather {
     const showRain = outside && this.rainAmt > 0.02;
     this.rain.visible = showRain;
     if (showRain) {
-      this.rain.material.opacity = 0.5 * this.rainAmt;
+      this.rain.material.opacity = (this.kind === 'storm' ? 0.72 : 0.5) * this.rainAmt;
       const p = this.rainPos;
       const s = this.rainSeed;
       const fall = this.t * 24;
@@ -131,5 +140,31 @@ export class Weather {
       }
       this.snow.geometry.attributes.position.needsUpdate = true;
     }
+  }
+
+  /** Rain or a thunderstorm: umbrellas up, street life heads indoors. */
+  get wet() {
+    return this.kind === 'rain' || this.kind === 'storm';
+  }
+
+  /** Lightning every few seconds in a storm; the thunder follows, later the further away it struck. */
+  updateLightning(dt, outside) {
+    this.flash = Math.max(0, this.flash - dt * 4.5);
+    for (let i = this.thunders.length - 1; i >= 0; i--) {
+      const th = this.thunders[i];
+      th.t -= dt;
+      if (th.t <= 0) {
+        this.thunders.splice(i, 1);
+        this.onThunder?.(th.loud);
+      }
+    }
+    if (this.kind !== 'storm') return;
+    this.boltT -= dt;
+    if (this.boltT > 0) return;
+    this.boltT = 5 + Math.random() * 11;
+    const dist = Math.random(); // 0 = right overhead
+    this.bolts = (this.bolts || 0) + 1;
+    if (outside) this.flash = 1 - dist * 0.55;
+    this.thunders.push({ t: 0.3 + dist * 2.6, loud: (outside ? 1 : 0.45) * (1 - dist * 0.6) });
   }
 }

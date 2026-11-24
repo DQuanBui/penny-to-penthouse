@@ -14,7 +14,7 @@ export default {
   topIndustries: ['Finance', 'Trades'],
   industries: { finance: 1.15, trades: 1.2, healthcare: 1.05 },
   transit: { name: 'L Train', fare: 2.5, icon: '🚆', kind: 'elevated', line: '#c53a3a' },
-  weather: { summary: 'Hot summers, snowy winters', rain: 0.2, snowInWinter: 0.65, haze: 0, sunny: 0.45 },
+  weather: { summary: 'Hot summers, snowy winters', rain: 0.2, snowInWinter: 0.65, haze: 0, storms: 0.3, sunny: 0.45 },
   treeType: 'leafy',
   busColor: '#3d6fa3', // city bus livery
   zoo: 'Lakeshore Zoo',
