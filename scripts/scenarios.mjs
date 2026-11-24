@@ -756,6 +756,42 @@ export const scenarios = {
     console.log('tired', JSON.stringify(out));
     if (!out.early || out.fainted || !out.refused || out.slept >= 9 || !String(out.review).includes('more days')) throw new Error('balance safety nets failed');
   },
+  /** Camera collision (ray against the colliders) and awnings fading out of the way. */
+  async camera({ page, shot, wait }) {
+    await startLife(page, wait);
+    await page.evaluate(() => {
+      const g = window.__game;
+      g.weather.force = 'clear';
+      g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 13 * 60;
+      // stand at a shop door facing the street, swing the camera round into the building
+      const p = g.city.places.find((q) => q.type === 'cafe') || g.city.places.find((q) => !q.minor && q.type !== 'home');
+      g.player.teleport(p.x + p.nx * 1.2, p.z + p.nz * 1.2, Math.atan2(p.nx, p.nz));
+      g.cam.yaw = Math.atan2(-p.nx, -p.nz);
+      g.cam.pitch = 0.15;
+      g.cam.dist = 10;
+      window.__camPlace = p;
+    });
+    await wait(2000);
+    const wall = await page.evaluate(() => {
+      const g = window.__game;
+      const c = g.camera.position;
+      return { cur: +g.cam.curDist.toFixed(2), dist: g.cam.dist, inWall: g.city.colliders.pointBlocked(c.x, c.y, c.z, 0) };
+    });
+    console.log('camera vs wall', JSON.stringify(wall));
+    if (wall.inWall || wall.cur > 5) throw new Error('camera went into the building');
+    await shot('camera-wall');
+    // under the awning, looking down steeply from the street: the awning dissolves
+    await page.evaluate(() => {
+      const g = window.__game;
+      const p = window.__camPlace;
+      g.player.teleport(p.x + p.nx * 0.5, p.z + p.nz * 0.5, Math.atan2(-p.nx, -p.nz));
+      g.cam.snapBehind(Math.atan2(-p.nx, -p.nz));
+      g.cam.pitch = 1.15;
+      g.cam.dist = 6;
+    });
+    await wait(2000);
+    await shot('camera-awning');
+  },
   /** A city's signature look (CITY=Miami | Los Angeles | Chicago | Austin). */
   async themes({ page, shot, wait }) {
     const city = process.env.CITY || 'Miami';

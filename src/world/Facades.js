@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { FACADE, InstanceBatch } from './Buildings.js';
 import { adTextures } from './TimesSquare.js';
+import { fadeOccluders } from './OccluderFade.js';
 
 // fictional names for apartment buildings and towers
 const HOME_NAMES = ['The Beaumont', 'Maple Court', 'Riverside Lofts', 'The Ashford', 'Linden House', 'Park View', 'The Wellington', 'Harbor House', 'The Calloway', 'Willow Gardens', 'The Hartley', 'Cedar Hall', 'The Marlowe', 'Briarwood', 'The Ellison', 'Juniper Lofts', 'The Sterling', 'Oakmont', 'The Adeline', 'Sycamore Place'];
@@ -73,7 +74,7 @@ export function buildFacadeDetails(ctx) {
   const boards = new Map();
   const ads = adTextures();
   const grass = new InstanceBatch(new THREE.BoxGeometry(1, 0.12, 1).translate(0, 0.06, 0), new THREE.MeshStandardMaterial({ color: '#4f8a3f', roughness: 1 }), { receiveShadow: true });
-  const planters = new InstanceBatch(new THREE.BoxGeometry(1, 0.5, 1).translate(0, 0.25, 0), new THREE.MeshStandardMaterial({ color: '#8a6a4a', roughness: 0.9 }), { castShadow: true });
+  const planters = new InstanceBatch(new THREE.BoxGeometry(1, 0.5, 1).translate(0, 0.25, 0), fadeOccluders(new THREE.MeshStandardMaterial({ color: '#8a6a4a', roughness: 0.9 })), { castShadow: true });
   const shrubs = new InstanceBatch(new THREE.IcosahedronGeometry(0.6, 1), new THREE.MeshStandardMaterial({ color: '#3f7a34', roughness: 0.9, flatShading: true }), { castShadow: true });
   const posts = new Bag();
   let escapes = 0;

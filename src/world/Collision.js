@@ -97,6 +97,42 @@ export class ColliderWorld {
     return hit;
   }
 
+  /**
+   * Distance along a ray (unit direction) to the first box, each grown by pad,
+   * or maxT when nothing is hit. A box the origin is already inside is skipped
+   * (when only its padding holds the origin, the bare box is tested instead).
+   */
+  raycast(ox, oy, oz, dx, dy, dz, maxT, pad = 0.25) {
+    const c = this.cell;
+    const ex = ox + dx * maxT;
+    const ez = oz + dz * maxT;
+    const cx0 = Math.floor((Math.min(ox, ex) - pad) / c);
+    const cx1 = Math.floor((Math.max(ox, ex) + pad) / c);
+    const cz0 = Math.floor((Math.min(oz, ez) - pad) / c);
+    const cz1 = Math.floor((Math.max(oz, ez) + pad) / c);
+    const stamp = (this._stamp = (this._stamp || 0) + 1);
+    let best = maxT;
+    for (let cx = cx0; cx <= cx1; cx++) {
+      for (let cz = cz0; cz <= cz1; cz++) {
+        const list = this.map.get(this._key(cx, cz));
+        if (!list) continue;
+        for (let i = 0; i < list.length; i++) {
+          const b = list[i];
+          if (b._ray === stamp) continue;
+          b._ray = stamp;
+          let p = pad;
+          if (inBox(ox, oy, oz, b, p)) {
+            if (inBox(ox, oy, oz, b, 0)) continue;
+            p = 0;
+          }
+          const t = rayBox(ox, oy, oz, dx, dy, dz, b, p, best);
+          if (t >= 0 && t < best) best = t;
+        }
+      }
+    }
+    return best;
+  }
+
   /** Highest box top under a point that the player could stand on (for furniture, kerbs...). */
   pointBlocked(x, y, z, pad = 0.2) {
     const list = this.map.get(this._key(Math.floor(x / this.cell), Math.floor(z / this.cell)));
@@ -107,6 +143,36 @@ export class ColliderWorld {
     }
     return false;
   }
+}
+
+function inBox(x, y, z, b, p) {
+  return x > b.minX - p && x < b.maxX + p && y > b.y0 - p && y < b.y1 + p && z > b.minZ - p && z < b.maxZ + p;
+}
+
+/** One slab of the ray / box test: narrows [t0, t1] in place, false when it misses. */
+function slab(o, d, lo, hi, T) {
+  if (Math.abs(d) < 1e-9) return o >= lo && o <= hi;
+  let a = (lo - o) / d;
+  let c = (hi - o) / d;
+  if (a > c) {
+    const s = a;
+    a = c;
+    c = s;
+  }
+  if (a > T[0]) T[0] = a;
+  if (c < T[1]) T[1] = c;
+  return T[0] <= T[1];
+}
+const _T = [0, 0];
+
+/** Entry distance of a ray into box b grown by p (within tMax), or -1. */
+function rayBox(ox, oy, oz, dx, dy, dz, b, p, tMax) {
+  _T[0] = 0;
+  _T[1] = tMax;
+  if (!slab(ox, dx, b.minX - p, b.maxX + p, _T)) return -1;
+  if (!slab(oy, dy, b.y0 - p, b.y1 + p, _T)) return -1;
+  if (!slab(oz, dz, b.minZ - p, b.maxZ + p, _T)) return -1;
+  return _T[0];
 }
 
 // ---- oriented boxes (cars) ----------------------------------------------------

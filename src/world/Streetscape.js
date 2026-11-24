@@ -10,6 +10,7 @@ import { LANE_OUT } from './Vehicles.js';
 import { vehicleGeometry, carMaterial, BODY_DIMS } from './CarModel.js';
 import { dockedBikeGeometry, SHARE_COLOR } from './Bikes.js';
 import { pick } from '../core/utils.js';
+import { fadeOccluders } from './OccluderFade.js';
 
 const CAR_COLORS = ['#f4f4f2', '#1d1f24', '#8a8d92', '#b0463c', '#27406b', '#d9c7a8', '#3f5f4a', '#5a6270', '#a8adb4', '#7a2230', '#2f4f6f', '#c9b16b'];
 const AWNING = ['#1e5b3a', '#6e1f2b', '#27406b', '#c46a3a', '#3a3f48', '#7a4a8a', '#2f6e78', '#b5343c', '#d9b44a'];
@@ -203,7 +204,7 @@ export function buildStreetscape(ctx) {
 
   // ---- awnings on ordinary ground-floor shops -------------------------------
   const awnGeo = new THREE.BoxGeometry(1, 0.06, 1.3).translate(0, 0, 0.65).rotateX(0.33);
-  const awnings = new InstanceBatch(awnGeo, new THREE.MeshStandardMaterial({ roughness: 0.9, side: THREE.DoubleSide }), { castShadow: true });
+  const awnings = new InstanceBatch(awnGeo, fadeOccluders(new THREE.MeshStandardMaterial({ roughness: 0.9, side: THREE.DoubleSide })), { castShadow: true });
   const signs = new InstanceBatch(box(1, 0.7, 0.12, 0, 0, 0.06), new THREE.MeshStandardMaterial({ roughness: 0.6 }));
   for (const b of blocks) {
     if (b.kind !== 'build' || b.style.lots === 'houses') continue;

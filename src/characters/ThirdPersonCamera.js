@@ -1,7 +1,10 @@
-// Orbiting third-person camera with zoom, smoothing and collision (the boom is
-// shortened when a wall is between the player and the camera).
+// Orbiting third-person camera with zoom, smoothing and collision: a ray from
+// the head to the camera is cast against the building / interior colliders and
+// the camera is pulled in front of the first hit (fast in, slow back out).
+// Small occluders (awnings, planters, tree crowns) dissolve instead.
 import * as THREE from 'three';
 import { clamp, damp } from '../core/utils.js';
+import { occluderUniforms } from '../world/OccluderFade.js';
 
 export class ThirdPersonCamera {
   constructor(camera) {
@@ -51,25 +54,20 @@ export class ThirdPersonCamera {
     const cp = Math.cos(this.pitch);
     const d = this._dir.set(Math.sin(this.yaw) * cp, Math.sin(this.pitch), Math.cos(this.yaw) * cp);
 
-    // Collision: march along the boom and stop before the first blocked sample.
+    // Collision: cast the boom against the colliders (boxes grown by the near-plane margin).
     let allowed = this.dist;
     const w = this.world;
     if (w) {
-      const step = 0.4;
-      for (let s = 0.8; s <= this.dist; s += step) {
-        const x = this.target.x + d.x * s;
-        const y = this.target.y + d.y * s;
-        const z = this.target.z + d.z * s;
-        if (w.colliders.pointBlocked(x, y, z, 0.3)) {
-          allowed = Math.max(0.6, s - step);
-          break;
-        }
-      }
+      const hit = w.colliders.raycast(this.target.x, this.target.y, this.target.z, d.x, d.y, d.z, this.dist, 0.3);
+      if (hit < this.dist) allowed = Math.max(0.6, hit - 0.1);
     }
     // pull in fast, ease out slowly
     this.curDist = allowed < this.curDist ? damp(this.curDist, allowed, 30, dt) : damp(this.curDist, allowed, 5, dt);
     const gy = w ? w.groundY(this.target.x + d.x * this.curDist, this.target.z + d.z * this.curDist) : 0;
     this.camera.position.set(this.target.x + d.x * this.curDist, Math.max(this.target.y + d.y * this.curDist, gy + 0.3), this.target.z + d.z * this.curDist);
     this.camera.lookAt(this.target);
+    occluderUniforms.uOccCam.value.copy(this.camera.position);
+    occluderUniforms.uOccHead.value.set(this.target.x, this.target.y - 0.4, this.target.z);
+    occluderUniforms.uOccOn.value = 1;
   }
 }

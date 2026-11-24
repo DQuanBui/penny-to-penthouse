@@ -1,12 +1,12 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Sixth round in progress (see checklist below). Done so far: city signature features, taxi drop-off, achievements, balance. Next: the fix list (camera collision, map labels, creator preview, save-failed toast), then bus riding, relocation, office interiors, touch controls, performance.
+RESUME HERE: Sixth round in progress (see checklist below). Done so far: city signature features, taxi drop-off, achievements, balance, camera collision. Next: the fix list (map labels, creator preview, save-failed toast), then bus riding, relocation, office interiors, touch controls, performance.
 
 ## Sixth round (this session)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)
 - [x] Taxi drop-off (TaxiRide.taxiArrive / updateCabOff): the cab pulls up at the kerb by the door, you step out, it drives off; kerbSpot/kerbGap shared with ui/Hail.js (`hail` scenario)
 - [x] Achievements: Top of the Trail (summit), Peak Bagger (summits in 3 cities, flags.summitCities), Clean Streets (50 litter, flags.litterTotal)
-- [ ] Camera collision (ray vs colliders, smoothing) + occluder fade
+- [x] Camera collision: ColliderWorld.raycast (slab test, padded boxes) head→camera, fast in / slow out; world/OccluderFade.js dithers awnings, planters, shopfront trim and tree crowns inside a cone around the camera→player line (`camera` scenario)
 - [x] Balance (npm run sim): ER collapses came from life events resolved at midnight + choices that eat hours (LifeEvents.decideNow, energy/hunger floor after long choices, stale events expire), shifts and activities that drove energy past 0 (Jobs.workShift sends you home early, doActivity refuses when exhausted), hunger during sleep (sleep wakes you); promotions need time in the role (jobs.minDaysAtLevel × level); business levelGrowth 1.45 / upgradeCost 1.0 / sellMultiple 8
 - [ ] Map: district labels avoid icons
 - [ ] Creator: preview faces the camera after Random / appearance changes

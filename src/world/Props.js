@@ -5,6 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { Tex } from './Textures.js';
 import { InstanceBatch } from './Buildings.js';
 import { pick } from '../core/utils.js';
+import { fadeOccluders } from './OccluderFade.js';
 
 const box = (w, h, d, x = 0, y = 0, z = 0) => new THREE.BoxGeometry(w, h, d).translate(x, y, z);
 const cyl = (r0, r1, h, x = 0, y = 0, z = 0, seg = 8) => new THREE.CylinderGeometry(r0, r1, h, seg).translate(x, y, z);
@@ -73,7 +74,7 @@ export function buildProps(ctx) {
 
   const trunkMat = new THREE.MeshStandardMaterial({ color: '#6b4a32', roughness: 0.9 });
   const trunks = new InstanceBatch(palm ? cyl(0.13, 0.2, 1, 0, 0.5, 0, 6) : cyl(0.14, 0.22, 1, 0, 0.5, 0, 6), trunkMat, { castShadow: true });
-  const leafMat = new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true });
+  const leafMat = fadeOccluders(new THREE.MeshStandardMaterial({ roughness: 0.85, flatShading: true }));
   let leafGeo;
   if (palm) {
     const fronds = [];

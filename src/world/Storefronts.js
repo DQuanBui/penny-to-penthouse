@@ -10,6 +10,7 @@ import { PLACE_TYPES } from '../data/placeTypes.js';
 import { labelTexture, iconTexture } from './Textures.js';
 import { mulberry32, hashStr } from '../core/utils.js';
 import { vehicleGeometry, carMaterial } from './CarModel.js';
+import { fadeOccluders } from './OccluderFade.js';
 
 const _c = new THREE.Color();
 const _m = new THREE.Matrix4();
@@ -374,8 +375,8 @@ export function buildStorefronts(ctx) {
 
   // ---- merge -----------------------------------------------------------------
   const mats = {
-    solid: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0.05 }),
-    fabric: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, side: THREE.DoubleSide }),
+    solid: fadeOccluders(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0.05 })),
+    fabric: fadeOccluders(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, side: THREE.DoubleSide })),
     // blue-grey glass that catches the sky by day and glows with warm interior light at night
     glass: new THREE.MeshStandardMaterial({ color: '#5f7a92', roughness: 0.12, metalness: 0.15, emissive: '#ffcf8a', emissiveIntensity: 0 }),
     neon: new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }),
