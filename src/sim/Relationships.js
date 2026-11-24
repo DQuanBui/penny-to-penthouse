@@ -3,6 +3,7 @@
 // (job referrals, shop discounts, tips, party invites).
 import { BALANCE } from '../data/balance.js';
 import { npcsOf, npcWhere, PERSONALITY } from '../data/npcs/index.js';
+import { CITIES } from '../data/cities/index.js';
 import { GIFTS } from '../data/items.js';
 import { CAREER_BY_ID } from '../data/careers.js';
 import { SKILLS } from '../data/archetypes.js';
@@ -42,6 +43,24 @@ const LINES = {
   tired: ['They glance at the time. "I should get going — catch you later!"'],
 };
 
+const FAR = new Map();
+/** An NPC from another city's roster, tagged with where they live ({ ...npc, away: cityId }). */
+function farAway(id, hereId) {
+  const key = id + '|' + hereId;
+  if (FAR.has(key)) return FAR.get(key);
+  let found = null;
+  for (const c of CITIES) {
+    if (c.id === hereId) continue;
+    const n = npcsOf(c.id).find((x) => x.id === id);
+    if (n) {
+      found = { ...n, away: c.id, awayName: c.name };
+      break;
+    }
+  }
+  FAR.set(key, found);
+  return found;
+}
+
 export class Relationships {
   constructor(sim) {
     this.sim = sim;
@@ -50,7 +69,29 @@ export class Relationships {
     return npcsOf(this.sim.city.id);
   }
   npc(id) {
-    return this.all.find((n) => n.id === id);
+    return this.all.find((n) => n.id === id) || farAway(id, this.sim.city.id);
+  }
+  /** People you met in a city you have moved away from (texts and calls only). */
+  away() {
+    const map = this.sim.state.relationships;
+    const here = new Set(this.all.map((n) => n.id));
+    const out = [];
+    for (const id in map) if (!here.has(id)) {
+      const n = farAway(id, this.sim.city.id);
+      if (n) out.push(n);
+    }
+    return out;
+  }
+  /** A call to a long-distance friend: once a day, keeps the friendship warm. */
+  call(id) {
+    const r = this.rel(id);
+    const day = this.sim.day;
+    if (!r || r.callDay === day) return false;
+    r.callDay = day;
+    r.lastDay = day;
+    this.add(id, 2.5);
+    this.sim.advance(20, { rates: { social: 18, fun: 6 } });
+    return true;
   }
   /** Relationship record (created on first contact). */
   rel(id, create = false) {
@@ -67,7 +108,7 @@ export class Relationships {
   /** Met NPCs at or above a level, best first. */
   known(minLevel = 0) {
     const map = this.sim.state.relationships;
-    return this.all.filter((n) => map[n.id] && relLevel(map[n.id].score) >= minLevel).sort((a, b) => map[b.id].score - map[a.id].score);
+    return [...this.all, ...this.away()].filter((n) => map[n.id] && relLevel(map[n.id].score) >= minLevel).sort((a, b) => map[b.id].score - map[a.id].score);
   }
   friendCount(minLevel = 2) {
     return this.known(minLevel).length;
@@ -170,6 +211,7 @@ export class Relationships {
     const sim = this.sim;
     const npc = this.npc(id);
     const r = this.rel(id);
+    if (npc?.away) return { reason: `${npc.first} lives in ${npc.awayName} — call or text to stay close.` };
     const hour = hourOf(sim.state.time.total);
     const where = this.where(npc);
     if (!r || relLevel(r.score) < 1) return { reason: 'Get to know them a little first.' };

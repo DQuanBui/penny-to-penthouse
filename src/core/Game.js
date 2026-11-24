@@ -58,6 +58,7 @@ import { ClubQueues } from '../world/NightLife.js';
 import { TaxiHail } from '../ui/Hail.js';
 import { Doormen } from '../world/Doormen.js';
 import { updateTaxiRide, updateCabOff } from '../world/TaxiRide.js';
+import { relocate } from '../sim/Relocation.js';
 import { RoofParties } from '../world/RoofParties.js';
 import { CityTrash } from '../world/Trash.js';
 import { CityCleaning } from '../world/Cleaning.js';
@@ -448,6 +449,33 @@ export class Game {
     });
     card.remove();
     this.events.emit('toast', st.trip ? { icon: '🛬', title: `Welcome to ${dest.name}!`, text: `Your room is booked at ${this.city.placeById.hotel?.name}. Follow the waypoint. Fly home from the airport any time.`, kind: 'good', long: true } : { icon: '🏠', title: 'Home sweet home', text: `Back in ${dest.name}.`, kind: 'good' });
+    this.saveNow(true);
+  }
+
+  /** Move permanently to another city (sim/Relocation.js): a new world, a new sim, the same life. */
+  async relocate(q, opts = {}) {
+    const st = this.state;
+    if (st.money.checking < q.total) return this.events.emit('toast', { icon: '🚚', title: 'Not enough to move', text: `Moving costs ${fmtMoney(q.total)} up front. Move money into checking first.`, kind: 'bad' });
+    this.closeAllOverlays();
+    this.photoMode.toggle(false);
+    const card = h('div.travel-card', h('div.travel-plane', '🚚'), h('div.travel-title', `Moving to ${q.to.name}`), h('div.travel-sub', `The movers load the truck · ${Math.floor(q.minutes / 60)}h ${q.minutes % 60}m flight · a new chapter`));
+    this.ui.append(card);
+    let res = null;
+    await this.fade(async () => {
+      await new Promise((r) => setTimeout(r, 1500));
+      if (this.vehicles.driving) this.vehicles.exit(true);
+      this.leaveInterior(true);
+      res = relocate(this.sim, q, opts);
+      if (!res.ok) return;
+      this.setupLife(st);
+      this.sim.advance(q.minutes, { noCollapse: true });
+      this.map.setWaypoint(null);
+      this.enterPlace(this.homePlace(), true);
+    });
+    card.remove();
+    if (!res?.ok) return this.events.emit('toast', { icon: '🚚', title: 'Move cancelled', text: res?.reason || '', kind: 'bad' });
+    const jobLine = st.job ? `Your job transferred with you (${this.sim.jobs.title()}).` : 'Find work in the Jobs app — your experience counts.';
+    this.events.emit('toast', { icon: '🏙️', title: `Welcome to your new life in ${q.to.name}!`, text: `${res.type.name} in ${q.district.name}. ${jobLine} Old friends are a text or a call away.`, kind: 'good', long: true });
     this.saveNow(true);
   }
 

@@ -44,7 +44,7 @@ export const ContactsApp = {
         'div.sec',
         known.map((n) => {
           const s = rel.score(n.id);
-          return row({ icon: REL_ICONS[relLevel(s)], title: n.name, sub: `${n.job} · ${game.npcs.whereText(n)}`, right: Math.round(s), onclick: () => ((this.open = n.id), refresh()) });
+          return row({ icon: REL_ICONS[relLevel(s)], title: n.name, sub: `${n.job} · ${n.away ? `📍 ${n.awayName} · long distance` : game.npcs.whereText(n)}`, right: Math.round(s), onclick: () => ((this.open = n.id), refresh()) });
         }),
       ),
     );
@@ -60,9 +60,16 @@ export const ContactsApp = {
     root.append(
       btn('‹ All contacts', () => ((this.open = null), refresh()), 'small'),
       h('div.card.hero', h('div.big', n.name), h('div.muted.small', `${n.job} · ${PERSONALITY[n.personality].label} · age ${n.age}`), h('div.muted.small', `Likes: ${n.interests.join(', ')}`), relBar(r.score)),
-      row({ icon: '📍', title: game.npcs.whereText(n), sub: 'Find them in person for a real conversation.' }),
+      n.away ? row({ icon: '📍', title: `Lives in ${n.awayName}`, sub: 'Long distance now: texts and calls keep the friendship alive.' }) : row({ icon: '📍', title: game.npcs.whereText(n), sub: 'Find them in person for a real conversation.' }),
       section(
         'Stay in touch',
+        n.away
+          ? btn(r.callDay === sim.day ? '✓ Called today' : `📞  Call ${n.first} · 20 min`, () => {
+              if (!rel.call(n.id)) return;
+              game.events.emit('toast', { icon: '📞', title: `A long call with ${n.first}`, text: `You catch up on everything going on in ${n.awayName}. It feels like no time has passed.`, kind: 'good' });
+              refresh();
+            }, r.callDay === sim.day ? 'disabled' : '')
+          : null,
         btn(texted ? '✓ Texted today' : '✉️  Send a friendly text', () => {
           r.textDay = sim.day;
           rel.add(n.id, 1.5);

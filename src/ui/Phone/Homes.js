@@ -5,6 +5,8 @@ import { confirmBox } from '../Menus.js';
 import { HOME_BY_ID } from '../../data/homes.js';
 import { VEHICLE_BY_ID, CAR } from '../../data/vehicles.js';
 import { fmtMoney } from '../../core/utils.js';
+import { CITIES } from '../../data/cities/index.js';
+import { relocationQuote, MOVE_TYPES } from '../../sim/Relocation.js';
 import { section, row, tabs, kv, empty } from './widgets.js';
 
 export const HomesApp = {
@@ -28,6 +30,7 @@ export const HomesApp = {
           ['rent', 'Rent'],
           ['buy', 'Buy'],
           ['own', 'Owned'],
+          ['move', 'Move'],
         ],
         this.tab,
         (t) => ((this.tab = t), refresh()),
@@ -108,6 +111,8 @@ export const HomesApp = {
         root.append(row({ icon: t.icon, title: `${t.name} · ${l.address}`, sub: `${t.size[0]}×${t.size[1]} m${t.floors > 1 ? ' · 2 floors' : ''} · from ${fmtMoney(l.price * 0.1)} down`, right: fmtMoney(l.price, { compact: true }), onclick: () => ((this.open = l.id), refresh()) }));
       }
       root.append(h('div.tip', '💡 Listings change every month. Prices rise in booms and dip in recessions.'));
+    } else if (this.tab === 'move') {
+      this.relocation(root, game, sim, state, refresh);
     } else {
       if (!state.properties.length) root.append(empty('You do not own property yet. Your first purchase can be a home — or a rental that pays you every month.'));
       for (const p of state.properties) {
@@ -150,6 +155,43 @@ export const HomesApp = {
   },
 
   /** Listing detail with the mortgage calculator. */
+  /** Move tab: pick a city, a district and a home there, see what the move costs, go. */
+  relocation(root, game, sim, state, refresh) {
+    const others = CITIES.filter((c) => c.id !== state.cityId);
+    if (state.trip) return root.append(empty('Fly home first: you can only move from the city you live in.'));
+    if (!others.some((c) => c.id === this.moveTo)) this.moveTo = others[0].id;
+    const to = others.find((c) => c.id === this.moveTo);
+    if (!to.districts.some((d) => d.id === this.moveDistrict)) this.moveDistrict = to.districts[0].id;
+    if (!MOVE_TYPES.includes(this.moveType)) this.moveType = 'room';
+    this.keepJob ??= true;
+    const q = relocationQuote(sim, to.id, this.moveDistrict, this.moveType);
+    const t = HOME_BY_ID[this.moveType];
+    root.append(
+      h('div.muted.small', 'Move to another city for good. Your savings, investments, properties, businesses, cars and pet come along; old friends stay in your phone.'),
+      section('City', h('div.chips', others.map((c) => h('button.chip' + (c.id === to.id ? '.active' : ''), { onclick: () => ((this.moveTo = c.id), refresh()) }, c.name)))),
+      section('Neighbourhood', h('div.chips', to.districts.map((d) => h('button.chip' + (d.id === this.moveDistrict ? '.active' : ''), { onclick: () => ((this.moveDistrict = d.id), refresh()) }, d.name)))),
+      section('Home', h('div.chips', MOVE_TYPES.map((id) => h('button.chip' + (id === this.moveType ? '.active' : ''), { onclick: () => ((this.moveType = id), refresh()) }, `${HOME_BY_ID[id].icon} ${HOME_BY_ID[id].name}`)))),
+      state.job ? section('Your job', h('div.chips', h('button.chip' + (this.keepJob ? '.active' : ''), { onclick: () => ((this.keepJob = true), refresh()) }, `Transfer as ${sim.jobs.title()}`), h('button.chip' + (!this.keepJob ? '.active' : ''), { onclick: () => ((this.keepJob = false), refresh()) }, 'Hand in my notice'))) : null,
+      section(
+        `Moving to ${to.name}`,
+        kv(`${t.icon} ${t.name} · ${q.district.name}`, `${fmtMoney(q.rent)} / month`),
+        kv('First month + deposit', fmtMoney(q.rent + q.deposit)),
+        kv(`Movers · ${q.km.toLocaleString()} km`, fmtMoney(q.movers)),
+        kv('Flight', fmtMoney(q.flight)),
+        q.leaseBreak ? kv('Breaking your lease (half a month)', fmtMoney(q.leaseBreak)) : null,
+        q.refund ? kv('Deposit back from your landlord', `−${fmtMoney(q.refund)}`, 'good') : null,
+        kv('Total up front', fmtMoney(q.total), state.money.checking >= q.total ? 'good' : 'bad'),
+        state.home.owned ? h('div.muted.small', 'Your current home stays yours and is let out to tenants.') : null,
+        btn(`🚚  Move to ${to.name}`, async () => {
+          if (state.money.checking < q.total) return game.events.emit('toast', { icon: '🚚', title: 'Not enough to move', text: `You need ${fmtMoney(q.total)} in checking.`, kind: 'bad' });
+          if (!(await confirmBox(game, { title: `Move to ${to.name}?`, text: `A ${t.name.toLowerCase()} in ${q.district.name} for ${fmtMoney(q.rent)}/month. ${fmtMoney(q.total)} up front.${state.job ? (this.keepJob ? ' Your job transfers with you.' : ' You will leave your job.') : ''}`, yes: 'Move' }))) return;
+          game.phone.close();
+          game.relocate(q, { keepJob: this.keepJob });
+        }, 'primary'),
+      ),
+    );
+  },
+
   listing(root, game, sim, state, refresh) {
     const re = sim.re;
     const l = state.listings.find((x) => x.id === this.open);

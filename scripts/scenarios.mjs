@@ -761,6 +761,40 @@ export const scenarios = {
     console.log('tired', JSON.stringify(out));
     if (!out.early || out.fainted || !out.refused || out.slept >= 9 || !String(out.review).includes('more days')) throw new Error('balance safety nets failed');
   },
+  /** Relocation: move from New York to Chicago with a job transfer; money, investments and friends come along. */
+  async relocate({ page, shot, wait }) {
+    await startLife(page, wait);
+    const before = await page.evaluate(() => {
+      const g = window.__game;
+      const st = g.state;
+      st.money.checking = 30000;
+      g.sim.jobs.hire('tech', 1);
+      g.sim.market.buy('CITY500', 5000);
+      const friend = g.sim.rel.all[0];
+      g.sim.rel.add(friend.id, 60);
+      window.__friend = friend.id;
+      g.phone.open('homes');
+      return { city: st.cityId, inv: Math.round(g.sim.finance.breakdown().investments), job: g.sim.jobs.title() };
+    });
+    await page.click('.seg-btn:has-text("Move")');
+    await wait(600);
+    await shot('relocate-tab');
+    await page.click('.btn:has-text("Move to")');
+    await page.waitForSelector('.dialog:has-text("Move to")');
+    await page.click('.dialog .btn:has-text("Move")');
+    await page.waitForFunction(() => window.__game.state.cityId !== 'newyork' && window.__game.city.cfg.id === window.__game.state.cityId && !window.__game.fading, null, { timeout: 120000 });
+    await wait(1500);
+    const after = await page.evaluate(() => {
+      const g = window.__game;
+      const st = g.state;
+      const f = g.sim.rel.known(0).find((n) => n.id === window.__friend);
+      const called = f ? g.sim.rel.call(f.id) : false;
+      return { city: st.cityId, simCity: g.sim.city.id, inside: g.inside?.home || false, inv: Math.round(g.sim.finance.breakdown().investments), job: g.sim.jobs.title(), friendAway: f?.awayName, called, home: st.home.type + ' in ' + st.home.districtId, cash: Math.round(st.money.checking) };
+    });
+    console.log('relocate', JSON.stringify(before), '->', JSON.stringify(after));
+    if (after.city === before.city || after.simCity !== after.city || !after.inside || !after.friendAway || !after.called || after.job !== before.job || after.inv < before.inv * 0.8) throw new Error('relocation incomplete');
+    await shot('relocate-home');
+  },
   /** A save that cannot be written (storage full) says so, even for an autosave. */
   async savefail({ page, shot, wait }) {
     await startLife(page, wait);

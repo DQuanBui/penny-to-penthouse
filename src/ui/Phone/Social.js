@@ -66,11 +66,11 @@ export const SocialApp = {
 
 function canParty(game, sim, state) {
   const hour = hourOf(state.time.total);
-  return game.inside?.home && state.home.type !== 'couch' && sim.rel.known(1).length >= 2 && hour >= 16 && hour < 23 && state.social.lastPartyDay !== sim.day;
+  return game.inside?.home && state.home.type !== 'couch' && sim.rel.known(1).filter((n) => !n.away).length >= 2 && hour >= 16 && hour < 23 && state.social.lastPartyDay !== sim.day;
 }
 function partyHint(game, sim, state) {
   if (state.home.type === 'couch') return 'Not on someone else’s couch.';
-  if (sim.rel.known(1).length < 2) return 'You need at least 2 acquaintances to invite.';
+  if (sim.rel.known(1).filter((n) => !n.away).length < 2) return 'You need at least 2 acquaintances to invite.';
   if (!game.inside?.home) return 'Plan it from inside your home.';
   const hour = hourOf(state.time.total);
   if (hour < 16 || hour >= 23) return 'Parties start between 4 PM and 11 PM.';
@@ -80,7 +80,7 @@ function partyHint(game, sim, state) {
 
 async function planParty(game, refresh) {
   const sim = game.sim;
-  const guests = sim.rel.known(1).slice(0, 8);
+  const guests = sim.rel.known(1).filter((n) => !n.away).slice(0, 8);
   const cost = sim.social.partyCost(guests.length);
   const ok = await confirmBox(game, { title: '🎉 House party', text: `Invite ${guests.map((g) => g.first).join(', ')}? Snacks and drinks for ${guests.length} cost ${fmtMoney(cost)}. A stylish home makes a better party.`, yes: `Party! (${fmtMoney(cost)})` });
   if (!ok) return;
