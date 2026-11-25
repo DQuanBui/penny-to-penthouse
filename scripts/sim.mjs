@@ -297,7 +297,7 @@ for (const strat of STRATEGIES.filter((s) => !ONLY || ONLY.some((o) => s.name.to
       if (process.env.BREAKDOWN && (d + 1) % 112 === 0 && seed === 11 && strat.name.startsWith(process.env.BREAKDOWN)) {
         const b = sim.finance.breakdown();
         const biz = sim.state.businesses.filter((x) => x.active).map((x) => `L${x.level} avg ${Math.round(x.avgProfit)}/d cash ${Math.round(x.cash)}`).join('; ');
-        console.log(`   y${(d + 1) / 112} idx ${sim.market.m.prices.CITY500.toFixed(0)} ${sim.market.m.regime}`, Object.entries(b).map(([k, v]) => `${k} ${Math.round(v / 1000)}K`).join(' '), '| salary', Math.round(sim.jobs.annualSalary() / 1000) + 'K', '|', biz);
+        console.log(`   y${(d + 1) / 112} idx ${sim.market.m.prices.CITY500.toFixed(0)} ${sim.market.m.regime}`, Object.entries(b).map(([k, v]) => `${k} ${Math.round(v / 1000)}K`).join(' '), '| salary', Math.round(sim.jobs.annualSalary() / 1000) + 'K', sim.jobs.title(), '|', biz, sim.state.loans.map((l) => `${l.label} ${Math.round(l.balance / 1000)}K`).join(', '));
       }
     }
     last = sim;

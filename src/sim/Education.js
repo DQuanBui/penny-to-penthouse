@@ -27,6 +27,7 @@ export class Education {
     const r = p.req || {};
     if (r.anyDegree && !this.e.degrees.length) return { ok: false, reason: 'Needs a bachelor degree' };
     if (r.degree && !r.degree.some((d) => this.e.degrees.includes(d))) return { ok: false, reason: `Needs ${r.degree.map((d) => PROGRAM_BY_ID[d].name).join(' or ')}` };
+    if (r.cert && !r.cert.some((c) => this.has(c))) return { ok: false, reason: `Needs ${r.cert.map((c) => PROGRAM_BY_ID[c].name).join(' or ')}` };
     for (const s in r.skills || {}) if (skillLevel(st, s) < r.skills[s]) return { ok: false, reason: `Needs ${SKILL_BY_ID[s].name} ${r.skills[s]}` };
     return { ok: true };
   }

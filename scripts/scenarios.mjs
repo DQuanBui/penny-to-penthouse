@@ -4150,6 +4150,10 @@ export const scenarios = {
     await page.evaluate(() => {
       const g = window.__game;
       g.state.time.total = Math.floor(g.state.time.total / 1440) * 1440 + 10 * 60;
+      // a random life event from the six skipped days must not cover the class desk
+      g.closeAllOverlays();
+      g.state.events.pending = null;
+      g.state.events.nextDay = g.sim.day + 30;
       g.enterPlace(g.city.placeById.college);
     });
     await wait(1500);
