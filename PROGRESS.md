@@ -7,7 +7,7 @@ RESUME HERE: Seventh round, batch 1 (fix known issues) in progress — next unti
 - [x] 2. Balance: Trades had no trade-side way past Handiness 4, so the bot (and players) went through nursing + medical school ($117K of student loans). New 'Master Electrician Program' cert ($4,500, needs Handiness 4 + Electrician Certification; Education.canEnroll understands req.cert). Trades year 1: −$88K → −$2K, year 10 $280K → $864K
 - [x] 3. Camera collision vs vehicles: Collision.rayOBB (ray vs ground-standing oriented box) + Game.moverRay (your parked cars, incident vehicles, traffic with buses 3.3 m tall); the camera holds a vehicle hit 0.45 s before easing out so passing buses don't pump the boom. Kerbside parked cars were already colliders (`camera` scenario: car 2.1 m, bus ray 6.4 m)
 - [x] 4. Map labels: icons are [x, y, half size, glyph] (bus-stop dots count as 6 px, not 11), finer 24×24 search, smaller font + a little slack past the district edge when crowded, and anything a label still touches is redrawn on top (`mapsearch` asserts 0 covered on the transit layer too)
-- [ ] 5. Holiday lights: cut the ~180k extra triangles, same look
+- [x] 5. Holiday lights: bulbs are THREE.Points (Props.js BulbPoints: soft round sprite, vertex colours, 120 m chunks registered in ctx.lod as small) instead of 8-triangle octahedra — 22,620 bulbs in NYC = ~181K triangles gone, ~1.8K points drawn near you; nightGlow brightens PointsMaterial too (`holiday` asserts no octahedra)
 - [ ] 6. Remote properties: real rent/value model in the old city, 'remote — managed' badge + manager fee
 
 ## Sixth round (Nov 2026)

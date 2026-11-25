@@ -7,6 +7,60 @@ import { InstanceBatch } from './Buildings.js';
 import { pick } from '../core/utils.js';
 import { fadeOccluders } from './OccluderFade.js';
 
+/** A soft round dot for the holiday bulbs (white, tinted per bulb by vertex colour). */
+let bulbTex = null;
+function bulbTexture() {
+  if (bulbTex) return bulbTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gr.addColorStop(0, '#fff');
+  gr.addColorStop(0.55, 'rgba(255,255,255,0.95)');
+  gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, 32, 32);
+  bulbTex = new THREE.CanvasTexture(c);
+  bulbTex.colorSpace = THREE.SRGBColorSpace;
+  return bulbTex;
+}
+
+/** Holiday bulbs as THREE.Points, bucketed into 120 m chunks so frustum + distance culling work. */
+class BulbPoints {
+  constructor() {
+    this.mat = new THREE.PointsMaterial({ size: 0.4, sizeAttenuation: true, vertexColors: true, map: bulbTexture(), alphaTest: 0.4, toneMapped: false });
+    this.mat.userData.ownMap = false;
+    this.chunks = new Map();
+    this._c = new THREE.Color();
+  }
+  add(x, y, z, color) {
+    const k = `${Math.floor(x / 120)},${Math.floor(z / 120)}`;
+    let ch = this.chunks.get(k);
+    if (!ch) this.chunks.set(k, (ch = { p: [], c: [] }));
+    this._c.set(color);
+    ch.p.push(x, y, z);
+    ch.c.push(this._c.r, this._c.g, this._c.b);
+  }
+  get count() {
+    let n = 0;
+    for (const ch of this.chunks.values()) n += ch.p.length / 3;
+    return n;
+  }
+  build() {
+    const out = [];
+    for (const ch of this.chunks.values()) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(ch.p, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(ch.c, 3));
+      geo.computeBoundingSphere();
+      const pts = new THREE.Points(geo, this.mat);
+      pts.userData.bulbs = ch.p.length / 3;
+      out.push(pts);
+    }
+    return out;
+  }
+}
+
 const box = (w, h, d, x = 0, y = 0, z = 0) => new THREE.BoxGeometry(w, h, d).translate(x, y, z);
 const cyl = (r0, r1, h, x = 0, y = 0, z = 0, seg = 8) => new THREE.CylinderGeometry(r0, r1, h, seg).translate(x, y, z);
 
@@ -92,10 +146,11 @@ export function buildProps(ctx) {
   ctx.leafBatchColors = [];
   // winter is the holiday season: every street tree (and palm) is wrapped in lights that glow after dark
   const holiday = ctx.season === 'winter';
-  // unlit so each bulb keeps its own colour; brightened past 1 after dark so the bloom picks them up
-  const bulbMat = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false });
-  const xmas = holiday ? new InstanceBatch(new THREE.OctahedronGeometry(0.11, 0), bulbMat) : null;
-  if (holiday) (ctx.nightGlow ||= []).push({ mat: bulbMat, day: 0.7, night: 2.4 });
+  // One round sprite per bulb (THREE.Points, chunked + distance-culled) instead of an
+  // 8-triangle octahedron each: ~22k bulbs in NYC were ~180k triangles. Unlit, so each
+  // bulb keeps its own colour; brightened past 1 after dark so the bloom picks them up.
+  const xmas = holiday ? new BulbPoints() : null;
+  if (holiday) (ctx.nightGlow ||= []).push({ mat: xmas.mat, day: 0.7, night: 2.4 });
   const BULB_SETS = [['#ffd27a'], ['#ffd27a'], ['#ff5a5a', '#5ad1ff', '#9bff6a', '#ffd23f'], ['#ffffff', '#9fd6ff'], ['#ff5a5a', '#ffffff']];
   /** A spiral of bulbs around a cylinder (radius r) from y0 to y1. */
   const wrap = (x, z, y0, y1, r, n) => {
@@ -104,7 +159,7 @@ export function buildProps(ctx) {
     for (let i = 0; i < n; i++) {
       const u = i / (n - 1);
       const a = a0 + u * 6.28 * 2.2;
-      xmas.add(x + Math.cos(a) * r * (1 - u * 0.35), y0 + (y1 - y0) * u, z + Math.sin(a) * r * (1 - u * 0.35), { color: set[i % set.length] });
+      xmas.add(x + Math.cos(a) * r * (1 - u * 0.35), y0 + (y1 - y0) * u, z + Math.sin(a) * r * (1 - u * 0.35), set[i % set.length]);
     }
   };
 
@@ -323,7 +378,11 @@ export function buildProps(ctx) {
     mat.userData.ownMap = true;
     group.add(new THREE.Mesh(mergeGeometries(geos), mat));
   }
-  for (const b of [lamps, bulbs, trunks, leaves, ...(xmas ? [xmas] : []), benches, grass, paths, fountains, waterDisc, tl, ...Object.values(lights)]) {
+  if (xmas) for (const m of xmas.build()) {
+    group.add(m);
+    (ctx.lod ||= []).push({ mesh: m, x: m.geometry.boundingSphere.center.x, z: m.geometry.boundingSphere.center.z, r: m.geometry.boundingSphere.radius, small: true });
+  }
+  for (const b of [lamps, bulbs, trunks, leaves, benches, grass, paths, fountains, waterDisc, tl, ...Object.values(lights)]) {
     const m = b.build();
     if (m) group.add(m);
   }
