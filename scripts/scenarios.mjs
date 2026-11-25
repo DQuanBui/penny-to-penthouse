@@ -1015,6 +1015,41 @@ export const scenarios = {
     });
     await wait(2000);
     await shot('camera-awning');
+    // vehicles: a parked car right behind you stops the boom short; a bus blocks the ray too
+    await page.evaluate(() => {
+      const g = window.__game;
+      const p = window.__camPlace;
+      const k = g.vehicles.kerbSpot(p.x + p.nx * 6, p.z + p.nz * 6);
+      g.state.vehicles.push({ id: 'v_cam', model: 'metro', color: '#c0392b', value: 19500, condition: 1, bought: 0, pos: k });
+      g.vehicles.sync();
+      const fx = Math.sin(k.ry);
+      const fz = Math.cos(k.ry);
+      g.player.teleport(k.x + fx * 4.8, k.z + fz * 4.8, k.ry);
+      g.cam.yaw = Math.atan2(-fx, -fz);
+      g.cam.pitch = 0.1;
+      g.cam.dist = 10;
+      window.__camCar = k;
+    });
+    await wait(2500);
+    const car = await page.evaluate(() => {
+      const g = window.__game;
+      const t = g.traffic;
+      let bus = null;
+      for (let i = t.bus0; i < t.n; i++) {
+        if (!t.alive[i]) continue;
+        const rx = Math.cos(t.ry[i]);
+        const rz = -Math.sin(t.ry[i]);
+        const ox = t.x[i] + rx * 8;
+        const oz = t.z[i] + rz * 8;
+        bus = +g.moverRay(ox, 2, oz, -rx, 0, -rz, 20).toFixed(2);
+        break;
+      }
+      return { cur: +g.cam.curDist.toFixed(2), dist: g.cam.dist, bus };
+    });
+    console.log('camera vs car', JSON.stringify(car));
+    if (car.cur > 3.2) throw new Error('camera went through the parked car');
+    if (car.bus != null && !(car.bus > 5 && car.bus < 7.5)) throw new Error('camera ray misses the bus');
+    await shot('camera-car');
   },
   /** A city's signature look (CITY=Miami | Los Angeles | Chicago | Austin). */
   async themes({ page, shot, wait }) {

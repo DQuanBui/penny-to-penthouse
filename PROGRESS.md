@@ -5,7 +5,7 @@ RESUME HERE: Seventh round, batch 1 (fix known issues) in progress — next unti
 ## Seventh round (Nov 2026)
 - [x] 1. Balance: 'Markets in freefall' now reacts to a real sell-off (index 15%+ under its 90-day high, cooldown 112) instead of knocking 14% off every price and forcing a recession each time — it fired every ~60 days for anyone invested, so the index sank 100 → 18 over 10 years and the saver lost to the coaster. Sim yr 10: Coaster $204K, Saver $191K → $409K. `npm run sim` gains ONLY=, CATS=1, idx in BREAKDOWN
 - [x] 2. Balance: Trades had no trade-side way past Handiness 4, so the bot (and players) went through nursing + medical school ($117K of student loans). New 'Master Electrician Program' cert ($4,500, needs Handiness 4 + Electrician Certification; Education.canEnroll understands req.cert). Trades year 1: −$88K → −$2K, year 10 $280K → $864K
-- [ ] 3. Camera collision avoids cars, buses, parked cars (smoothed)
+- [x] 3. Camera collision vs vehicles: Collision.rayOBB (ray vs ground-standing oriented box) + Game.moverRay (your parked cars, incident vehicles, traffic with buses 3.3 m tall); the camera holds a vehicle hit 0.45 s before easing out so passing buses don't pump the boom. Kerbside parked cars were already colliders (`camera` scenario: car 2.1 m, bus ray 6.4 m)
 - [ ] 4. Transit map layer: district labels never cover icons
 - [ ] 5. Holiday lights: cut the ~180k extra triangles, same look
 - [ ] 6. Remote properties: real rent/value model in the old city, 'remote — managed' badge + manager fee

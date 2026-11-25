@@ -87,7 +87,7 @@ import { StreetLife } from '../world/StreetLife.js';
 import { CityEvents } from '../world/CityEvents.js';
 import { VEHICLE_BY_ID } from '../data/vehicles.js';
 import { PostFX } from './PostFX.js';
-import { pushOutOBB } from '../world/Collision.js';
+import { pushOutOBB, rayOBB } from '../world/Collision.js';
 import { AudioEngine } from '../audio/AudioEngine.js';
 import { fmtMoney, dampAngle } from './utils.js';
 
@@ -366,7 +366,35 @@ export class Game {
   }
 
   cityWorld() {
-    return { colliders: this.city.colliders, groundY: this.city.groundY, obstacles: (pos, r, y) => this.pushOutOfMovers(pos, r, y) };
+    return { colliders: this.city.colliders, groundY: this.city.groundY, obstacles: (pos, r, y) => this.pushOutOfMovers(pos, r, y), moverRay: (ox, oy, oz, dx, dy, dz, maxT, pad) => this.moverRay(ox, oy, oz, dx, dy, dz, maxT, pad) };
+  }
+
+  /**
+   * Camera boom vs vehicles: your parked cars, accident / emergency vehicles
+   * and traffic (buses included). Distance to the first hit, or maxT.
+   * (Kerbside parked cars are static colliders and already in the city raycast.)
+   */
+  moverRay(ox, oy, oz, dx, dy, dz, maxT, pad = 0.3) {
+    let best = maxT;
+    const near = (x, z, r) => (x - ox) ** 2 + (z - oz) ** 2 < (maxT + r + 1) ** 2;
+    for (const o of this.vehicles.parkedOBBs()) if (near(o.x, o.z, o.hl)) best = rayOBB(ox, oy, oz, dx, dy, dz, o, 1.7, pad, best);
+    for (const o of this.liveEvents.obbs()) if (near(o.x, o.z, o.hl)) best = rayOBB(ox, oy, oz, dx, dy, dz, o, o.hl > 2.6 ? 2.7 : 1.7, pad, best);
+    const t = this.traffic;
+    if (t?.n) {
+      const o = (this._camObb ||= { x: 0, z: 0, ry: 0, hw: 1, hl: 2 });
+      for (let i = 0; i < t.n; i++) {
+        if (!t.alive[i] || !near(t.x[i], t.z[i], t.hl[i])) continue;
+        o.x = t.x[i];
+        o.z = t.z[i];
+        o.ry = t.ry[i];
+        o.hw = t.hw[i];
+        o.hl = t.hl[i];
+        // buses stand tall, box trucks a bit less, bikes low
+        const h = o.hl > 4.5 ? 3.3 : o.hw < 0.5 ? 1.4 : o.hl > 2.6 ? 2.7 : 1.7;
+        best = rayOBB(ox, oy, oz, dx, dy, dz, o, h, pad, best);
+      }
+    }
+    return best;
   }
 
   /**

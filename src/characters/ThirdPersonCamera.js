@@ -60,6 +60,14 @@ export class ThirdPersonCamera {
     if (w) {
       const hit = w.colliders.raycast(this.target.x, this.target.y, this.target.z, d.x, d.y, d.z, this.dist, 0.3);
       if (hit < this.dist) allowed = Math.max(0.6, hit - 0.1);
+      // cars and buses: they move, so a hit holds for a moment before the boom may ease out
+      // again (a bus rolling past does not make it pump in and out)
+      const mv = w.moverRay ? w.moverRay(this.target.x, this.target.y, this.target.z, d.x, d.y, d.z, this.dist, 0.3) : this.dist;
+      if (mv < this.dist) {
+        this._mvHold = 0.45;
+        this._mvAllowed = Math.max(0.6, mv - 0.15);
+      } else if ((this._mvHold = (this._mvHold || 0) - dt) <= 0) this._mvAllowed = this.dist;
+      allowed = Math.min(allowed, this._mvAllowed ?? this.dist);
     }
     // pull in fast, ease out slowly
     this.curDist = allowed < this.curDist ? damp(this.curDist, allowed, 30, dt) : damp(this.curDist, allowed, 5, dt);

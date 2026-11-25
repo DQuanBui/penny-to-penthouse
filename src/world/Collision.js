@@ -214,6 +214,41 @@ export function pushOutOBB(pos, r, o) {
   return true;
 }
 
+/**
+ * Distance along a ray (unit direction) to an oriented box standing on the
+ * ground (height h), grown by pad; maxT when missed or when the origin is
+ * already inside the padded box (the camera then just keeps its distance).
+ */
+export function rayOBB(ox, oy, oz, dx, dy, dz, o, h, pad, maxT) {
+  const s = Math.sin(o.ry);
+  const c = Math.cos(o.ry);
+  const rx = ox - o.x;
+  const rz = oz - o.z;
+  // into the box frame: lx along its right axis, lz along its forward axis
+  const lx = rx * c - rz * s;
+  const lz = rx * s + rz * c;
+  const ldx = dx * c - dz * s;
+  const ldz = dx * s + dz * c;
+  const hw = o.hw + pad;
+  const hl = o.hl + pad;
+  const y0 = -pad;
+  const y1 = h + pad;
+  if (Math.abs(lx) < hw && Math.abs(lz) < hl && oy > y0 && oy < y1) return maxT;
+  let t0 = 0;
+  let t1 = maxT;
+  const slab = (p, d, lo, hi) => {
+    if (Math.abs(d) < 1e-9) return p > lo && p < hi;
+    let a = (lo - p) / d;
+    let b = (hi - p) / d;
+    if (a > b) [a, b] = [b, a];
+    if (a > t0) t0 = a;
+    if (b < t1) t1 = b;
+    return t0 <= t1;
+  };
+  if (!slab(lx, ldx, -hw, hw) || !slab(oy, dy, y0, y1) || !slab(lz, ldz, -hl, hl)) return maxT;
+  return t0;
+}
+
 /** Do two oriented boxes overlap? (separating-axis test) */
 export function obbOverlap(a, b) {
   const axes = [a.ry, a.ry + Math.PI / 2, b.ry, b.ry + Math.PI / 2];
