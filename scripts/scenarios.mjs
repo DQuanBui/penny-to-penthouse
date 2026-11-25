@@ -547,8 +547,10 @@ export const scenarios = {
     await page.click('.map-filter .chip:has-text("Transit")');
     await wait(500);
     const stops = await page.$$eval('.map-place', (e) => e.filter((x) => x.textContent.includes('🚏')).length);
-    console.log('transit: bus stops listed', stops, JSON.stringify(await page.evaluate(() => window.__game.map.labelStats)));
+    const tl = await page.evaluate(() => window.__game.map.labelStats);
+    console.log('transit: bus stops listed', stops, JSON.stringify(tl));
     if (!stops) throw new Error('no bus stops on the transit layer');
+    if (!tl || tl.covered > 0) throw new Error('district labels cover transit icons');
     await shot('map-transit');
     await page.click('.map-filter .chip:has-text("Key places")');
     await page.fill('.map-search', 'pizza');

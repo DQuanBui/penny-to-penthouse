@@ -214,7 +214,7 @@ export class CityMap {
    * inside the district, scored by how much they cover icons (and each other),
    * with a gentle pull toward the district's centre.
    */
-  drawDistrictLabels(g, sx, icons) {
+  drawDistrictLabels(g, sx, icons, size) {
     const city = this.game.city;
     if (!this._dBounds || this._dBoundsCity !== city) {
       this._dBoundsCity = city;
@@ -228,44 +228,74 @@ export class CityMap {
         B.z1 = Math.max(B.z1, b.z1);
       }
     }
-    g.font = '700 15px Outfit, sans-serif';
-    const H = 24;
-    const IC = 11; // half size of an emoji icon
     const placed = [];
     const overlap = (ax, ay, aw, ah, bx, by, bw, bh) => Math.max(0, Math.min(ax + aw, bx + bw) - Math.max(ax, bx)) * Math.max(0, Math.min(ay + ah, by + bh) - Math.max(ay, by));
+    const iconHit = (lx, ly, w, h) => {
+      let a = 0;
+      for (let i = 0; i < icons.length; i += 4) {
+        const r = icons[i + 2];
+        a += overlap(lx, ly, w, h, icons[i] - r, icons[i + 1] - r, r * 2, r * 2);
+      }
+      return a;
+    };
     for (const d of city.districts) {
       const B = this._dBounds[d.index];
-      const w = g.measureText(d.name).width + 16;
-      const X0 = sx(B.x0) + w / 2 - 14;
-      const X1 = sx(B.x1) - w / 2 + 14;
-      const Y0 = sx(B.z0) + H / 2 - 10;
-      const Y1 = sx(B.z1) - H / 2 + 10;
-      let best = { x: sx(d.cx), y: sx(d.cz), cost: Infinity };
-      const S = 18;
-      for (let gy = 0; gy <= S; gy++) {
-        for (let gx = 0; gx <= S; gx++) {
-          const x = X1 > X0 ? X0 + ((X1 - X0) * gx) / S : sx(d.cx);
-          const y = Y1 > Y0 ? Y0 + ((Y1 - Y0) * gy) / S : sx(d.cz);
-          const lx = x - w / 2 - 3;
-          const ly = y - H / 2 - 3;
-          let cost = Math.hypot(x - sx(d.cx), y - sx(d.cz)) * 0.3;
-          for (let i = 0; i < icons.length; i += 2) cost += overlap(lx, ly, w + 6, H + 6, icons[i] - IC, icons[i + 1] - IC, IC * 2, IC * 2) * 4;
-          for (const r of placed) cost += overlap(lx, ly, w + 6, H + 6, r[0], r[1], r[2], r[3]) * 8;
-          if (cost < best.cost) best = { x, y, cost };
+      // try the full-size label first; on a crowded layer (every bus stop) a smaller one,
+      // with a little more room past the district edge, may fit between the icons
+      let best = null;
+      for (const [px, H, slack] of [[15, 24, 0], [13, 21, 18], [12, 19, 40]]) {
+        g.font = `700 ${px}px Outfit, sans-serif`;
+        const w = g.measureText(d.name).width + 16;
+        const X0 = sx(B.x0) + w / 2 - 14 - slack;
+        const X1 = sx(B.x1) - w / 2 + 14 + slack;
+        const Y0 = sx(B.z0) + H / 2 - 10 - slack;
+        const Y1 = sx(B.z1) - H / 2 + 10 + slack;
+        const S = 24;
+        for (let gy = 0; gy <= S; gy++) {
+          for (let gx = 0; gx <= S; gx++) {
+            const x = X1 > X0 ? X0 + ((X1 - X0) * gx) / S : sx(d.cx);
+            const y = Y1 > Y0 ? Y0 + ((Y1 - Y0) * gy) / S : sx(d.cz);
+            if (x - w / 2 < 2 || y - H / 2 < 2 || x + w / 2 > size - 2 || y + H / 2 > size - 2) continue;
+            const lx = x - w / 2 - 3;
+            const ly = y - H / 2 - 3;
+            const hit = iconHit(lx, ly, w + 6, H + 6);
+            let cost = Math.hypot(x - sx(d.cx), y - sx(d.cz)) * 0.3 + hit * 4;
+            for (const r of placed) cost += overlap(lx, ly, w + 6, H + 6, r[0], r[1], r[2], r[3]) * 8;
+            if (!best || cost < best.cost) best = { x, y, cost, hit, w, H, px };
+          }
         }
+        if (best && best.hit === 0) break;
       }
-      placed.push([best.x - w / 2 - 3, best.y - H / 2 - 3, w + 6, H + 6]);
+      const { x, y, w, H, px } = best;
+      placed.push([x - w / 2 - 3, y - H / 2 - 3, w + 6, H + 6]);
       g.fillStyle = 'rgba(0,0,0,0.55)';
       g.beginPath();
-      g.roundRect(best.x - w / 2, best.y - H / 2, w, H, 12);
+      g.roundRect(x - w / 2, y - H / 2, w, H, 12);
       g.fill();
       g.fillStyle = '#fff';
-      g.fillText(d.name, best.x, best.y + 1);
+      g.font = `700 ${px}px Outfit, sans-serif`;
+      g.fillText(d.name, x, y + 1);
     }
+    // whatever a label still touches is drawn again on top, so no icon is ever hidden
     // (smoke tests read how many icons a label still covers)
     let covered = 0;
-    for (let i = 0; i < icons.length; i += 2) if (placed.some((r) => overlap(r[0] + 3, r[1] + 3, r[2] - 6, r[3] - 6, icons[i] - IC + 2, icons[i + 1] - IC + 2, IC * 2 - 4, IC * 2 - 4) > 0)) covered++;
-    this.labelStats = { labels: placed.length, icons: icons.length / 2, covered };
+    g.font = '17px "Segoe UI Emoji", sans-serif';
+    for (let i = 0; i < icons.length; i += 4) {
+      const r = icons[i + 2] - 2;
+      if (!placed.some((q) => overlap(q[0] + 3, q[1] + 3, q[2] - 6, q[3] - 6, icons[i] - r, icons[i + 1] - r, r * 2, r * 2) > 0)) continue;
+      covered++;
+      if (icons[i + 3]) g.fillText(icons[i + 3], icons[i], icons[i + 1]);
+      else {
+        g.lineWidth = 2;
+        g.strokeStyle = 'rgba(20,22,30,0.9)';
+        g.fillStyle = '#ffd23f';
+        g.beginPath();
+        g.arc(icons[i], icons[i + 1], 4, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+      }
+    }
+    this.labelStats = { labels: placed.length, icons: icons.length / 4, covered, redrawn: covered };
     g.font = '17px "Segoe UI Emoji", sans-serif';
   }
 
@@ -393,8 +423,10 @@ export class CityMap {
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.font = '17px "Segoe UI Emoji", sans-serif';
-      const icons = []; // screen positions of every icon drawn, so the district labels can keep clear
-      for (const lm of city.landmarks) icons.push(sx(lm.x), sx(lm.z));
+      // every icon drawn as [x, y, half size, glyph] so the district labels can keep clear
+      // (and redraw anything a label still touches on top of it); '' = a bus-stop dot
+      const icons = [];
+      for (const lm of city.landmarks) icons.push(sx(lm.x), sx(lm.z), 11, '⭐');
       for (const p of city.places) {
         const mine = game.state && p.id === 'home_' + game.state.home.districtId;
         if (p.type === 'home' && !mine) continue;
@@ -407,7 +439,7 @@ export class CityMap {
           continue;
         }
         g.fillText(p.icon, sx(p.x), sx(p.z));
-        icons.push(sx(p.x), sx(p.z));
+        icons.push(sx(p.x), sx(p.z), 11, p.icon);
       }
       if ((this.filter || 'key') === 'transit') {
         // bus stops: bold yellow dots with a dark ring, easy to spot between the blocks
@@ -419,10 +451,10 @@ export class CityMap {
           g.arc(sx(s.x), sx(s.z), 4, 0, Math.PI * 2);
           g.fill();
           g.stroke();
-          icons.push(sx(s.x), sx(s.z));
+          icons.push(sx(s.x), sx(s.z), 6, '');
         }
       }
-      this.drawDistrictLabels(g, sx, icons);
+      this.drawDistrictLabels(g, sx, icons, size);
       // search results glow on the map
       for (const p of matches() || []) {
         g.strokeStyle = '#ffd23f';
