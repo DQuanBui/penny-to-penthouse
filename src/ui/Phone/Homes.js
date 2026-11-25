@@ -5,6 +5,7 @@ import { confirmBox } from '../Menus.js';
 import { HOME_BY_ID } from '../../data/homes.js';
 import { VEHICLE_BY_ID, CAR } from '../../data/vehicles.js';
 import { fmtMoney } from '../../core/utils.js';
+import { BALANCE } from '../../data/balance.js';
 import { CITIES } from '../../data/cities/index.js';
 import { relocationQuote, MOVE_TYPES } from '../../sim/Relocation.js';
 import { section, row, tabs, kv, empty } from './widgets.js';
@@ -119,19 +120,23 @@ export const HomesApp = {
         const t = HOME_BY_ID[p.type];
         const mort = re.mortgageOf(p);
         const home = state.home.propertyId === p.id;
+        const remote = re.isRemote(p);
+        const fee = re.managerFee(p);
         root.append(
           h(
             'div.card.biz',
             h('div.row.between', h('b', `${t.icon} ${p.address}`), h('span.pill' + (home ? '.trait' : p.rented && !p.vacant ? '' : '.warn'), home ? 'Home' : p.rented ? (p.vacant ? 'Vacant' : 'Rented') : 'Empty')),
+            remote ? h('div.row', h('span.pill.remote', `🌐 Remote — managed · ${re.cityOf(p).name}`)) : null,
             kv('Value', `${fmtMoney(p.value)} (paid ${fmtMoney(p.paid)})`, p.value >= p.paid ? 'good' : 'bad'),
             kv('Equity', fmtMoney(re.equity(p))),
             mort ? kv('Mortgage', `${fmtMoney(mort.payment)}/mo · ${fmtMoney(mort.balance)} left`) : kv('Mortgage', 'Paid off', 'good'),
-            p.rented ? kv('Rent income', p.vacant ? 'No tenant right now' : `${fmtMoney(p.rent)}/mo before tax`, p.vacant ? 'bad' : 'good') : null,
+            p.rented ? kv('Rent income', p.vacant ? (remote ? 'The manager is finding a tenant' : 'No tenant right now') : `${fmtMoney(p.rent)}/mo before tax`, p.vacant ? 'bad' : 'good') : null,
+            remote ? kv('Property manager', fee ? `${fmtMoney(fee)}/mo (${Math.round(BALANCE.realEstate.managerFee * 100)}% of rent)` : `${Math.round(BALANCE.realEstate.managerFee * 100)}% of rent once let`) : null,
             h(
               'div.biz-actions',
               !home && !p.rented ? btn('🔑 Rent it out', () => (re.rentOut(p.id), refresh()), 'small primary') : null,
-              p.rented ? btn('Stop renting', () => (re.stopRenting(p.id), refresh()), 'small') : null,
-              !home
+              p.rented && !remote ? btn('Stop renting', () => (re.stopRenting(p.id), refresh()), 'small') : null,
+              !home && !remote
                 ? btn('🏠 Move in', async () => {
                     if (await confirmBox(game, { title: 'Move in here?', text: p.rented ? 'The tenant’s lease ends and this becomes your home.' : 'This becomes your home.', yes: 'Move in' })) {
                       re.moveIn(p.id);

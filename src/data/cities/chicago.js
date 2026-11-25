@@ -11,6 +11,7 @@ export default {
   salaryIndex: 1.08,
   priceIndex: 1.03,
   homePriceIndex: 0.95,
+  homeGrowth: 0.04, // home prices per game year before the economy's swings
   topIndustries: ['Finance', 'Trades'],
   industries: { finance: 1.15, trades: 1.2, healthcare: 1.05 },
   transit: { name: 'L Train', fare: 2.5, icon: '🚆', kind: 'elevated', line: '#c53a3a' },

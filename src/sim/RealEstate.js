@@ -4,6 +4,7 @@ import { BALANCE } from '../data/balance.js';
 import { HOME_TYPES, HOME_BY_ID, rentFor, priceFor } from '../data/homes.js';
 import { fmtMoney, pick, clamp } from '../core/utils.js';
 import { amortPayment } from './Loans.js';
+import { CITIES, getCity } from '../data/cities/index.js';
 
 const RE = BALANCE.realEstate;
 const H = BALANCE.housing;
@@ -29,6 +30,29 @@ export class RealEstate {
   }
   get index() {
     return this.sim.state.market?.homeIndex || 1;
+  }
+
+  // ---- properties in other cities ------------------------------------------------
+  /** The city a property stands in (properties carry cityId once you have moved). */
+  cityOf(p) {
+    return getCity(p.cityId || this.sim.state.cityId);
+  }
+  /** A property in a city you moved away from: a manager lets it out for a fee. */
+  isRemote(p) {
+    return !!p.cityId && p.cityId !== this.sim.state.cityId;
+  }
+  managerFee(p) {
+    return this.isRemote(p) && p.rented && !p.vacant ? Math.round(p.rent * RE.managerFee) : 0;
+  }
+  /** Each city's home-price index ({ cityId: n }); the one you live in is market.homeIndex. */
+  cityIndexes() {
+    const m = this.sim.state.market;
+    if (!m) return {};
+    if (!m.cityHome) {
+      m.cityHome = {};
+      for (const c of CITIES) m.cityHome[c.id] = m.homeIndex || 1;
+    }
+    return m.cityHome;
   }
 
   // ---- renting ----------------------------------------------------------------
@@ -166,7 +190,10 @@ export class RealEstate {
   }
 
   marketRent(p) {
-    return Math.round((p.value * RE.rentYield * (1 + (p.styleScore || 0) / 400)) / 10) * 10;
+    // that city's rent-to-price ratio: pricey markets (NYC, LA) yield a little less
+    const c = this.cityOf(p);
+    const ratio = (c.rentIndex || 1) / (c.homePriceIndex || c.rentIndex || 1);
+    return Math.round((p.value * RE.rentYield * ratio * (1 + (p.styleScore || 0) / 400)) / 10) * 10;
   }
   rentOut(id) {
     const st = this.sim.state;
@@ -216,10 +243,20 @@ export class RealEstate {
     const m = st.market;
     // prices drift with the economy
     const regime = { recession: -0.012, bear: -0.003, normal: 0, bull: 0.004, boom: 0.012 }[m?.regime || 'normal'];
-    const growth = RE.appreciationPerYear / 4 + regime + (sim.rng() - 0.5) * 0.01;
-    if (m) m.homeIndex *= 1 + growth;
+    // every city's housing market moves on its own trend; the economy's mood is shared
+    const idx = this.cityIndexes();
+    const growthOf = {};
+    for (const c of CITIES) {
+      growthOf[c.id] = (c.homeGrowth ?? RE.appreciationPerYear) / 4 + regime + (sim.rng() - 0.5) * 0.01;
+      if (idx[c.id]) idx[c.id] *= 1 + growthOf[c.id];
+    }
+    if (m) m.homeIndex = idx[st.cityId] || m.homeIndex * (1 + growthOf[st.cityId]);
     for (const p of st.properties) {
+      const remote = this.isRemote(p);
+      const growth = growthOf[p.cityId || st.cityId] ?? growthOf[st.cityId];
       p.value = Math.round(p.value * (1 + growth + (sim.rng() - 0.5) * 0.006));
+      // a home in a city you left is always let out: the manager finds the tenants
+      if (remote && !p.rented) (p.rented = true), (p.vacant = true);
       const tax = Math.round((p.value * RE.propertyTaxPerYear) / 12);
       const upkeep = Math.round((p.value * RE.maintenancePerYear) / 12);
       const mort = this.mortgageOf(p);
@@ -238,6 +275,8 @@ export class RealEstate {
         if (!p.vacant) {
           p.rent = Math.round(p.rent * 0.7 + this.marketRent(p) * 0.3);
           sim.finance.earnTaxed(p.rent, 'rent_income', `Rent — ${p.address}`);
+          const fee = this.managerFee(p);
+          if (fee) sim.finance.charge(fee, 'housing', `Property manager — ${p.address}`);
         }
         if (sim.rng() < RE.repairChance) {
           const cost = Math.round(p.value * (RE.repairCost[0] + sim.rng() * (RE.repairCost[1] - RE.repairCost[0])));

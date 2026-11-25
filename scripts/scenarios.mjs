@@ -788,17 +788,26 @@ export const scenarios = {
       g.checkSeason?.();
       for (let i = 0; i < 240 && (g.city.season !== 'winter' || g.fading); i++) await new Promise((res) => setTimeout(res, 500));
       let bulbs = 0;
+      let chunks = 0;
+      let octa = 0;
       g.city.group.traverse((o) => {
-        if (o.isInstancedMesh && o.geometry.type === 'OctahedronGeometry' && o.geometry.parameters?.radius === 0.11) bulbs += o.count;
+        if (o.isPoints && o.userData.bulbs) (bulbs += o.userData.bulbs), chunks++;
+        if (o.isInstancedMesh && o.geometry.type === 'OctahedronGeometry') octa += o.count;
       });
       const p = g.player.pos;
       g.cam.pitch = 0.12;
       g.cam.dist = 8;
-      return { season: g.city.season, bulbs, x: Math.round(p.x) };
+      return { season: g.city.season, bulbs, chunks, octa, x: Math.round(p.x) };
     });
     console.log('holiday', JSON.stringify(r));
     if (!r.bulbs) throw new Error('no holiday lights in winter');
+    if (r.octa) throw new Error('holiday bulbs are still triangle meshes');
     await wait(2000);
+    const tris = await page.evaluate(() => {
+      const i = window.__game.renderer.info.render;
+      return { tris: Math.round(i.triangles / 1000) + 'k', points: i.points, calls: i.calls };
+    });
+    console.log('holiday render', JSON.stringify(tris));
     await shot('holiday-lights');
   },
   /** Thunderstorms: heavy rain, lightning flashes and thunder; the phone shows the forecast. */
@@ -921,6 +930,11 @@ export const scenarios = {
       st.money.checking = 30000;
       g.sim.jobs.hire('tech', 1);
       g.sim.market.buy('CITY500', 5000);
+      // a rental flat here, bought outright, that stays behind when you move
+      const ls = [...st.listings].sort((a, b) => a.price - b.price)[0];
+      st.money.checking += ls.price * 1.1;
+      g.sim.re.buy(ls.id, { downPct: 1, years: 30, use: 'rent' });
+      st.money.checking = 30000;
       const friend = g.sim.rel.all[0];
       g.sim.rel.add(friend.id, 60);
       window.__friend = friend.id;
@@ -957,6 +971,27 @@ export const scenarios = {
     });
     console.log('boxes', JSON.stringify(boxes));
     if (!boxes.before || boxes.after || boxes.left) throw new Error('moving boxes missing or not unpacked');
+    // the flat back in New York: priced by its own market, let out by a manager for a fee
+    const remote = await page.evaluate(() => {
+      const g = window.__game;
+      const re = g.sim.re;
+      const p = g.state.properties[0];
+      if (!p) return null;
+      p.vacant = false;
+      const v0 = p.value;
+      re.monthly(g.sim);
+      const fee = g.state.money.txs.find((t) => /Property manager/.test(t.label));
+      g.phone.open('homes');
+      return { city: p.cityId, remote: re.isRemote(p), rented: p.rented, vacant: p.vacant, v0, v1: p.value, rent: p.rent, fee: fee ? -fee.amount : 0, idx: g.state.market.cityHome };
+    });
+    await wait(600);
+    await page.click('.seg-btn:has-text("Owned")');
+    await wait(400);
+    const badge = await page.evaluate(() => /Remote — managed/.test(document.querySelector('.phone')?.innerText || ''));
+    console.log('remote property', JSON.stringify(remote), 'badge', badge);
+    if (!remote || !remote.remote || remote.city !== 'newyork' || !remote.rented || !badge) throw new Error('old-city property is not shown as remote and managed');
+    if (!remote.vacant && !(remote.fee > 0)) throw new Error('no property-manager fee');
+    await shot('relocate-remote');
   },
   /** A save that cannot be written (storage full) says so, even for an autosave. */
   async savefail({ page, shot, wait }) {

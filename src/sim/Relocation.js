@@ -47,6 +47,7 @@ export function relocate(sim, q, { keepJob = true } = {}) {
   // the place you leave: furniture you bought goes in the moving truck
   sim.re.stashFurniture();
   for (const p of st.properties) p.cityId ||= from;
+  sim.re.cityIndexes(); // start tracking every city's housing market before home changes
   const lived = st.home.owned && st.properties.find((p) => p.id === st.home.propertyId);
   sim.finance.spend(q.movers + q.flight + q.leaseBreak + q.rent, 'housing', `Moving to ${q.to.name}`, { credit: false });
   sim.finance.assetTx(-(q.deposit - q.refund), q.refund ? 'Security deposit (net of refund)' : 'Security deposit');
@@ -54,6 +55,7 @@ export function relocate(sim, q, { keepJob = true } = {}) {
   st.bills.missedRent = 0;
   st.flags.newHome = true;
   st.cityId = q.to.id;
+  if (st.market) st.market.homeIndex = sim.re.cityIndexes()[q.to.id] || st.market.homeIndex;
   st.trip = null;
   st.listings = null; // the new city's market fills in on load
   (st.stats.citiesVisited ||= {})[from] = 1;

@@ -1,6 +1,6 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Seventh round, batch 1 (fix known issues) in progress — next unticked item below. Then batch 2 (items 7–11: old-city friends, dating→wedding, aging + Life Story, Analytics app, taxes) and batch 3 (12–18: code-splitting, daily challenges + achievements gallery, gamepad + rebinding, accessibility, seasonal events, VRM check, final README).
+RESUME HERE: Seventh round — batch 1 (items 1–6) done and pushed. NEXT: batch 2, items 7–11 below (old-city friends, dating→wedding, aging + Life Story, Analytics app, taxes). Then batch 3 (12–18: code-splitting, daily challenges + achievements gallery, gamepad + key rebinding, accessibility, seasonal events, VRM check, final README + full smoke).
 
 ## Seventh round (Nov 2026)
 - [x] 1. Balance: 'Markets in freefall' now reacts to a real sell-off (index 15%+ under its 90-day high, cooldown 112) instead of knocking 14% off every price and forcing a recession each time — it fired every ~60 days for anyone invested, so the index sank 100 → 18 over 10 years and the saver lost to the coaster. Sim yr 10: Coaster $204K, Saver $191K → $409K. `npm run sim` gains ONLY=, CATS=1, idx in BREAKDOWN
@@ -8,7 +8,12 @@ RESUME HERE: Seventh round, batch 1 (fix known issues) in progress — next unti
 - [x] 3. Camera collision vs vehicles: Collision.rayOBB (ray vs ground-standing oriented box) + Game.moverRay (your parked cars, incident vehicles, traffic with buses 3.3 m tall); the camera holds a vehicle hit 0.45 s before easing out so passing buses don't pump the boom. Kerbside parked cars were already colliders (`camera` scenario: car 2.1 m, bus ray 6.4 m)
 - [x] 4. Map labels: icons are [x, y, half size, glyph] (bus-stop dots count as 6 px, not 11), finer 24×24 search, smaller font + a little slack past the district edge when crowded, and anything a label still touches is redrawn on top (`mapsearch` asserts 0 covered on the transit layer too)
 - [x] 5. Holiday lights: bulbs are THREE.Points (Props.js BulbPoints: soft round sprite, vertex colours, 120 m chunks registered in ctx.lod as small) instead of 8-triangle octahedra — 22,620 bulbs in NYC = ~181K triangles gone, ~1.8K points drawn near you; nightGlow brightens PointsMaterial too (`holiday` asserts no octahedra)
-- [ ] 6. Remote properties: real rent/value model in the old city, 'remote — managed' badge + manager fee
+- [x] 6. Remote properties: every city's housing market has its own index (market.cityHome, city.homeGrowth per game year + the shared economy), rent follows that city's rent-to-price ratio (RealEstate.marketRent), a home in a city you left is always let by a manager who keeps 8% (balance realEstate.managerFee); Homes shows '🌐 Remote — managed · City', the fee, and no Move in / Stop renting there (`relocate` scenario)
+- [ ] 7. Old-city friends drift, message, invite you to visit (airport trip) and visit you
+- [ ] 8. Dating → partner → moving in → wedding (data-driven, shared household budget, PG)
+- [ ] 9. Aging + retirement: Life Story recap (timeline, rankings, Legacy Score), New Life with one inherited perk
+- [ ] 10. Analytics phone app: net worth, income vs spending, savings rate, allocation, 12-month forecast
+- [ ] 11. Taxes: annual filing (income, deductions, refund/bill), finance-friend tip, late penalty
 
 ## Sixth round (Nov 2026)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)

@@ -11,6 +11,7 @@ export default {
   salaryIndex: 1.05,
   priceIndex: 0.98,
   homePriceIndex: 1.0,
+  homeGrowth: 0.055, // home prices per game year before the economy's swings
   topIndustries: ['Tech', 'Music & Media'],
   industries: { tech: 1.25, creative: 1.1, entrepreneur: 1.1 },
   transit: { name: 'CapMetro Bus', fare: 1.25, icon: '🚌', kind: 'bus', line: '#c53a3a' },

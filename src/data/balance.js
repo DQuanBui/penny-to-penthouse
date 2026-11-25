@@ -175,7 +175,8 @@ export const BALANCE = {
 
   // --- Real estate ----------------------------------------------------------------
   realEstate: {
-    appreciationPerYear: 0.05, // game year, ± regime
+    appreciationPerYear: 0.05, // game year, ± regime (a city's own homeGrowth wins)
+    managerFee: 0.08, // share of rent a property manager keeps for a home in a city you moved away from
     propertyTaxPerYear: 0.011,
     maintenancePerYear: 0.01,
     closingCost: 0.03,
