@@ -4,7 +4,8 @@
 // economy can be tuned with data. Tuning numbers live in src/data/balance.js.
 // Debug flags: ER_DETAIL=1 (why each collapse happened), BREAKDOWN=<strategy>
 // (net worth parts per year), TRACE=<strategy> [TRACE_DAYS=n] (day-by-day log),
-// NO_EVENTS=1 (no life events).
+// NO_EVENTS=1 (no life events), ONLY=Coaster,Server (run only these strategies),
+// CATS=1 (lifetime income and spending by category, seed 11).
 import { Sim } from '../src/sim/Sim.js';
 import { installSystems } from '../src/sim/index.js';
 import { newState } from '../src/sim/State.js';
@@ -43,7 +44,8 @@ function makeSim(strat, seed) {
   const sim = installSystems(new Sim(state, new Events(), city, mulberry32(seed)));
   sim.headless = true;
   sim.events.policy = process.env.NO_EVENTS ? null : () => 0; // always the first (sensible) choice
-  sim.log = { collapses: 0, mood: 0, days: 0, why: {}, name: strat.name };
+  sim.log = { collapses: 0, mood: 0, days: 0, why: {}, name: strat.name, cats: {} };
+  if (process.env.CATS) sim.bus.on('money', ({ amount, cat }) => amount && (sim.log.cats[(amount > 0 ? '+' : '-') + cat] = (sim.log.cats[(amount > 0 ? '+' : '-') + cat] || 0) + amount));
   sim.bus.on('collapse', (c) => {
     sim.log.collapses++;
     // ER_DETAIL=1: what led to it (kind @ hour, during which activity)
@@ -277,7 +279,8 @@ console.log(`\nPENNY TO PENTHOUSE — balance simulation · ${getCity(CITY).name
 console.log(pad('Strategy', 22) + Array.from({ length: YEARS }, (_, i) => padL(`Year ${i + 1}`, 11)).join('') + padL('Salary', 11) + padL('Credit', 8) + padL('Mood', 6) + padL('ER', 7) + '  Final role');
 console.log('-'.repeat(22 + YEARS * 11 + 30 + 28));
 
-for (const strat of STRATEGIES) {
+const ONLY = process.env.ONLY?.split(',').map((x) => x.trim().toLowerCase());
+for (const strat of STRATEGIES.filter((s) => !ONLY || ONLY.some((o) => s.name.toLowerCase().startsWith(o)))) {
   // average three seeds so one lucky market does not decide the verdict
   const seeds = [11, 23, 47];
   const sums = Array(YEARS).fill(0);
@@ -294,7 +297,7 @@ for (const strat of STRATEGIES) {
       if (process.env.BREAKDOWN && (d + 1) % 112 === 0 && seed === 11 && strat.name.startsWith(process.env.BREAKDOWN)) {
         const b = sim.finance.breakdown();
         const biz = sim.state.businesses.filter((x) => x.active).map((x) => `L${x.level} avg ${Math.round(x.avgProfit)}/d cash ${Math.round(x.cash)}`).join('; ');
-        console.log(`   y${(d + 1) / 112}`, Object.entries(b).map(([k, v]) => `${k} ${Math.round(v / 1000)}K`).join(' '), '| salary', Math.round(sim.jobs.annualSalary() / 1000) + 'K', '|', biz);
+        console.log(`   y${(d + 1) / 112} idx ${sim.market.m.prices.CITY500.toFixed(0)} ${sim.market.m.regime}`, Object.entries(b).map(([k, v]) => `${k} ${Math.round(v / 1000)}K`).join(' '), '| salary', Math.round(sim.jobs.annualSalary() / 1000) + 'K', '|', biz);
       }
     }
     last = sim;
@@ -302,6 +305,7 @@ for (const strat of STRATEGIES) {
     score += sim.state.credit.score;
     mood += sim.log.mood / sim.log.days;
     er += sim.log.collapses;
+    if (process.env.CATS && seed === 11) console.log('   ', strat.name, 'invested', Math.round((sim.state.stats.invested || 0) / 1000) + 'K basis', Math.round(sim.market.costBasis() / 1000) + 'K value', Math.round(sim.market.portfolioValue() / 1000) + 'K', Object.entries(sim.log.cats).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${Math.round(v / 1000)}K`).join(' '));
     if (process.env.ER_DETAIL && sim.log.collapses) console.log('   ', strat.name, seed, JSON.stringify(sim.log.why));
   }
   const n = seeds.length;

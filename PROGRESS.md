@@ -1,6 +1,14 @@
 # PENNY TO PENTHOUSE — Progress
 
-RESUME HERE: Sixth round complete and deployed (checklist below). Next ideas: an online leaderboard provider (sim/Rankings.js interface), camera collision against cars/buses (OBBs), office coworkers seated at the new desks, more seasonal city dressing (a big plaza tree), relocation in the headless sim (`npm run sim` strategy).
+RESUME HERE: Seventh round, batch 1 (fix known issues) in progress — next unticked item below. Then batch 2 (items 7–11: old-city friends, dating→wedding, aging + Life Story, Analytics app, taxes) and batch 3 (12–18: code-splitting, daily challenges + achievements gallery, gamepad + rebinding, accessibility, seasonal events, VRM check, final README).
+
+## Seventh round (Nov 2026)
+- [x] 1. Balance: 'Markets in freefall' now reacts to a real sell-off (index 15%+ under its 90-day high, cooldown 112) instead of knocking 14% off every price and forcing a recession each time — it fired every ~60 days for anyone invested, so the index sank 100 → 18 over 10 years and the saver lost to the coaster. Sim yr 10: Coaster $204K, Saver $191K → $409K. `npm run sim` gains ONLY=, CATS=1, idx in BREAKDOWN
+- [ ] 2. Balance: Trades + index bottoms around −$30K (was −$88K)
+- [ ] 3. Camera collision avoids cars, buses, parked cars (smoothed)
+- [ ] 4. Transit map layer: district labels never cover icons
+- [ ] 5. Holiday lights: cut the ~180k extra triangles, same look
+- [ ] 6. Remote properties: real rent/value model in the old city, 'remote — managed' badge + manager fee
 
 ## Sixth round (Nov 2026)
 - [x] City signature features (world/CityThemes.js): Miami neon, LA hillside letters, Chicago sailboats, Austin festoons + dusk bats (`themes` scenario, CITY=...)

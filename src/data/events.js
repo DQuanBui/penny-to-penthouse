@@ -36,13 +36,16 @@ export const LIFE_EVENTS = [
     ],
   },
   {
-    id: 'market_crash', title: 'Markets in freefall', icon: '📉', weight: 1.2, cooldown: 60,
-    when: (sim) => sim.market.portfolioValue() > 500 && sim.state.market.regime !== 'recession',
+    // a reaction to a real sell-off (the index 15%+ under its 90-day high), not its cause:
+    // the event used to knock 14% off every price and force a recession each time it fired,
+    // which made patient index investors poorer than people who kept cash
+    id: 'market_crash', title: 'Markets in freefall', icon: '📉', weight: 3, cooldown: 112,
+    when: (sim) => sim.market.portfolioValue() > 500 && drawdown(sim) >= 0.15,
     text: (sim) => `Stocks are plunging and the headlines are screaming. Your portfolio (${fmtMoney(sim.market.portfolioValue())}) is taking a beating.`,
     choices: [
-      { label: 'Hold. I am in it for the long run.', run: (sim) => { crash(sim); return 'You closed the app and went for a walk. Historically, that is the winning move.'; } },
-      { label: 'Sell everything', run: (sim) => { crash(sim); let got = 0; for (const s of Object.keys(sim.state.portfolio.holdings)) got += sim.market.sell(s, 1)?.proceeds || 0; return `You sold near the bottom for ${fmtMoney(got)}. At least the anxiety stopped.`; } },
-      { label: 'Buy the dip with $1,000', run: (sim) => { crash(sim); return sim.market.buy('CITY500', Math.min(1000, Math.max(0, sim.state.money.checking))) ? 'You bought the index while everyone else panicked.' : 'You wanted to buy, but there was no spare cash.'; } },
+      { label: 'Hold. I am in it for the long run.', run: (sim) => { panic(sim); return 'You closed the app and went for a walk. Historically, that is the winning move.'; } },
+      { label: 'Sell everything', run: (sim) => { panic(sim); let got = 0; for (const s of Object.keys(sim.state.portfolio.holdings)) got += sim.market.sell(s, 1)?.proceeds || 0; return `You sold near the bottom for ${fmtMoney(got)}. At least the anxiety stopped.`; } },
+      { label: 'Buy the dip with $1,000', run: (sim) => { panic(sim); return sim.market.buy('CITY500', Math.min(1000, Math.max(0, sim.state.money.checking))) ? 'You bought the index while everyone else panicked.' : 'You wanted to buy, but there was no spare cash.'; } },
     ],
   },
   {
@@ -341,10 +344,12 @@ export const LIFE_EVENTS = [
 ];
 export const LIFE_EVENT_BY_ID = Object.fromEntries(LIFE_EVENTS.map((e) => [e.id, e]));
 
-function crash(sim) {
-  const m = sim.state.market;
-  m.regime = 'recession';
-  m.regimeLeft = 10 + Math.floor(sim.rng() * 10);
-  for (const s in m.prices) if (s !== 'BOND') m.prices[s] *= 0.82 + sim.rng() * 0.08;
-  sim.market.news('📉', 'Black Monday', 'Markets drop sharply as panic selling spreads. Economists warn of a recession.', 'bad');
+/** How far the index sits under its high of the last 90 days (0..1). */
+function drawdown(sim) {
+  const h = sim.state.market.hist?.CITY500;
+  if (!h?.length) return 0;
+  return 1 - h[h.length - 1] / Math.max(...h);
+}
+function panic(sim) {
+  sim.market.news('📉', 'Panic on the trading floor', `The index is ${Math.round(drawdown(sim) * 100)}% off its high as panic selling spreads.`, 'bad');
 }
